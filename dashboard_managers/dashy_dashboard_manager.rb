@@ -2,26 +2,6 @@ require 'yaml'
 
 class DashyDashboardManager
 
-  def initialize(config)
-    @config = config
-  end
-
-  def get_section_items_map
-    dashboard_config_file = YAML.load_file(@config.dashy_config_file_path)
-
-    section_items_map = Hash.new
-
-    dashboard_config_file["sections"].each do |s|
-      items_json = s["items"]
-      if items_json == nil
-        next
-      end
-
-      items = items_json.map { |i| create_item_from_item_json(i) }
-      section_items_map[s["name"]] = items
-    end
-  end
-
   SECTION_ICON_MAP =
   {
     "Uncategorized" => "fas fa-question",
@@ -29,6 +9,16 @@ class DashyDashboardManager
     "Smart Home" => "fas fa-house-signal",
     "Infrastructure" => "fas fa-chart-network"
   }
+
+  def initialize(config)
+    @config = config
+  end
+
+  def get_sections_hash
+    dashboard_config_hash = YAML.load_file(@config.dashy_config_file_path)
+
+    dashboard_config_hash["sections"]
+  end
 
   def save_to_config_file(services)
     section_items_map = create_section_items_map(services)
@@ -51,6 +41,8 @@ class DashyDashboardManager
     File.open(@config.dashy_config_file_path, 'w') do |file|
       file.write(dashboard_config_file.to_yaml)
     end
+
+    sections
   end
 
   def create_section_items_map(services)

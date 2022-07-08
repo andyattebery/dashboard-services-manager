@@ -3,8 +3,6 @@ class Service
   attr_reader :hostname
   attr_reader :category
   attr_reader :icon
-  attr_reader :names
-  attr_reader :labels
 
   def initialize(name, hostname, category, icon, names, labels)
     @name = name

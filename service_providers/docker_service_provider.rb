@@ -4,6 +4,11 @@ require 'active_support/core_ext/string/inflections'
 require_relative '../models/service'
 
 class DockerServiceProvider
+
+  def initialize(config)
+    @config = config
+  end
+
   def get_services
     containers = Docker::Container.all(:all => true)
 
@@ -41,13 +46,13 @@ class DockerServiceProvider
       if /^traefik\.http\.routers.*\.rule/.match?(k) && /^Host\((.+)\)/.match(v)
         hostnames = Regexp.last_match.captures[0].split(",").map { |h| h.gsub("`", "")}
         hostname = "https://#{hostnames.first}"
-      elsif /org\.opencontainers\.image\.title/.match?(k)
+      elsif k == "org.opencontainers.image.title"
         opencontainers_image_title = v
-      elsif /dcm\.name/.match?(k)
+      elsif k == "#{@config.docker_label_prefix}.name"
         dcm_name = v
-      elsif /dcm\.category/.match?(k)
+      elsif k == "#{@config.docker_label_prefix}.category"
         category = v
-      elsif /dcm\.icon/.match?(k)
+      elsif k == "#{@config.docker_label_prefix}.icon"
         if v.include?("/")
           begin
             icon_uri = URI.parse(v)

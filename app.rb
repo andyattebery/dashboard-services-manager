@@ -3,6 +3,7 @@ require 'http'
 require 'json'
 require 'yaml'
 require 'sinatra/base'
+require 'sinatra/json'
 # require 'sinatra/config_file'
 
 require_relative 'config'
@@ -11,44 +12,32 @@ require_relative 'service_providers/docker_service_provider'
 
 class DockerServicesApi < Sinatra::Base
 
-  @config = Config.new
-  @service_provider = DockerServiceProvider.new
-  @config_manager = DashyDashboardManager.new(@config)
+  def initialize(app = nil, **kwargs)
+    super(app, **kwargs)
 
-  get "/containers" do
-    get_services
+    @config = Config.new
+    @service_provider = DockerServiceProvider.new(@config)
+    @dashboard_manager = DashyDashboardManager.new(@config)
+
+    yield self if block_given?
   end
 
-  get "/config" do
-    get_config
+  get "/services" do
+    services = @service_provider.get_services
+    json services.to_json
   end
 
-  get "/update-config" do
-    config = Config.new
-    service_provider = DockerServiceProvider.new
-    config_manager = DashyDashboardManager.new(config)
-
-    services = service_provider.get_services
-    config_manager.save_to_config_file(services)
-
-    "Updated"
+  get "/dashboard-config" do
+    headers "Content-Type" => "text/x.yaml"
+    dashboard_config_hash = @dashboard_manager.get_sections_hash
+    dashboard_config_hash.to_yaml
   end
 
-  def get_services
-    config = Config.new
-    service_provider = DockerServiceProvider.new
-    config_manager = DashyDashboardManager.new(config)
-
-    services = service_provider.get_services
-    section_items_map = config_manager.create_section_items_map(services)
-    section_items_map.to_yaml
-  end
-
-  def get_config
-    config = Config.new
-    config_manager = DashyDashboardManager.new(config)
-    section_items_map = config_manager.get_section_items_map
-    section_items_map.to_json
+  get "/update-dashboard-config" do
+    headers "Content-Type" => "text/x.yaml"
+    services = @service_provider.get_services
+    updated_sections = @dashboard_manager.save_to_config_file(services)
+    updated_sections.to_yaml
   end
 
 end
