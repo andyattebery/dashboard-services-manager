@@ -27,7 +27,7 @@ class DockerServicesApi < Sinatra::Base
     @dashboard_manager.get_dashboard_config.to_yaml
   end
 
-  get "/sections" do
+  get "/dashboard-config/sections" do
     sections = @dashboard_manager.get_sections_from_dashboard_config
     json sections
   end
@@ -37,7 +37,7 @@ class DockerServicesApi < Sinatra::Base
     json services
   end
 
-  get "/update-dashboard-config" do
+  get "/dashboard-config/update-from-local-services" do
     headers "Content-Type" => "text/x.yaml"
     services = @service_provider.get_services
     updated_sections = @dashboard_manager.update_dashboard_config_file(services)
