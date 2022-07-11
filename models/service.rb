@@ -1,35 +1,44 @@
 class Service
+
   attr_reader :name
-  attr_reader :hostname
+  attr_reader :url
   attr_reader :category
   attr_reader :icon
+  attr_reader :image_url
+  attr_reader :opencontainers_image_title
 
-  def initialize(name, hostname, category, icon, names, labels)
+  def initialize(name, url, category, icon, image_url, opencontainers_image_title, names, labels)
     @name = name
+    @url = url
     @category = category
     @icon = icon
+    @image_url = image_url
+    @opencontainers_image_title = opencontainers_image_title
     @names = names
     @labels = labels
-    @hostname = hostname
   end
 
-  def hostname?
-    !@hostname.nil? && !@hostname.empty?
+  def as_json(options={})
+    {
+      name: @name,
+      url: @url,
+      category: @category,
+      icon: @icon,
+      image_url: @image_url,
+      opencontainers_image_title: @opencontainers_image_title
+    }
   end
 
-  def uncategorized?
-    !@category.nil? && !@category.empty?
-  end
-
-  def icon?
-    !@icon.nil? && !@icon.empty?
+  def to_json(*options)
+    as_json(*options).to_json(*options)
   end
 
   def to_s
-    "name: #{@name} | hostname: #{@hostname} | category: #{@category}"
+    "name: #{@name} | url: #{@url} | category: #{@category}"
   end
 
   def to_s_debug
     "#{to_s}|\nnames: #{@names.join(",")}|\nlabels: #{@labels.to_json}"
   end
+
 end

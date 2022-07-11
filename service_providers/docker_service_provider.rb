@@ -11,77 +11,64 @@ class DockerServiceProvider
 
   def get_services
     containers = Docker::Container.all(:all => true)
-
-    response = ""
-
-    container_infos = []
-
-    containers.each do |c|
-
-      container_info = create_service_from_docker_api_container(c)
-
-      unless container_info.hostname?
-        next
-      end
-
-      container_infos << container_info
-
-      puts container_info.to_s
-    end
-
-    container_infos
+    services = containers.map{ |c| create_service_from_docker_api_container(c) }
+    services
   end
 
-  def create_service_from_docker_api_container(container)
-    hostname = ""
-    category = "Uncategorized"
-    icon = ""
-    icon_uri = nil
+  private
 
-    container_name = container.info["Names"].first.delete_prefix("/").gsub("-", " ").titleize
-    dcm_name = ""
-    opencontainers_image_title = ""
+    def create_service_from_docker_api_container(container)
+      url = ""
+      category = "Uncategorized"
+      icon = ""
+      image_uri = nil
 
-    container.info["Labels"].each do |k,v|
-      if /^traefik\.http\.routers.*\.rule/.match?(k) && /^Host\((.+)\)/.match(v)
-        hostnames = Regexp.last_match.captures[0].split(",").map { |h| h.gsub("`", "")}
-        hostname = "https://#{hostnames.first}"
-      elsif k == "org.opencontainers.image.title"
-        opencontainers_image_title = v
-      elsif k == "#{@config.docker_label_prefix}.name"
-        dcm_name = v
-      elsif k == "#{@config.docker_label_prefix}.category"
-        category = v
-      elsif k == "#{@config.docker_label_prefix}.icon"
-        if v.include?("/")
-          begin
-            icon_uri = URI.parse(v)
-          rescue URI::InvalidURIError
-            icon = v
-          end
-        else
+      container_name = container.info["Names"].first.delete_prefix("/").gsub("-", " ").titleize
+      dcm_name = ""
+      opencontainers_image_title = ""
+
+      container.info["Labels"].each do |k,v|
+        if /^traefik\.http\.routers.*\.rule/.match?(k) && /^Host\((.+)\)/.match(v)
+          urls = Regexp.last_match.captures[0].split(",").map { |h| h.gsub("`", "")}
+          url = "https://#{urls.first}"
+        elsif k == "org.opencontainers.image.title"
+          opencontainers_image_title = v
+        elsif k == "#{@config.docker_label_prefix}.name"
+          dcm_name = v
+        elsif k == "#{@config.docker_label_prefix}.category"
+          category = v
+        elsif k == "#{@config.docker_label_prefix}.icon"
           icon = v
+        elsif k == "#{@config.docker_label_prefix}.image_path"
+          image_uri = URI.parse(v)
         end
       end
-    end
 
-    name =
-      if !dcm_name.empty?
-        dcm_name
-      elsif !opencontainers_image_title.empty?
-        opencontainers_image_title
-      else
-        container_name
+      name =
+        if !dcm_name.empty?
+          dcm_name
+        else
+          container_name
+        end
+
+      image_url = nil
+
+      if image_uri != nil
+        if (image_uri.host == nil)
+          image_url = URI.join(url, image_uri.to_s).to_s
+        else
+          image_url = image_uri.to_s
+        end
       end
 
-    if icon_uri != nil
-      if (icon_uri.host == nil)
-        icon = URI.join(hostname, icon_uri.to_s).to_s
-      else
-        icon = icon_uri.to_s
-      end
+      service = Service.new(
+        name,
+        url,
+        category,
+        icon,
+        image_url,
+        opencontainers_image_title,
+        container.info["Names"],
+        container.info["Labels"])
     end
-
-    service = Service.new(name, hostname, category, icon, container.info["Names"], container.info["Labels"])
-  end
 end

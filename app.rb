@@ -22,21 +22,25 @@ class DockerServicesApi < Sinatra::Base
     yield self if block_given?
   end
 
-  get "/services" do
-    services = @service_provider.get_services
-    json services.to_json
-  end
-
   get "/dashboard-config" do
     headers "Content-Type" => "text/x.yaml"
-    dashboard_config_hash = @dashboard_manager.get_sections_hash
-    dashboard_config_hash.to_yaml
+    @dashboard_manager.get_dashboard_config.to_yaml
+  end
+
+  get "/sections" do
+    sections = @dashboard_manager.get_sections_from_dashboard_config
+    json sections
+  end
+
+  get "/services" do
+    services = @service_provider.get_services
+    json services
   end
 
   get "/update-dashboard-config" do
     headers "Content-Type" => "text/x.yaml"
     services = @service_provider.get_services
-    updated_sections = @dashboard_manager.save_to_config_file(services)
+    updated_sections = @dashboard_manager.update_dashboard_config_file(services)
     updated_sections.to_yaml
   end
 
