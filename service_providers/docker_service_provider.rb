@@ -68,6 +68,7 @@ class DockerServiceProvider
         icon,
         image_url,
         opencontainers_image_title,
+        @config.hostname,
         container.info["Names"],
         container.info["Labels"])
     end

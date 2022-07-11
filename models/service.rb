@@ -6,14 +6,16 @@ class Service
   attr_reader :icon
   attr_reader :image_url
   attr_reader :opencontainers_image_title
+  attr_reader :hostname
 
-  def initialize(name, url, category, icon, image_url, opencontainers_image_title, names, labels)
+  def initialize(name, url, category, icon, image_url, opencontainers_image_title, hostname, names, labels)
     @name = name
     @url = url
     @category = category
     @icon = icon
     @image_url = image_url
     @opencontainers_image_title = opencontainers_image_title
+    @hostname = hostname
     @names = names
     @labels = labels
   end
