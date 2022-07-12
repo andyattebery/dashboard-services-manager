@@ -61,7 +61,7 @@ class DashyDashboardManager
             "url" => item.url,
             "icon" => item.icon
           }
-          if item.tags || item.tags.empty?
+          if item.tags && item.tags.any?
             config_item["tags"] = item.tags
           end
           config_item

@@ -26,19 +26,12 @@ class Service
       icon: @icon,
       image_url: @image_url,
       opencontainers_image_title: @opencontainers_image_title
+      hostname: @hostname
     }
   end
 
   def to_json(*options)
     as_json(*options).to_json(*options)
-  end
-
-  def to_s
-    "name: #{@name} | url: #{@url} | category: #{@category}"
-  end
-
-  def to_s_debug
-    "#{to_s}|\nnames: #{@names.join(",")}|\nlabels: #{@labels.to_json}"
   end
 
 end
