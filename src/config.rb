@@ -10,6 +10,12 @@ class Config
     @dashy_config_file_path = "#{ENV['APP_CONFIG_DIR']}/dashy_config.yaml"
     @docker_label_prefix = "dcm"
     @hostname = ENV["HOSTNAME"]
+    @ignored_service_names = 
+      [
+        "Dashy",
+        "dashboard-services-manager"
+      ]
+    
   end
 
 end

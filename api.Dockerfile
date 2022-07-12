@@ -4,10 +4,8 @@ ADD src/Gemfile* .
 RUN apk upgrade && \
     apk add --no-cache \
       g++ \
-      make \
-      linux-headers \
-      libstdc++ && \
-    bundle config set --local with api && \
+      make && \
+    bundle config set with api && \
     bundle install
 
 FROM ruby:3.1-alpine3.16
@@ -27,7 +25,8 @@ RUN addgroup -g $PGID ruby && \
 
 RUN mkdir $APP_HOME && \
     mkdir $APP_CONFIG_DIR && \
-    chown -R ruby:ruby $APP_HOME
+    chown -R ruby:ruby $APP_HOME && \
+    bundle config set with api
 
 WORKDIR $APP_HOME
 
@@ -41,4 +40,4 @@ EXPOSE 59999
 
 VOLUME $APP_CONFIG_DIR
 
-CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "59999" ]
+CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "59999", "--env", "production" ]

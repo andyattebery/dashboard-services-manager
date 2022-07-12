@@ -1,6 +1,6 @@
-require 'uri'
 require 'active_support/core_ext/string/inflections'
-
+require 'docker'
+require 'uri'
 require_relative '../models/service'
 
 class DockerServiceProvider
@@ -68,8 +68,7 @@ class DockerServiceProvider
         icon,
         image_url,
         opencontainers_image_title,
-        @config.hostname,
-        container.info["Names"],
-        container.info["Labels"])
+        @config.hostname
+      )
     end
 end

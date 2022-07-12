@@ -1,6 +1,5 @@
-require 'yaml'
 require 'active_support/core_ext/object/blank'
-
+require 'yaml'
 require_relative '../models/service'
 require_relative 'dashy/dashy_item'
 require_relative 'dashy/dashy_section'
@@ -95,7 +94,7 @@ class DashyDashboardManager
       section_name_to_items_hash = {}
 
       services.each do |s|
-        if s.url.blank? || s.opencontainers_image_title == "Dashy"
+        if s.url.blank? || @config.ignored_service_names.include?(s.name)
           next
         end
 

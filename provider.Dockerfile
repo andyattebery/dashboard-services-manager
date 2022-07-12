@@ -2,12 +2,9 @@ FROM ruby:3.1-alpine3.16 AS builder
 
 ADD src/Gemfile* .
 RUN apk upgrade && \
-    # apk add --no-cache \
-    #   g++ \
-    #   make \
-    #   linux-headers \
-    #   libstdc++ && \
-    bundle config set --local without api && \
+    apk add --no-cache \
+      g++ \
+      make && \
     bundle install
 
 FROM ruby:3.1-alpine3.16
@@ -39,4 +36,5 @@ ADD --chown=ruby:ruby src/ $APP_HOME/
 
 VOLUME $APP_CONFIG_DIR
 
-CMD ["bundle", "exec", "Provider.new.update_api_with_services" ]
+ENV BUNDLER_WITHOUT app
+CMD ["bundle", "exec", "ruby", "./provider.rb" ]

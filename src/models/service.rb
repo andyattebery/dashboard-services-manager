@@ -8,7 +8,7 @@ class Service
   attr_reader :opencontainers_image_title
   attr_reader :hostname
 
-  def initialize(name, url, category, icon, image_url, opencontainers_image_title, hostname, names, labels)
+  def initialize(name, url, category, icon, image_url, opencontainers_image_title, hostname)
     @name = name
     @url = url
     @category = category
@@ -16,8 +16,6 @@ class Service
     @image_url = image_url
     @opencontainers_image_title = opencontainers_image_title
     @hostname = hostname
-    @names = names
-    @labels = labels
   end
 
   def as_json(options={})
