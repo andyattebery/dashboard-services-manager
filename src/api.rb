@@ -10,7 +10,7 @@ require_relative 'config'
 require_relative 'dashboard_managers/dashy_dashboard_manager'
 require_relative 'service_providers/docker_service_provider'
 
-class DockerServicesApi < Sinatra::Base
+class Api < Sinatra::Base
 
   def initialize(app = nil, **kwargs)
     super(app, **kwargs)

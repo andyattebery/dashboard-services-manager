@@ -10,6 +10,7 @@ class DashyDashboardManager
   {
     "Uncategorized" => "fas fa-question",
     "Media" => "fas fa-tv",
+    "Monitoring" => "fas fa-magnifying-glass-chart",
     "Network" => "fas fa-network-wired",
     "Smart Home" => "fas fa-house-signal",
     "Infrastructure" => "fas fa-chart-network"
@@ -56,12 +57,15 @@ class DashyDashboardManager
     def create_config_sections(sections)
       config_sections = sections.map do |section|
         config_items = section.items.map do |item|
-          {
+          config_item = {
             "title" => item.title,
             "url" => item.url,
-            "icon" => item.icon,
-            "tags" => if item.tags then item.tags else [] end
+            "icon" => item.icon
           }
+          if item.tags || item.tags.empty?
+            config_item["tags"] = item.tags
+          end
+          config_item
         end
         config_section =
         {

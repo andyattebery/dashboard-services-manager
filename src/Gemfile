@@ -3,6 +3,9 @@ source 'https://rubygems.org'
 gem 'activesupport'
 gem 'docker-api'
 gem 'http'
-gem 'sinatra'
-gem 'sinatra-contrib'
-gem 'puma'
+
+group :api do
+  gem 'sinatra'
+  gem 'sinatra-contrib'
+  gem 'puma'
+end
