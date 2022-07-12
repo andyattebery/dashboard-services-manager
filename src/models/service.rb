@@ -25,7 +25,7 @@ class Service
       category: @category,
       icon: @icon,
       image_url: @image_url,
-      opencontainers_image_title: @opencontainers_image_title
+      opencontainers_image_title: @opencontainers_image_title,
       hostname: @hostname
     }
   end
