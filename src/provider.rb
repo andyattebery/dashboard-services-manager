@@ -21,11 +21,6 @@ class Provider
                               "Content-Type" => "application/json")
 
     puts response.message
-    puts response.body
-
-    if response.is_a?(Net::HTTPSuccess)
-      puts response.body
-    end
   end
 
 end

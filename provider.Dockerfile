@@ -37,5 +37,5 @@ ADD --chown=ruby:ruby src/ $APP_HOME/
 
 VOLUME $APP_CONFIG_DIR
 
-ENV BUNDLER_WITHOUT app
+ENV BUNDLER_WITHOUT api
 CMD ["bundle", "exec", "ruby", "./provider.rb" ]
