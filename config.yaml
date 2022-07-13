@@ -2,18 +2,22 @@
 api_url: https://dashboard-services-manager.omegaho.me
 dashy_config_file_path: /config/dashy_config.yaml
 docker_label_prefix: dcm
+are_service_hosts_https: true
 ignored_service_names:
 - Dashy
-- dashboard-services-manager
+- Dashboard Services Manager Api
 section_icons:
-  Infrastructure: fas fa-chart-network
-  Media: fas fa-tv
-  Monitoring: fas fa-magnifying-glass-chart
-  Network: fas fa-network-wired
-  Smart Home: fas fa-house-signal
-  Uncategorized: fas fa-question
+  downloading: fas fa-download
+  infrastructure: fas fa-chart-network
+  media: fas fa-tv
+  monitoring: fas fa-magnifying-glass-chart
+  network: fas fa-network-wired
+  smart some: fas fa-house-signal
+  storage: fas fa-hard-drive
+  uncategorized: fas fa-question
+  utilities: fas fa-toolbox
 default_service_configs:
-  adguard-home:
+  adguardhome:
     name_with_hostname_format_string: AdGuard Home [%s]
     category: network
   changedetectionio:
@@ -33,10 +37,13 @@ default_service_configs:
   homeassistant:
     category: smart home
     image_path: /static/icons/favicon-apple-180x180.png
+  homebridge:
+    category: smart home
   loki:
     category: monitoring
   minio:
     category: storage
+    image_path: /favicon-96x96.png
   pikvm:
     category: infrastructure
     image_path: /share/apple-touch-icon.png

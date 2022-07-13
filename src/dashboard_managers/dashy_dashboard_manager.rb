@@ -5,15 +5,6 @@ require_relative 'dashy/dashy_item'
 require_relative 'dashy/dashy_section'
 
 class DashyDashboardManager
-  SECTION_ICON_MAP =
-  {
-    "Uncategorized" => "fas fa-question",
-    "Media" => "fas fa-tv",
-    "Monitoring" => "fas fa-magnifying-glass-chart",
-    "Network" => "fas fa-network-wired",
-    "Smart Home" => "fas fa-house-signal",
-    "Infrastructure" => "fas fa-chart-network"
-  }
 
   def initialize(config)
     @config = config
@@ -121,13 +112,8 @@ class DashyDashboardManager
     end
 
     def create_dashy_section(section_name, items)
-      icon =
-        if @config.section_icons.include?(section_name) then 
-          @config.section_icons[section_name]
-        else
-          nil
-        end
-        DashySection.new(section_name, icon, items.sort_by! { |i| i.title })
+      icon = @config.section_icons[section_name.downcase]
+      DashySection.new(section_name, icon, items.sort_by! { |i| i.title })
     end
 
     def get_dashboard_config_hash
