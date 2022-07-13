@@ -79,8 +79,8 @@ class DockerServiceProvider
       traefik_router_to_hosts = {}
 
       container.info["Labels"].each do |k,v|
-        if router_match = /^traefik\.http\.routers\.(.*)\.rule/.match(k) &&
-           url_match = /^Host\((.+)\)/.match(v)
+        if (router_match = /^traefik\.http\.routers\.(.*)\.rule/.match(k)) &&
+           (url_match = /^Host\((.+)\)/.match(v))
           traefik_router_to_hosts[router_match.captures[0]] = url_match.captures[0]
         elsif k == "org.opencontainers.image.title"
           opencontainers_image_title = v
@@ -100,10 +100,15 @@ class DockerServiceProvider
         end
       end
 
+      puts container_name
+      puts "label_traefik_router: #{label_traefik_router}"
+      puts "traefik_router_to_hosts"
+      puts traefik_router_to_hosts
+
       traefik_router_host =
         if traefik_router_to_hosts.any?
           traefik_router_hosts = label_traefik_router ?
-            traefik_router_to_hosts[label_traefik_router] :
+            traefik_router_to_hosts[label_traefik_router].split(",")  :
             traefik_router_to_hosts.values.map { |rhs| rhs.split(",") }.flatten
           traefik_router_hosts.first
         else
