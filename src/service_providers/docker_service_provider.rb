@@ -17,15 +17,64 @@ class DockerServiceProvider
 
   private
 
-    def create_service_from_docker_api_container(container)
-      url = ""
-      category = "Uncategorized"
-      icon = ""
-      image_uri = nil
+    def create_service(container_name, url, label_name, label_category, icon, image_path, opencontainers_image_title, hostname)
+      default_service_config = @config.get_default_service_config(container_name.downcase)
+      name_with_hostname_format_string = default_service_config["name_with_hostname_format_string"]
+      default_category = default_service_config["category"]
 
+      icon ||= default_service_config["icon"]
+      image_path ||= default_service_config["image_path"]
+
+      name =
+        if label_name
+          label_name
+        elsif name_with_hostname_format_string
+          name_with_hostname_format_string % hostname
+        else
+          container_name
+        end
+
+      category =
+        if label_category
+          label_category
+        elsif default_category
+          default_category
+        else
+          "uncategorized"
+        end
+
+      image_url =
+        if image_path
+          image_uri = URI.parse(image_path)
+          if image_uri && image_uri.host
+            image_uri.to_s
+          else
+            URI.join(url, image_uri.to_s).to_s
+          end
+        else
+          nil
+        end
+
+      Service.new(
+        name,
+        url,
+        category,
+        icon,
+        image_url,
+        opencontainers_image_title,
+        hostname
+      )
+    end
+
+    def create_service_from_docker_api_container(container)
       container_name = container.info["Names"].first.delete_prefix("/").gsub("-", " ").titleize
-      dcm_name = ""
-      opencontainers_image_title = ""
+
+      url = nil
+      label_category = nil
+      label_icon = nil
+      label_image_path = nil
+      label_name = nil
+      opencontainers_image_title = nil
 
       container.info["Labels"].each do |k,v|
         if /^traefik\.http\.routers.*\.rule/.match?(k) && /^Host\((.+)\)/.match(v)
@@ -34,39 +83,23 @@ class DockerServiceProvider
         elsif k == "org.opencontainers.image.title"
           opencontainers_image_title = v
         elsif k == "#{@config.docker_label_prefix}.name"
-          dcm_name = v
+          label_name = v
         elsif k == "#{@config.docker_label_prefix}.category"
-          category = v
+          label_category = v
         elsif k == "#{@config.docker_label_prefix}.icon"
-          icon = v
+          label_icon = v
         elsif k == "#{@config.docker_label_prefix}.image_path"
-          image_uri = URI.parse(v)
+          label_image_path = v
         end
       end
 
-      name =
-        if !dcm_name.empty?
-          dcm_name
-        else
-          container_name
-        end
-
-      image_url = nil
-
-      if image_uri != nil
-        if (image_uri.host == nil)
-          image_url = URI.join(url, image_uri.to_s).to_s
-        else
-          image_url = image_uri.to_s
-        end
-      end
-
-      service = Service.new(
-        name,
+      create_service(
+        container_name,
         url,
-        category,
-        icon,
-        image_url,
+        label_name,
+        label_category,
+        label_icon,
+        label_image_path,
         opencontainers_image_title,
         @config.hostname
       )
