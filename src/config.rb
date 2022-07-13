@@ -3,6 +3,7 @@ require 'yaml'
 class Config
 
   attr_reader :api_url
+  attr_reader :are_service_hosts_https
   attr_reader :dashy_config_file_path
   attr_reader :docker_label_prefix
   attr_reader :hostname
@@ -15,6 +16,7 @@ class Config
     @hostname = ENV["HOSTNAME"]
 
     @api_url = config_hash["api_url"]
+    @are_service_hosts_https = config_hash["are_service_hosts_https"]
     @dashy_config_file_path = config_hash["dashy_config_file_path"]
     @docker_label_prefix = config_hash["docker_label_prefix"] || "dcm"
     @ignored_service_names = config_hash["ignored_service_names"] || []

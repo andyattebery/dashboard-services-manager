@@ -74,12 +74,14 @@ class DockerServiceProvider
       label_icon = nil
       label_image_path = nil
       label_name = nil
+      label_traefik_router = nil
       opencontainers_image_title = nil
+      traefik_router_to_hosts = {}
 
       container.info["Labels"].each do |k,v|
-        if /^traefik\.http\.routers.*\.rule/.match?(k) && /^Host\((.+)\)/.match(v)
-          urls = Regexp.last_match.captures[0].split(",").map { |h| h.gsub("`", "")}
-          url = "https://#{urls.first}"
+        if router_match = /^traefik\.http\.routers\.(.*)\.rule/.match(k) &&
+           url_match = /^Host\((.+)\)/.match(v)
+          traefik_router_to_hosts[router_match.captures[0]] = url_match.captures[0]
         elsif k == "org.opencontainers.image.title"
           opencontainers_image_title = v
         elsif k == "#{@config.docker_label_prefix}.name"
@@ -90,11 +92,33 @@ class DockerServiceProvider
           label_icon = v
         elsif k == "#{@config.docker_label_prefix}.image_path"
           label_image_path = v
+        elsif k == "#{@config.docker_label_prefix}.traefik_router"
+          label_traefik_router = v
         elsif k == "#{@config.docker_label_prefix}.ignore" &&
-              v == "true"
+          v == "true"
           next
         end
       end
+
+      traefik_router_host =
+        if traefik_router_to_hosts.any?
+          traefik_router_hosts = label_traefik_router ?
+            traefik_router_to_hosts[label_traefik_router] :
+            traefik_router_to_hosts.values.map { |rhs| rhs.split(",") }.flatten
+          traefik_router_hosts.first
+        else
+          nil
+        end
+
+      url =
+        if traefik_router_host
+          clean_router_host = traefik_router_host.gsub("`", "")
+          @config.are_service_hosts_https ?
+            "https://#{clean_router_host}" :
+            "https://#{clean_router_host}"
+        else
+          nil
+        end
 
       create_service(
         container_name,
