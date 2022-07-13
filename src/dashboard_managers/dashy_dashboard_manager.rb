@@ -80,8 +80,13 @@ class DashyDashboardManager
 
     def create_dashy_sections_from_config_sections(config_sections)
       sections = config_sections.map do |config_section|
-        items = config_section["items"].map do |config_item|
-          DashyItem.new(config_item["title"], config_item["url"], config_item["icon"], config_item["tags"])
+        items =
+          if !config_section["items"]
+            []
+          else
+            config_section["items"].map do |config_item|
+            DashyItem.new(config_item["title"], config_item["url"], config_item["icon"], config_item["tags"])
+          end
         end
 
         DashySection.new(config_section["name"], config_section["icon"], items)
@@ -117,8 +122,8 @@ class DashyDashboardManager
 
     def create_dashy_section(section_name, items)
       icon =
-        if SECTION_ICON_MAP.include?(section_name) then 
-          SECTION_ICON_MAP[section_name]
+        if @config.section_icons.include?(section_name) then 
+          @config.section_icons[section_name]
         else
           nil
         end

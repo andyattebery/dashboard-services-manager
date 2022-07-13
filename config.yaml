@@ -1,0 +1,43 @@
+---
+app_url: https://dashboard-services-manager.omegaho.me
+dashy_config_file_path: /config/dashy_config.yaml
+docker_label_prefix: dcm
+ignored_service_names:
+- Dashy
+- dashboard-services-manager
+section_icons:
+  Infrastructure: fas fa-chart-network
+  Media: fas fa-tv
+  Monitoring: fas fa-magnifying-glass-chart
+  Network: fas fa-network-wired
+  Smart Home: fas fa-house-signal
+  Uncategorized: fas fa-question
+default_service_configs:
+  adguard-home:
+    name_with_hostname_format_string: AdGuard Home [%s]
+  grafana:
+    category: Monitoring
+    image_path: /public/img/grafana_icon.svg
+  healthchecks:
+    category: Infrastructure
+    image_path: https://healthchecks.io/static/img/favicon.png
+  homeassistant:
+    category: Smart Home
+    image_path: /static/icons/favicon-apple-180x180.png
+  pikvm:
+    category: Infrastructure
+    image_path: /share/apple-touch-icon.png
+  plex:
+    category: Media
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/plex.png
+  proxmox:
+    category: Infrastructure
+    image_path: /pve2/images/logo-128.png
+  tautulli:
+    category: Media
+  traefik:
+    name_with_hostname_format_string: Traefik [%s]
+    category: Network
+    image_path: /dashboard/statics/icons/favicon-96x96.png
+  unifi:
+    category: Network
