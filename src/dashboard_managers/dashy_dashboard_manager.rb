@@ -155,7 +155,9 @@ class DashyDashboardManager
           updated_items.concat(section_name_to_new_sections_hash[section.name].items)
         end
 
-        updated_sections << create_dashy_section(section.name, updated_items)
+        if updated_items.any?
+          updated_sections << create_dashy_section(section.name, updated_items)
+        end
       end
 
       return updated_sections.sort_by! { |s| s.name }
