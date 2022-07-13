@@ -1,3 +1,5 @@
+require 'yaml'
+
 class Config
 
   attr_reader :api_url
