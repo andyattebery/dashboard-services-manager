@@ -6,6 +6,7 @@ are_service_hosts_https: true
 ignored_service_names:
 - Dashy
 - Dashboard Services Manager Api
+- Loki
 section_icons:
   downloading: fas fa-download
   infrastructure: fas fa-chart-network
@@ -41,8 +42,6 @@ default_service_configs:
     image_path: /static/icons/favicon-apple-180x180.png
   homebridge:
     category: smart home
-  loki:
-    category: monitoring
   minio:
     category: storage
     image_path: /favicon-96x96.png
@@ -59,7 +58,7 @@ default_service_configs:
     image_path: /pve2/images/logo-128.png
   scrutiny:
     category: monitoring
-    image_path: /android-icon-192x192.png
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/scrutiny.png
   tautulli:
     category: media
   traefik:
