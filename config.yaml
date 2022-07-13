@@ -16,7 +16,7 @@ default_service_configs:
   adguard-home:
     name_with_hostname_format_string: AdGuard Home [%s]
     category: network
-  changedetection.io:
+  changedetectionio:
     category: utilities
   flexget:
     category: downloading
