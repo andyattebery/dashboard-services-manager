@@ -20,6 +20,10 @@ default_service_configs:
     category: utilities
   flexget:
     category: downloading
+  flood:
+    category: downloading
+  gitea:
+    category: storage
   grafana:
     category: monitoring
     image_path: /public/img/grafana_icon.svg
@@ -31,6 +35,8 @@ default_service_configs:
     image_path: /static/icons/favicon-apple-180x180.png
   loki:
     category: monitoring
+  minio:
+    category: storage
   pikvm:
     category: infrastructure
     image_path: /share/apple-touch-icon.png
@@ -42,6 +48,8 @@ default_service_configs:
   proxmox:
     category: infrastructure
     image_path: /pve2/images/logo-128.png
+  scrutiny:
+    category: monitoring
   tautulli:
     category: media
   traefik:
