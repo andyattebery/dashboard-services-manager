@@ -12,7 +12,7 @@ section_icons:
   media: fas fa-tv
   monitoring: fas fa-magnifying-glass-chart
   network: fas fa-network-wired
-  smart some: fas fa-house-signal
+  smart home: fas fa-house-signal
   storage: fas fa-hard-drive
   uncategorized: fas fa-question
   utilities: fas fa-toolbox
@@ -20,10 +20,12 @@ default_service_configs:
   adguardhome:
     name_with_hostname_format_string: AdGuard Home [%s]
     category: network
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/adguard-home.png
   changedetectionio:
     category: utilities
   flexget:
     category: downloading
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/flexget.png
   flood:
     category: downloading
   gitea:
@@ -57,6 +59,7 @@ default_service_configs:
     image_path: /pve2/images/logo-128.png
   scrutiny:
     category: monitoring
+    image_path: /android-icon-192x192.png
   tautulli:
     category: media
   traefik:
