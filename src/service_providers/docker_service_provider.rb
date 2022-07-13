@@ -96,14 +96,10 @@ class DockerServiceProvider
           label_traefik_router = v
         elsif k == "#{@config.docker_label_prefix}.ignore" &&
           v == "true"
+          #TODO: actually handle this
           next
         end
       end
-
-      puts container_name
-      puts "label_traefik_router: #{label_traefik_router}"
-      puts "traefik_router_to_hosts"
-      puts traefik_router_to_hosts
 
       traefik_router_host =
         if traefik_router_to_hosts.any?
