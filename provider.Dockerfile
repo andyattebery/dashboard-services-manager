@@ -14,7 +14,7 @@ ARG PGID=1000
 ARG DOCKER_GID=998
 
 ENV APP_HOME /app
-ENV APP_CONFIG_DIR $APP_HOME/config
+ENV APP_CONFIG_DIR /config
 
 RUN addgroup -g $PGID ruby && \
     addgroup -g $DOCKER_GID docker && \
@@ -24,7 +24,8 @@ RUN addgroup -g $PGID ruby && \
 
 RUN mkdir $APP_HOME && \
     mkdir $APP_CONFIG_DIR && \
-    chown -R ruby:ruby $APP_HOME
+    chown ruby:ruby $APP_HOME && \
+    chown ruby:ruby $APP_CONFIG_DIR
 
 WORKDIR $APP_HOME
 
