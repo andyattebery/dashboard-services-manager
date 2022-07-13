@@ -90,6 +90,9 @@ class DockerServiceProvider
           label_icon = v
         elsif k == "#{@config.docker_label_prefix}.image_path"
           label_image_path = v
+        elsif k == "#{@config.docker_label_prefix}.ignore" &&
+              v == "true"
+          next
         end
       end
 
