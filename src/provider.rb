@@ -1,13 +1,15 @@
 require 'net/http'
 require 'uri'
 require_relative 'config'
+require_relative 'service/service_factory'
 require_relative 'service_providers/docker_service_provider'
 
 class Provider
 
   def initialize
     @config = Config.new
-    @service_provider = DockerServiceProvider.new(@config)
+    @service_factory = ServiceFactory.new
+    @service_provider = DockerServiceProvider.new(@config, @service_factory)
   end
 
   def update_api_with_services

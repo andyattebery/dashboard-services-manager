@@ -6,7 +6,8 @@ require 'sinatra/json'
 
 require_relative 'config'
 require_relative 'dashboard_managers/dashy_dashboard_manager'
-require_relative 'models/service'
+require_relative 'service/service'
+require_relative 'service/service_factory'
 require_relative 'service_providers/docker_service_provider'
 
 class Api < Sinatra::Base
@@ -15,7 +16,8 @@ class Api < Sinatra::Base
     super(app, **kwargs)
 
     @config = Config.new
-    @service_provider = DockerServiceProvider.new(@config)
+    @service_factory = ServiceFactory.new(@config)
+    @service_provider = DockerServiceProvider.new(@config, @service_factory)
     @dashboard_manager = DashyDashboardManager.new(@config)
 
     yield self if block_given?
@@ -52,14 +54,7 @@ class Api < Sinatra::Base
   post "/dashboard-config/update-from-services" do
     service_hashes = JSON.parse(request.body.read)
     services = service_hashes.map do |sh|
-      Service.new(
-        sh["name"],
-        sh["url"], 
-        sh["category"], 
-        sh["icon"], 
-        sh["image_url"], 
-        sh["opencontainers_image_title"], 
-        sh["hostname"])
+      @service_factory.create_with_default_service_config_from_json_hash(sh)
     end
 
     updated_sections = @dashboard_manager.update_dashboard_config_file(services)

@@ -1,6 +1,6 @@
 require 'active_support/core_ext/object/blank'
 require 'yaml'
-require_relative '../models/service'
+require_relative '../service/service'
 require_relative 'dashy/dashy_item'
 require_relative 'dashy/dashy_section'
 
