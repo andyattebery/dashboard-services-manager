@@ -17,7 +17,7 @@ class DockerServiceProvider
     if !include_ignored
       services = services.select{ |s| !s.ignore? }
     end
-    services
+    return services
   end
 
   private
@@ -52,8 +52,7 @@ class DockerServiceProvider
           label_image_path = v
         elsif k == "#{@config.docker_label_prefix}.traefik_router"
           label_traefik_router = v
-        elsif k == "#{@config.docker_label_prefix}.ignore" &&
-          v == "true"
+        elsif k == "#{@config.docker_label_prefix}.ignore" && v == "true"
           label_ignore = true
         end
       end

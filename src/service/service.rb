@@ -18,7 +18,7 @@ class Service
     @image_url = image_url
     @opencontainers_image_title = opencontainers_image_title
     @hostname = hostname
-    @ignore = false
+    @ignore = ignore
   end
 
   def as_json(options={})
@@ -29,7 +29,8 @@ class Service
       icon: @icon,
       image_url: @image_url,
       opencontainers_image_title: @opencontainers_image_title,
-      hostname: @hostname
+      hostname: @hostname,
+      ignore: @ignore
     }
   end
 
