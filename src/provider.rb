@@ -8,7 +8,7 @@ class Provider
 
   def initialize
     @config = Config.new
-    @service_factory = ServiceFactory.new
+    @service_factory = ServiceFactory.new(@config)
     @service_provider = DockerServiceProvider.new(@config, @service_factory)
   end
 

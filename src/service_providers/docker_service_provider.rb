@@ -15,7 +15,7 @@ class DockerServiceProvider
     containers = Docker::Container.all()
     services = containers.map{ |c| create_service_from_docker_api_container(c) }
     if !include_ignored
-      services = services.select{ |s| !s.ignored? }
+      services = services.select{ |s| !s.ignore? }
     end
     services
   end
