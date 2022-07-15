@@ -11,9 +11,12 @@ class DockerServiceProvider
     @service_factory = service_factory
   end
 
-  def get_services
+  def get_services(include_ignored=false)
     containers = Docker::Container.all()
     services = containers.map{ |c| create_service_from_docker_api_container(c) }
+    if !include_ignored
+      services = services.select{ |s| !s.ignored? }
+    end
     services
   end
 
@@ -29,6 +32,7 @@ class DockerServiceProvider
       label_image_path = nil
       label_name = nil
       label_traefik_router = nil
+      label_ignore = false
       opencontainers_image_title = nil
       traefik_router_to_hosts = {}
 
@@ -50,8 +54,7 @@ class DockerServiceProvider
           label_traefik_router = v
         elsif k == "#{@config.docker_label_prefix}.ignore" &&
           v == "true"
-          #TODO: actually handle this
-          next
+          label_ignore = true
         end
       end
 
@@ -65,7 +68,8 @@ class DockerServiceProvider
         label_icon,
         label_image_path,
         opencontainers_image_title,
-        @config.hostname
+        @config.hostname,
+        label_ignore
       )
     end
 

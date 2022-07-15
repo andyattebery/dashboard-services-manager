@@ -9,12 +9,14 @@ class ServiceFactory
   def create_from_json_hash(json_hash)
     return Service.new(
       json_hash["name"],
-      json_hash["url"], 
-      json_hash["category"], 
-      json_hash["icon"], 
-      json_hash["image_url"], 
-      json_hash["opencontainers_image_title"], 
-      json_hash["hostname"])
+      json_hash["url"],
+      json_hash["category"],
+      json_hash["icon"],
+      json_hash["image_url"],
+      json_hash["opencontainers_image_title"],
+      json_hash["hostname"],
+      json_hash["ignored"]
+    )
   end
 
   def create_with_default_service_config(service)
