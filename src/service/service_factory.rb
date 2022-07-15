@@ -20,7 +20,7 @@ class ServiceFactory
   end
 
   def create_with_default_service_config(service)
-    default_service_config = @config.get_default_service_config(container_name.downcase)
+    default_service_config = @config.get_default_service_config(service.name.downcase)
 
     name_with_hostname_format_string = default_service_config["name_with_hostname_format_string"]
     default_category = default_service_config["category"]
@@ -28,7 +28,7 @@ class ServiceFactory
     default_image_path = default_service_config["image_path"]
 
     name = name_with_hostname_format_string ?
-      name_with_hostname_format_string % hostname :
+      name_with_hostname_format_string % service.hostname :
       service.name
 
     category =
@@ -42,7 +42,7 @@ class ServiceFactory
 
     icon = service.icon ? service.icon : default_icon
 
-    image_path = service.image_path ? service.image_path : default_image_path
+    image_path = service.image_url ? service.image_url : default_image_path
 
     image_url =
       if image_path
@@ -50,7 +50,7 @@ class ServiceFactory
         if image_uri && image_uri.host
           image_uri.to_s
         else
-          URI.join(url, image_uri.to_s).to_s
+          URI.join(service.url, image_uri.to_s).to_s
         end
       else
         nil
@@ -58,7 +58,7 @@ class ServiceFactory
 
     return Service.new(
       name,
-      url,
+      service.url,
       category,
       icon,
       image_url,
