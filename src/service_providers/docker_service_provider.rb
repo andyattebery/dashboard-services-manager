@@ -31,6 +31,7 @@ class DockerServiceProvider
       label_icon = nil
       label_image_path = nil
       label_name = nil
+      label_url = nil
       label_traefik_router = nil
       label_ignore = false
       opencontainers_image_title = nil
@@ -44,6 +45,8 @@ class DockerServiceProvider
           opencontainers_image_title = v
         elsif k == "#{@config.docker_label_prefix}.name"
           label_name = v
+        elsif k == "#{@config.docker_label_prefix}.url"
+          label_url = v
         elsif k == "#{@config.docker_label_prefix}.category"
           label_category = v
         elsif k == "#{@config.docker_label_prefix}.icon"
@@ -58,7 +61,7 @@ class DockerServiceProvider
       end
 
       name = label_name ? label_name : container_name
-      url = get_url(label_traefik_router, traefik_router_to_hosts)
+      url = get_url(label_url, label_traefik_router, traefik_router_to_hosts)
 
       return Service.new(
         name,
@@ -72,7 +75,7 @@ class DockerServiceProvider
       )
     end
 
-    def get_url(label_traefik_router, traefik_router_to_hosts)
+    def get_url(label_url, label_traefik_router, traefik_router_to_hosts)
       traefik_router_host =
         if traefik_router_to_hosts.any?
           traefik_router_hosts = label_traefik_router ?
@@ -84,7 +87,9 @@ class DockerServiceProvider
         end
 
       url =
-        if traefik_router_host
+        if label_url
+          label_url
+        elsif traefik_router_host
           clean_router_host = traefik_router_host.gsub("`", "")
           @config.are_service_hosts_https ?
             "https://#{clean_router_host}" :
