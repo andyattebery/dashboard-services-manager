@@ -1,0 +1,15 @@
+DashyDashboardManager:
+  - Create config sections and items directly from Services
+  - Create Services from config sections and items
+ServiceManager:
+  - Merge existing Services and new Services using ServiceFactory to create Services
+Docker:
+  - Separate api gems into separate group
+  - Only install api gems in api.Dockerfile
+  - Exclude api gems in provider.Dockerfile
+Create Tests:
+  - Choose test framework
+  - Add DockerServiceProvider tests
+  - Add ServiceFactory tests
+  - Add DashyDashboardManager tests
+Archive:
