@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  dashboard-services-manager-api:
+    container_name: dashboard-services-manager-api
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - DOCKER_GID=${DOCKER_GID}
+    environment:
+      - HOSTNAME=${HOSTNAME}
+    ports:
+    - 59999:59999
+    volumes:
+      - ${APPLICATION_SETTINGS_DIR}/dashy/config/config.yaml:/config/dashy_config.yaml
+      - /home/services/projects/dashboard-services-manager/config.yaml:/config/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+  dashboard-services-manager-provider:
+    container_name: dashboard-services-manager-provider
+    build:
+      context: .
+      dockerfile: provider.Dockerfile
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - DOCKER_GID=${DOCKER_GID}
+    environment:
+      - HOSTNAME=${HOSTNAME}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
