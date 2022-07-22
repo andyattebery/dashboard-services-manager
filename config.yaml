@@ -11,16 +11,20 @@ section_icons:
   downloading: fas fa-download
   infrastructure: fas fa-chart-network
   media: fas fa-tv
-  monitoring: fas fa-magnifying-glass-chart
+  monitoring: fas fa-chart-line
   network: fas fa-network-wired
   smart home: fas fa-house-signal
-  storage: fas fa-hard-drive
+  storage: fas fa-database
   uncategorized: fas fa-question
   utilities: fas fa-toolbox
 default_service_configs:
   adguardhome:
     name_with_hostname_format_string: AdGuard Home [%s]
     category: network
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/adguard-home.png
+  adguardhome sync:
+    name_with_hostname_format_string: AdGuard Home Sync
+    category: utilities
     image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/adguard-home.png
   changedetectionio:
     category: utilities
@@ -35,7 +39,7 @@ default_service_configs:
     category: monitoring
     image_path: /public/img/grafana_icon.svg
   healthchecks:
-    category: infrastructure
+    category: monitoring
     image_path: https://healthchecks.io/static/img/favicon.png
   homeassistant:
     category: smart home
@@ -53,6 +57,7 @@ default_service_configs:
     image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/plex.png
   prometheus:
     category: monitoring
+    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/prometheus.png
   proxmox:
     category: infrastructure
     image_path: /pve2/images/logo-128.png
