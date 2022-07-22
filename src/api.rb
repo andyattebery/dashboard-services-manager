@@ -47,6 +47,7 @@ class Api < Sinatra::Base
   get "/dashboard-config/update-from-local-services" do
     headers "Content-Type" => "text/x.yaml"
     services = @service_provider.get_services
+    services = services.map { |s| @service_factory.create_with_default_service_config(s) }
     updated_sections = @dashboard_manager.update_dashboard_config_file(services)
     updated_sections.to_yaml
   end
