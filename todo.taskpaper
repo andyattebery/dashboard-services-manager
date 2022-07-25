@@ -4,9 +4,9 @@ DashyDashboardManager:
 ServiceManager:
   - Merge existing Services and new Services using ServiceFactory to create Services
 Docker:
-  - Separate api gems into separate group
-  - Only install api gems in api.Dockerfile
-  - Exclude api gems in provider.Dockerfile
+  ✔ Separate api gems into separate group @done(22-07-24 23:19)
+  ✔ Only install api gems in api.Dockerfile @done(22-07-24 23:19)
+  ✔ Exclude api gems in provider.Dockerfile @done(22-07-24 23:19)
 Create Tests:
   - Choose test framework
   - Add DockerServiceProvider tests
