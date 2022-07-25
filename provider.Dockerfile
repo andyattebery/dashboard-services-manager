@@ -1,10 +1,10 @@
 FROM ruby:3.1-alpine3.16 AS builder
 
+ENV BUNDLE_WITHOUT api
+
 ADD src/Gemfile* .
 RUN apk upgrade && \
-    apk add --no-cache \
-      g++ \
-      make && \
+    apk add --no-cache g++ make && \
     bundle install
 
 FROM ruby:3.1-alpine3.16
@@ -35,7 +35,10 @@ COPY --from=builder /usr/local/bundle/ /usr/local/bundle/
 
 ADD --chown=ruby:ruby src/ $APP_HOME/
 
+# Grab generated Gemfile.lock from builder. This will allow bundle exec to run without running bundle install again.
+COPY --from=builder --chown=ruby:ruby Gemfile.lock $APP_HOME/Gemfile.lock
+
 VOLUME $APP_CONFIG_DIR
 
-ENV BUNDLER_WITHOUT api
+ENV BUNDLE_WITHOUT api
 CMD ["bundle", "exec", "ruby", "./provider.rb" ]
