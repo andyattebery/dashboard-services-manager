@@ -21,16 +21,16 @@ default_service_configs:
   adguardhome:
     name_with_hostname_format_string: AdGuard Home [%s]
     category: network
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/adguard-home.png
+    icon: hl-adguardhome
   adguardhome sync:
     name_with_hostname_format_string: AdGuard Home Sync
     category: utilities
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/adguard-home.png
+    icon: hl-adguard-home
   changedetectionio:
     category: utilities
   flexget:
     category: downloading
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/flexget.png
+    icon: hl-flexget
   flood:
     category: downloading
   gitea:
@@ -54,16 +54,16 @@ default_service_configs:
     image_path: /share/apple-touch-icon.png
   plex:
     category: media
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/plex.png
+    icon: hl-plex
   prometheus:
     category: monitoring
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/prometheus.png
+    icon: hl-prometheus
   proxmox:
     category: infrastructure
     image_path: /pve2/images/logo-128.png
   scrutiny:
     category: monitoring
-    image_path: https://github.com/walkxhub/dashboard-icons/raw/master/png/scrutiny.png
+    icon: hl-scrutiny
   tautulli:
     category: media
   traefik:
