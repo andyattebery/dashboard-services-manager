@@ -27,7 +27,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/andyattebery/dashboard-services-manager:latest
+            ghcr.io/andyattebery/dashboard-services-manager:api-latest
       - name: Build and push Provider Docker images
         uses: docker/build-push-action@v4
         with:
@@ -35,4 +35,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/andyattebery/dashboard-services-manager:latest
+            ghcr.io/andyattebery/dashboard-services-manager:provider-latest
