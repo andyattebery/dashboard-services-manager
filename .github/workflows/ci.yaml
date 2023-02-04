@@ -21,17 +21,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push API Docker images
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v4
         with:
-          file: api.DockerFile
+          file: api.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/andyattebery/dashboard-services-manager:latest
       - name: Build and push Provider Docker images
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v4
         with:
-          file: provider.DockerFile
+          file: provider.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
