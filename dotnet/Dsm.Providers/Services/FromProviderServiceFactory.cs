@@ -30,9 +30,11 @@ public class FromProviderServiceFactory
             // _logger.LogDebug($"{label.Key}, {label.Value}");
 
             var traefikRouterRuleRegexMatch = LabelKeyTraefikRouterRuleRegex.Match(label.Key);
-            if (traefikRouterRuleRegexMatch.Success)
+            if (traefikRouterRuleRegexMatch.Success &&
+                !string.IsNullOrEmpty(traefikRouterRuleRegexMatch.Groups[1].Value))
             {
-                fromProviderServiceBuilder.TraefikRouterNameToRule.Add(traefikRouterRuleRegexMatch.Value, label.Value);
+                var traefikRouter = traefikRouterRuleRegexMatch.Groups[1].Value;
+                fromProviderServiceBuilder.TraefikRouterNameToRule.Add(traefikRouter, label.Value);
             }
             else if (label.Key == $"{DockerLabelPrefix}.category")
             {
