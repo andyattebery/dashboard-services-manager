@@ -22,7 +22,7 @@ class Program
             })
             .ConfigureAppConfiguration((hostContext, configuration) =>
             {
-                configuration.AddEnvironmentVariables(prefix: "DCM_");
+                configuration.AddEnvironmentVariables(prefix: "DSM_");
             });
     }
 }
