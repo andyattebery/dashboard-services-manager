@@ -1,0 +1,5 @@
+---
+- name: "test1"
+  url: "https://test1.example.com"
+- name: test2
+  url: https://test2.example.com
