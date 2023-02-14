@@ -25,7 +25,7 @@ public class YamlFileServicesProviderTests : BaseTest
         var providerOptions = new ProviderOptions()
         {
             ProviderType = "yaml",
-            ServicesYamlFilePath = Path.Combine("UnitTests", "TestData", "services.yaml")
+            ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
         };
         var options = Options.Create(providerOptions);
         services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => options);
