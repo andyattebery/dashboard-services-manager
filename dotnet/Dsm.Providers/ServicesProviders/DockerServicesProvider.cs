@@ -49,7 +49,7 @@ public class DockerServicesProvider : IServicesProvider
         var name = containerListResponse.Names.First();
 
         var formattedName = name.TrimStart('/');
-        formattedName = ServicesProviderUtilities.GetFormattedServiceName(name);
+        formattedName = ServicesProviderUtilities.GetFormattedServiceName(formattedName);
         return formattedName;
     }
 }
