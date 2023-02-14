@@ -5,25 +5,49 @@ using Microsoft.Extensions.Logging;
 using Refit;
 using Dsm.Providers.ServicesProviders;
 using Dsm.Shared.ApiClients;
+using Microsoft.Extensions.Options;
+using Dsm.Shared.Options;
 
 namespace Dsm.Provider.App;
 
 public class ProviderService : BackgroundService
 {
     private readonly ILogger<ProviderService> _logger;
-    private readonly IServicesProvider _servicesProvider;
+    private readonly ProviderOptions _providerOptions;
+    private readonly ServicesProviderFactory _servicesProviderFactory;
     private readonly IDcmClient _dcmClient;
 
-    public ProviderService(ILogger<ProviderService> logger, IServicesProvider servicesProvider, IDcmClient dcmClient)
+    public ProviderService(ILogger<ProviderService> logger, IOptions<ProviderOptions> providerOptions, ServicesProviderFactory servicesProviderFactory, IDcmClient dcmClient)
     {
         _logger = logger;
-        _servicesProvider = servicesProvider;
+        _providerOptions = providerOptions.Value;
+        _servicesProviderFactory = servicesProviderFactory;
         _dcmClient = dcmClient;
     }
 
     protected override async Task ExecuteAsync (CancellationToken stoppingToken)
     {
-        var services = await _servicesProvider.ListServices();
+        // TODO: Verify ServicesProviderType or ServicesProviderTypes has values
+
+        if (_providerOptions.ServicesProviderTypes != null &&
+            _providerOptions.ServicesProviderTypes.Any())
+        {
+            foreach (var serviceProviderTypeString in _providerOptions.ServicesProviderTypes)
+            {
+                var serviceProvider = _servicesProviderFactory.Create(serviceProviderTypeString);
+                await UpdateDashboardFromProvider(serviceProvider);
+            }
+        }
+        else
+        {
+            var serviceProvider = _servicesProviderFactory.Create(_providerOptions.ServicesProviderType);
+            await UpdateDashboardFromProvider(serviceProvider);
+        }
+    }
+
+    private async Task UpdateDashboardFromProvider(IServicesProvider servicesProvider)
+    {
+        var services = await servicesProvider.ListServices();
         try
         {
             var sections = await _dcmClient.UpdateDashboard(services);

@@ -65,7 +65,7 @@ public class DockerServicesProviderTests : BaseTest
 
         var providerOptions = new ProviderOptions()
         {
-            ProviderType = "docker",
+            ServicesProviderType = "docker",
             DockerLabelPrefix = "dsm",
             AreServiceHostsHttps = true
         };

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Dsm.Providers.Tests;
-public static class ServicesProviderFactory
+public static class ServiceProviderFactory
 {
     public static IServiceProvider Create(
         Action<IConfiguration> configureConfiguration,

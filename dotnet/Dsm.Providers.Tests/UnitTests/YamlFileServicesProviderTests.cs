@@ -24,7 +24,7 @@ public class YamlFileServicesProviderTests : BaseTest
 
         var providerOptions = new ProviderOptions()
         {
-            ProviderType = "yaml",
+            ServicesProviderType = "yaml",
             ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
         };
         var options = Options.Create(providerOptions);

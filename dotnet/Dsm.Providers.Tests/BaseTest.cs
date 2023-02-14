@@ -10,7 +10,7 @@ public class BaseTest
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
-        ServiceProvider = ServicesProviderFactory.Create(ConfigureConfiguration, AddServices);
+        ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
     }
 
     protected virtual void AddServices(IConfiguration configuration, IServiceCollection services)
