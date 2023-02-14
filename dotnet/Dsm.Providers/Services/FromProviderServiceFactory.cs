@@ -27,7 +27,7 @@ public class FromProviderServiceFactory
 
         foreach (var label in labels)
         {
-            _logger.LogDebug($"{label.Key}, {label.Value}");
+            // _logger.LogDebug($"{label.Key}, {label.Value}");
 
             var traefikRouterRuleRegexMatch = LabelKeyTraefikRouterRuleRegex.Match(label.Key);
             if (traefikRouterRuleRegexMatch.Success)
@@ -65,7 +65,7 @@ public class FromProviderServiceFactory
             }
         }
         var service = fromProviderServiceBuilder.Build();
-        _logger.LogDebug(service.ToString());
+        _logger.LogInformation(service.ToString());
         return service;
     }
 
