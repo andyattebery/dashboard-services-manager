@@ -24,19 +24,19 @@ public class ProviderService : BackgroundService
     protected override async Task ExecuteAsync (CancellationToken stoppingToken)
     {
         var services = await _servicesProvider.ListServices();
-        // try
-        // {
-        //     var sections = await _dcmClient.UpdateDashboard(services);
-        //     _logger.LogDebug($"UpdateDashboard Response Sections");
-        //     foreach (var section in sections)
-        //     {
-        //         _logger.LogDebug(section.ToString());
-        //     }
-        // }
-        // catch (ApiException e)
-        // {
-        //     _logger.LogError($"{nameof(ApiException)}:: {nameof(e.Content)}: {e.Content}, {e}");
-        // }
+        try
+        {
+            var sections = await _dcmClient.UpdateDashboard(services);
+            _logger.LogDebug($"UpdateDashboard Response Sections");
+            foreach (var section in sections)
+            {
+                _logger.LogDebug(section.ToString());
+            }
+        }
+        catch (ApiException e)
+        {
+            _logger.LogError($"{nameof(ApiException)}:: {nameof(e.Content)}: {e.Content}, {e}");
+        }
     }
 }
 
