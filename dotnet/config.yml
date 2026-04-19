@@ -26,11 +26,11 @@ ServiceDefaultOptions:
       icon: fas fa-toolbox
   Services:
     adguardhome:
-      name_with_hostname_format_string: AdGuard Home [%s]
+      NameWithHostnameFormatString: AdGuard Home [%s]
       category: network
       # icon: hl-adguardhome
     adguardhome sync:
-      name_with_hostname_format_string: AdGuard Home Sync
+      NameWithHostnameFormatString: AdGuard Home Sync
       category: utilities
       # icon: hl-adguard-home
     changedetectionio:
@@ -44,10 +44,10 @@ ServiceDefaultOptions:
       category: storage
     grafana:
       category: monitoring
-      # image_path: /public/img/grafana_icon.svg
+      ImagePath: /public/img/grafana_icon.svg
     healthchecks:
       category: monitoring
-      # image_path: https://healthchecks.io/static/img/favicon.png
+      ImagePath: https://healthchecks.io/static/img/favicon.png
     homeassistant:
       category: smart home
       # image_path: /static/icons/favicon-apple-180x180.png
@@ -74,7 +74,7 @@ ServiceDefaultOptions:
     tautulli:
       category: media
     traefik:
-      name_with_hostname_format_string: Traefik [%s]
+      NameWithHostnameFormatString: Traefik [%s]
       category: network
       # image_path: /dashboard/statics/icons/favicon-96x96.png
     unifi:

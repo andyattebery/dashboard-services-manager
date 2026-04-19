@@ -20,7 +20,8 @@ public static class HostBuilderConfiguration
             .AddTransient<DashboardQueryService, DashboardQueryService>()
             .AddTransient<DashyDashboardManager, DashyDashboardManager>()
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
-            .AddTransient<WithDefaultsServiceFactory, WithDefaultsServiceFactory>();
+            .AddTransient<WithDefaultsServiceFactory, WithDefaultsServiceFactory>()
+            .AddTransient<ServicesCombiner, ServicesCombiner>();
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
