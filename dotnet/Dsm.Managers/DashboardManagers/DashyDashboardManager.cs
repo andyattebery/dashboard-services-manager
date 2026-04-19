@@ -1,63 +1,71 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Dsm.Managers.Configuration;
-using Dsm.Managers.Dashy;
+using Dsm.Managers.DashboardManagers.Dashy;
 using Dsm.Shared.Extensions;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Dsm.Managers;
+namespace Dsm.Managers.DashboardManagers;
 
 public class DashyDashboardManager : IDashboardManager
 {
-    private readonly DefaultOptions _defaultOptions;
+    private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly ManagerOptions _managerOptions;
 
     public DashyDashboardManager(
         IOptions<ManagerOptions> managerOptions,
-        IOptions<DefaultOptions> defaultOptions)
+        IOptions<ServiceDefaultOptions> defaultOptions)
     {
-        _defaultOptions = defaultOptions.Value;
+        _serviceDefaultOptions = defaultOptions.Value;
         _managerOptions = managerOptions.Value;
     }
 
-    public List<Service> ListServices()
+    public async Task<List<Service>> ListServices()
     {
-        var dashyConfig = LoadDashyConfig<DashyConfig>();
+        var dashyConfig = await LoadDashyConfig<DashyConfig>();
         var services = new List<Service>();
         foreach (var dashySection in dashyConfig.Sections)
-        foreach (var dashyItem in dashySection.Items)
         {
-            var (icon, imageUrl) = GetIconOrImageUrl(dashyItem.Icon);
-            var hostname = GetHostnameFromTags(dashyItem.Tags);
-            var service = new Service(dashyItem.Title, dashyItem.Url, dashySection.Name, icon,
-                imageUrl, hostname, false);
-            services.Add(service);
+            foreach (var dashyItem in dashySection.Items)
+            {
+                var (icon, imageUrl) = GetIconOrImageUrl(dashyItem.Icon);
+                var hostname = GetHostnameFromTags(dashyItem.Tags);
+                var service = new Service(dashyItem.Title, dashyItem.Url, dashySection.Name, icon,
+                    imageUrl, hostname, false);
+                services.Add(service);
+            }
         }
 
         return services;
     }
-    
-    public void UpdateWithNewServices(List<Service> services)
+
+    public async Task UpdateWithNewServices(List<Service> services)
     {
         var dashySections = CreateDashySections(services);
-        
+
         var serializer = new SerializerBuilder().Build();
         var deserializer = CreateDeserializer();
         var dashySectionsYaml = serializer.Serialize(dashySections);
         var dashySectionsObject = deserializer.Deserialize<object>(dashySectionsYaml);
-        var dashyConfigObject = LoadDashyConfig<Dictionary<object, object>>();
-        dashyConfigObject["sections"] = dashySectionsObject;
-        
+        var dashyConfigObject = await LoadDashyConfig<Dictionary<object, object>>();
+
+        if (dashyConfigObject.ContainsKey("sections"))
+        {
+            dashyConfigObject["sections"] = dashySectionsObject;
+        }
+        else
+        {
+            dashyConfigObject.Add("sections", dashySectionsObject);
+        }
+
         using (var textWriter = File.CreateText(_managerOptions.DashboardConfigFilePath))
         {
             serializer.Serialize(textWriter, dashyConfigObject);
         }
     }
-
-
 
     private static (string? icon, string? imageUrl) GetIconOrImageUrl(string icon)
     {
@@ -71,7 +79,9 @@ public class DashyDashboardManager : IDashboardManager
             var hostMatch = Regex.Match(tag, @"^host=(.*)$");
             if (hostMatch.Success &&
                 !string.IsNullOrEmpty(hostMatch.Groups[1].Value))
+            {
                 return hostMatch.Groups[1].Value;
+            }
         }
 
         return null;
@@ -100,7 +110,7 @@ public class DashyDashboardManager : IDashboardManager
             ? "Uncategorized"
             : CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
 
-        if (_defaultOptions.Categories.TryGetValue(dashySectionName.ToLower(), out var defaultCategoryConfig))
+        if (_serviceDefaultOptions.Categories.TryGetValue(dashySectionName.ToLower(), out var defaultCategoryConfig))
         {
             sectionIcon = defaultCategoryConfig.Icon;
         }
@@ -109,19 +119,24 @@ public class DashyDashboardManager : IDashboardManager
         return dashySection;
     }
 
-    private T LoadDashyConfig<T>()
+    private async Task<T> LoadDashyConfig<T>()
+        where T : new()
     {
-        var dashyConfigFilePath = _managerOptions.DashboardConfigFilePath;
         if (!File.Exists(_managerOptions.DashboardConfigFilePath))
+        {
             throw new FileNotFoundException(
                 $"{nameof(ManagerOptions)}.{nameof(ManagerOptions.DashboardConfigFilePath)}: {_managerOptions.DashboardConfigFilePath} does not exist.");
+        }
 
         var deserializer = CreateDeserializer();
-        using (var reader = File.OpenText(_managerOptions.DashboardConfigFilePath))
+        return await Task.Run(() =>
         {
-            var dashyConfig = deserializer.Deserialize<T>(reader);
-            return dashyConfig;
-        }
+            using (var reader = File.OpenText(_managerOptions.DashboardConfigFilePath))
+            {
+                var dashyConfig = deserializer.Deserialize<T>(reader);
+                return dashyConfig ?? new T();
+            }
+        });
     }
 
     private static IDeserializer CreateDeserializer()

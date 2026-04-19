@@ -1,6 +1,6 @@
 namespace Dsm.Managers.Configuration;
 
-public class CategoryDefaults
+public class CategoryConfig
 {
-    public string? FontAwesomeIcon { get; set; }
+    public string? Icon { get; set; }
 }

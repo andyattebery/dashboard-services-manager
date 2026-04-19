@@ -1,0 +1,81 @@
+---
+ManagerOptions:
+  DashboardConfigFilePath: "dashy_conf.yml"
+  DashboardManagerType: "dashy"
+
+ServiceDefaultOptions:
+  UseWalkxcodeDashboardIcons: true
+  Categories:
+    downloading:
+      icon: fas fa-download
+    infrastructure:
+      icon: fas fa-chart-network
+    media:
+      icon: fas fa-tv
+    monitoring:
+      icon: fas fa-chart-line
+    network:
+      icon: fas fa-network-wired
+    smart home:
+      icon: fas fa-house-signal
+    storage:
+      icon: fas fa-database
+    uncategorized:
+      icon: fas fa-question
+    utilities:
+      icon: fas fa-toolbox
+  Services:
+    adguardhome:
+      name_with_hostname_format_string: AdGuard Home [%s]
+      category: network
+      # icon: hl-adguardhome
+    adguardhome sync:
+      name_with_hostname_format_string: AdGuard Home Sync
+      category: utilities
+      # icon: hl-adguard-home
+    changedetectionio:
+      category: utilities
+    flexget:
+      category: downloading
+      # icon: hl-flexget
+    flood:
+      category: downloading
+    gitea:
+      category: storage
+    grafana:
+      category: monitoring
+      # image_path: /public/img/grafana_icon.svg
+    healthchecks:
+      category: monitoring
+      # image_path: https://healthchecks.io/static/img/favicon.png
+    homeassistant:
+      category: smart home
+      # image_path: /static/icons/favicon-apple-180x180.png
+    homebridge:
+      category: smart home
+    minio:
+      category: storage
+      # image_path: /favicon-96x96.png
+    pikvm:
+      category: infrastructure
+      # image_path: /share/apple-touch-icon.png
+    plex:
+      category: media
+      # icon: hl-plex
+    prometheus:
+      category: monitoring
+      # icon: hl-prometheus
+    proxmox:
+      category: infrastructure
+      # image_path: /pve2/images/logo-128.png
+    scrutiny:
+      category: monitoring
+      # icon: hl-scrutiny
+    tautulli:
+      category: media
+    traefik:
+      name_with_hostname_format_string: Traefik [%s]
+      category: network
+      # image_path: /dashboard/statics/icons/favicon-96x96.png
+    unifi:
+      category: network

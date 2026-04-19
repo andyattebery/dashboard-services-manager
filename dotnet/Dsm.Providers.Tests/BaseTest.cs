@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Dsm.Providers;
+using Dsm.Shared.Tests;
 
 namespace Dsm.Providers.Tests;
 public class BaseTest
@@ -15,9 +16,10 @@ public class BaseTest
 
     protected virtual void AddServices(IConfiguration configuration, IServiceCollection services)
     {
+        ServiceCollectionConfiguration.AddServices(configuration, services);
     }
 
-    protected virtual void ConfigureConfiguration(IConfiguration configuration)
+    protected virtual void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
     }
 }

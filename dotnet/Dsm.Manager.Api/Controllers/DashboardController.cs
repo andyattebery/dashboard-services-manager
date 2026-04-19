@@ -5,22 +5,29 @@ using Dsm.Shared.Models;
 namespace Dsm.Manager.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("dashboard-services")]
 public class DashboardController : ControllerBase
 {
     private readonly ILogger<DashboardController> _logger;
-    private readonly DashboardManagerFactory _dashboardManagerFactory;
+    private readonly DashboardCommandProcessor _dashboardCommandProcessor;
+    private readonly DashboardQueryService _dashboardQueryService;
 
-    public DashboardController(ILogger<DashboardController> logger, DashboardManagerFactory dashboardManagerFactory)
+    public DashboardController(ILogger<DashboardController> logger, DashboardCommandProcessor dashboardCommandProcessor, DashboardQueryService dashboardQueryService)
     {
         _logger = logger;
-        _dashboardManagerFactory = dashboardManagerFactory;
+        _dashboardCommandProcessor = dashboardCommandProcessor;
+        _dashboardQueryService = dashboardQueryService;
     }
 
-    [HttpPost()]
-    public List<Service> UpdateWithServices(List<Service> services)
+    [HttpPost]
+    public async Task<List<Service>> UpdateWithServices(List<Service> services)
     {
-        var dashboardManager = _dashboardManagerFactory.Create(DashboardManagerType.Dashy);
-        return dashboardManager.UpdateWithServices(services);
+        return await _dashboardCommandProcessor.UpdateWithServicesFromProvider(services);
+    }
+    
+    [HttpGet]
+    public async Task<List<Service>> List()
+    {
+        return await _dashboardQueryService.ListServices();
     }
 }

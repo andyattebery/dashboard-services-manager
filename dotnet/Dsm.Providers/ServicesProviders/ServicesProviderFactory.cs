@@ -17,7 +17,7 @@ public class ServicesProviderFactory
             ServicesProviderType.Docker => _serviceProvider.GetRequiredService<DockerServicesProvider>(),
             ServicesProviderType.Swarm => _serviceProvider.GetRequiredService<SwarmServicesProvider>(),
             ServicesProviderType.YamlFile => _serviceProvider.GetRequiredService<YamlFileServicesProvider>(),
-            var providerType => throw new ArgumentException($"{providerType} is not a valid provider type.")
+            _ => throw new ArgumentException($"{servicesProviderType} is not a valid {nameof(ServicesProviderType)}.")
         };
     }
 
@@ -27,14 +27,14 @@ public class ServicesProviderFactory
         return Create(servicesProviderType);
     }
 
-    private ServicesProviderType GetServiceProviderType(string serviceProviderTypeString)
+    private static ServicesProviderType GetServiceProviderType(string servicesProviderTypeString)
     {
-        return serviceProviderTypeString.ToLower() switch
+        return servicesProviderTypeString.ToLower() switch
         {
             "docker" => ServicesProviderType.Docker,
             "swarm" => ServicesProviderType.Swarm,
             "yaml" or "yaml_file" or "yamlfile" => ServicesProviderType.YamlFile,
-            var providerType => throw new ArgumentException($"{providerType} is not a value provider type.")
+            _ => throw new ArgumentException($"{servicesProviderTypeString} is not a valid {nameof(ServicesProviderType)}.")
         };
     }
 }

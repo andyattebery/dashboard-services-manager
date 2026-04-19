@@ -18,4 +18,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION AS app
 
 WORKDIR /app
 COPY --from=build /app .
+
+VOLUME [ "/config" ]
+
 ENTRYPOINT ["dotnet", "Dsm.Manager.Api.dll"]

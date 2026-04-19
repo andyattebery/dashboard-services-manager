@@ -4,6 +4,7 @@ using Dsm.Providers.ServicesProviders;
 using Dsm.Shared.Options;
 using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
+using Dsm.Shared.Tests;
 
 namespace Dsm.Providers.Tests.UnitTests;
 

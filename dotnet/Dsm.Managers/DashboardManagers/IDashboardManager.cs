@@ -1,8 +1,8 @@
 using Dsm.Shared.Models;
 
-namespace Dsm.Managers;
+namespace Dsm.Managers.DashboardManagers;
 public interface IDashboardManager
 {
-    List<Service> ListServices();
-    void UpdateWithNewServices(List<Service> services);
+    Task<List<Service>> ListServices();
+    Task UpdateWithNewServices(List<Service> services);
 }

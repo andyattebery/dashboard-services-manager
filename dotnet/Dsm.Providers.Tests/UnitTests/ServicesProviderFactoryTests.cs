@@ -38,6 +38,6 @@ public class ServicesProviderFactoryTests : BaseTest
 
         // var servicesProvider = serviceProvider.GetRequiredService<IServicesProvider>();
         var servicesProvider = _servicesProviderFactory.Create(servicesProviderTypeString);
-        Assert.IsInstanceOf(type, servicesProvider);
+        Assert.That(servicesProvider, Is.InstanceOf(type));
     }
 }

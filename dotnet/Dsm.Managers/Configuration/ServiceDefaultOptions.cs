@@ -1,6 +1,6 @@
 namespace Dsm.Managers.Configuration;
 
-public class DefaultOptions
+public class ServiceDefaultOptions
 {
     public bool UseWalkxcodeDashboardIcons { get; set; }
     public Dictionary<string, CategoryConfig> Categories { get; set; } = new Dictionary<string, CategoryConfig>();

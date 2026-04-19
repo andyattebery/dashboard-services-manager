@@ -31,7 +31,7 @@ public class YamlFileServicesProvider : IServicesProvider
     {
         if (!File.Exists(_providerOptions.ServicesYamlFilePath))
         {
-            throw new Exception($"{_providerOptions.ServicesYamlFilePath} does not exist.");
+            throw new FileNotFoundException($"{_providerOptions.ServicesYamlFilePath} does not exist.");
         }
 
         var deserializer = new DeserializerBuilder()

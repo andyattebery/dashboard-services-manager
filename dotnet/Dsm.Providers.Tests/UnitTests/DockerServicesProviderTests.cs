@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text.Json;
 using Docker.DotNet;
 using Docker.DotNet.Models;
@@ -7,8 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Dsm.Providers.ServicesProviders;
 using Dsm.Shared.Options;
+using Dsm.Shared.Tests;
 using Microsoft.Extensions.Options;
-using Dsm.Shared.Models;
 
 namespace Dsm.Providers.Tests.UnitTests;
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dsm.Managers;
+namespace Dsm.Managers.DashboardManagers;
 public class DashboardManagerFactory
 {
     private readonly IServiceProvider _serviceProvider;

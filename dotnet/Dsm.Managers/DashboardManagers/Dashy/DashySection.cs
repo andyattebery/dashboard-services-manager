@@ -1,4 +1,4 @@
-namespace Dsm.Managers.Dashy;
+namespace Dsm.Managers.DashboardManagers.Dashy;
 public class DashySection
 {
     public DashySection(string name, string? icon, List<DashyItem> items)

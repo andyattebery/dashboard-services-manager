@@ -1,6 +1,6 @@
 namespace Dsm.Managers.Configuration;
 
-public class ServiceDefaults
+public class ServiceConfig
 {
     public string? NameWithHostnameFormatString { get; set; } 
     public string? Category { get; set; }

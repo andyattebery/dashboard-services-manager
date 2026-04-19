@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --list-sdks)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager log -1 --format='%H %s' -- dotnet/Dsm.Managers/Factories/ServicesCombiner.cs dotnet/Dsm.Managers.Tests/UnitTests/ServicesCombinerTests.cs dotnet/Dsm.Managers.Tests/UnitTests/ServiceFactoryTests.cs)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager status --short dotnet/Dsm.Managers.Tests/UnitTests/ServicesCombinerTests.cs dotnet/Dsm.Managers.Tests/UnitTests/ServiceFactoryTests.cs dotnet/Dsm.Managers/Factories/ServicesCombiner.cs dotnet/Dsm.Managers/DashboardCommandProcessor.cs)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager log --oneline -10)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager show --stat 72af93df)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager diff --stat HEAD)"
+    ]
+  }
+}

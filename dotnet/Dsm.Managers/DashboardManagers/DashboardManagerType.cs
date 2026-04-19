@@ -1,4 +1,4 @@
-namespace Dsm.Managers;
+namespace Dsm.Managers.DashboardManagers;
 public enum DashboardManagerType
 {
     Dashy
