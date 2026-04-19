@@ -1,8 +1,9 @@
+using Dsm.Managers.Configuration;
+using Dsm.Shared.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Dsm.Shared.Options;
 
-namespace Dsm.Managers;
+namespace Dsm.Managers.Di;
 public static class ServiceCollectionConfiguration
 {
     public static void AddServices(IConfiguration configuration, IServiceCollection services)
