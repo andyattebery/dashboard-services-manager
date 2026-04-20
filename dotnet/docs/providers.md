@@ -9,7 +9,7 @@ See [overview.md](overview.md) for how this fits into the larger system and
 
 ## Provider abstraction
 
-One interface, three implementations:
+One interface, four implementations:
 
 ```csharp
 public interface IServicesProvider
@@ -27,15 +27,21 @@ public interface IServicesProvider
 - [`YamlFileServicesProvider`](../Dsm.Providers/ServicesProviders/YamlFileServicesProvider.cs) —
   reads a flat YAML file at `ProviderOptions.ServicesYamlFilePath`. Useful for bare-metal services
   that aren't containerized.
+- [`TraefikServicesProvider`](../Dsm.Providers/ServicesProviders/TraefikServicesProvider.cs) —
+  calls Traefik's [`GET /api/http/routers`](https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/#opt-apihttprouters)
+  and turns enabled routers with a `Host(...)` rule into services. Skips `@internal` routers and
+  strips `@provider` / `-docker-compose` suffixes from the service name.
 
-The shared translation from provider-specific data to a `Service` lives in
-[`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs).
+The shared translation from container labels to a `Service` lives in
+[`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs). The
+`Host(...)` rule-parsing helper it shares with the Traefik provider lives in
+[`TraefikRuleParser`](../Dsm.Providers/ServicesProviders/Traefik/TraefikRuleParser.cs).
 
 Provider selection is done by the
 [`ServicesProviderFactory`](../Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs), which
 accepts either a
-[`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServiceProviderType.cs) enum value or a
-free-form string (`"docker"`, `"swarm"`, `"yaml"` / `"yaml_file"` / `"yamlfile"`).
+[`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServicesProviderType.cs) enum value or a
+free-form string (`"docker"`, `"swarm"`, `"yaml"` / `"yaml_file"` / `"yamlfile"`, `"traefik"`).
 
 ## Provider.App runtime
 
@@ -69,6 +75,7 @@ All fields on [`ProviderOptions`](../Dsm.Shared/Options/ProviderOptions.cs), bou
 | `ServicesProviderType` | Legacy single-provider selector (`docker`, `swarm`, `yaml`) |
 | `ServicesProviderTypes` | Preferred plural form: a list, so one Provider.App instance can pull from several sources in turn |
 | `ServicesYamlFilePath` | Path to the YAML file when using `YamlFileServicesProvider` |
+| `TraefikApiUrl` | Base URL of the Traefik API (e.g. `http://traefik:8080`) when using `TraefikServicesProvider` |
 
 Example:
 
@@ -91,11 +98,17 @@ Dsm.Providers/
 │   ├── DockerServicesProvider.cs
 │   ├── SwarmServicesProvider.cs
 │   ├── YamlFileServicesProvider.cs
+│   ├── TraefikServicesProvider.cs
+│   ├── Traefik/
+│   │   ├── TraefikRouter.cs              DTO for /api/http/routers
+│   │   ├── ITraefikApiClient.cs          Refit interface for Traefik API
+│   │   ├── TraefikApiClientFactory.cs    Builds ITraefikApiClient from options
+│   │   └── TraefikRuleParser.cs          Host(...) rule → URL helper
 │   ├── ServicesProviderFactory.cs        Enum + string overloads
-│   ├── ServiceProviderType.cs            Enum (YamlFile, Docker, Swarm)
+│   ├── ServicesProviderType.cs           Enum (YamlFile, Docker, Swarm, Traefik)
 │   └── ServicesProviderUtilities.cs      Shared formatting helpers
 ├── Services/
-│   └── ContainerLabelServiceFactory.cs   Provider-agnostic label → Service
+│   └── ContainerLabelServiceFactory.cs   Container label dict → Service
 └── ServiceCollectionConfiguration.cs     DI wiring
 
 Dsm.Provider.App/
@@ -109,7 +122,7 @@ Dsm.Provider.App/
    Re-use [`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
    if your source exposes labels; otherwise build `Service` objects directly.
 2. Add a variant to
-   [`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServiceProviderType.cs).
+   [`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServicesProviderType.cs).
 3. Register your new class as a transient in
    [`ServiceCollectionConfiguration`](../Dsm.Providers/ServiceCollectionConfiguration.cs).
 4. Extend both overloads of

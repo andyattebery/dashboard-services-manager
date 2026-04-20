@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
 
@@ -91,8 +92,6 @@ public class ContainerLabelServiceFactory
 
         private bool _areTraefikRulesHttps;
 
-        private static readonly Regex LabelValueTraefikRulesUrlRegex = new Regex(@"^Host\((.+)\)");
-
         public FromProviderServiceBuilder(string dockerName, string? hostname, bool areTraefikRulesHttps)
         {
             DockerName = dockerName;
@@ -134,24 +133,8 @@ public class ContainerLabelServiceFactory
                 }
             }
 
-            if (string.IsNullOrEmpty(traefikRouterRule))
-            {
-                return null;
-            }
-
-            var ruleRegexMatch = LabelValueTraefikRulesUrlRegex.Match(traefikRouterRule);
-            if (ruleRegexMatch.Success && !string.IsNullOrEmpty(ruleRegexMatch.Groups[1].Value))
-            {
-                var firstRuleUrl = ruleRegexMatch.Groups[1].Value.Replace("`", "").Split(",").FirstOrDefault();
-                if (!string.IsNullOrEmpty(firstRuleUrl))
-                {
-                    return _areTraefikRulesHttps ?
-                        $"https://{firstRuleUrl}" :
-                        $"http://{firstRuleUrl}";
-                }
-            }
-
-            return null;
+            var host = TraefikRuleParser.ExtractFirstHost(traefikRouterRule);
+            return host is null ? null : TraefikRuleParser.BuildUrl(host, _areTraefikRulesHttps);
         }
     }
 }

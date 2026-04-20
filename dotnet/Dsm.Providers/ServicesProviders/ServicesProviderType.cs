@@ -3,5 +3,6 @@ public enum ServicesProviderType
 {
     YamlFile,
     Docker,
-    Swarm
+    Swarm,
+    Traefik
 }

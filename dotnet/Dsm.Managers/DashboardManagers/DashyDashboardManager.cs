@@ -48,7 +48,7 @@ public class DashyDashboardManager : IDashboardManager
     {
         var dashySections = CreateDashySections(services);
 
-        var serializer = new SerializerBuilder().Build();
+        var serializer = CreateSerializer();
         var deserializer = CreateDeserializer();
         var dashySectionsYaml = serializer.Serialize(dashySections);
         var dashySectionsObject = deserializer.Deserialize<object>(dashySectionsYaml);
@@ -148,6 +148,13 @@ public class DashyDashboardManager : IDashboardManager
         return new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .IgnoreUnmatchedProperties()
+            .Build();
+    }
+
+    private static ISerializer CreateSerializer()
+    {
+        return new SerializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
     }
 }

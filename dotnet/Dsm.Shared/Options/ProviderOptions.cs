@@ -11,5 +11,6 @@ public sealed class ProviderOptions
 
     public List<string>? ServicesProviderTypes { get; set; }
     public string? ServicesYamlFilePath { get; set; }
+    public string? TraefikApiUrl { get; set; }
     public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(60);
 }

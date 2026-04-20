@@ -17,6 +17,7 @@ public class ServicesProviderFactory
             ServicesProviderType.Docker => _serviceProvider.GetRequiredService<DockerServicesProvider>(),
             ServicesProviderType.Swarm => _serviceProvider.GetRequiredService<SwarmServicesProvider>(),
             ServicesProviderType.YamlFile => _serviceProvider.GetRequiredService<YamlFileServicesProvider>(),
+            ServicesProviderType.Traefik => _serviceProvider.GetRequiredService<TraefikServicesProvider>(),
             _ => throw new ArgumentException($"{servicesProviderType} is not a valid {nameof(ServicesProviderType)}.")
         };
     }
@@ -34,6 +35,7 @@ public class ServicesProviderFactory
             "docker" => ServicesProviderType.Docker,
             "swarm" => ServicesProviderType.Swarm,
             "yaml" or "yaml_file" or "yamlfile" => ServicesProviderType.YamlFile,
+            "traefik" => ServicesProviderType.Traefik,
             _ => throw new ArgumentException($"{servicesProviderTypeString} is not a valid {nameof(ServicesProviderType)}.")
         };
     }

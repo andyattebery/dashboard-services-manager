@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Refit;
 using Dsm.Providers.ServicesProviders;
 using Dsm.Shared.ApiClients;
+using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
 using Dsm.Shared.Options;
 
@@ -35,17 +36,23 @@ public class ProviderService : BackgroundService
         using var timer = new PeriodicTimer(_providerOptions.RefreshInterval);
         do
         {
+            var aggregated = new List<Service>();
             foreach (var providerType in providerTypes)
             {
                 try
                 {
                     var provider = _servicesProviderFactory.Create(providerType);
-                    await UpdateDashboardFromProvider(provider);
+                    aggregated.AddRange(await provider.ListServices());
                 }
                 catch (Exception e)
                 {
                     _logger.LogError(e, "Provider '{ProviderType}' failed this cycle; continuing.", providerType);
                 }
+            }
+
+            if (aggregated.Count > 0)
+            {
+                await PostServices(aggregated);
             }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
@@ -64,9 +71,8 @@ public class ProviderService : BackgroundService
         return string.IsNullOrWhiteSpace(legacy) ? new List<string>() : new List<string> { legacy };
     }
 
-    private async Task UpdateDashboardFromProvider(IServicesProvider servicesProvider)
+    private async Task PostServices(List<Service> services)
     {
-        var services = await servicesProvider.ListServices();
         try
         {
             var updatedServices = await _dcmClient.UpdateDashboard(services);
