@@ -18,7 +18,6 @@ public static class HostBuilderConfiguration
         services
             .AddTransient<DashboardCommandProcessor, DashboardCommandProcessor>()
             .AddTransient<DashboardQueryService, DashboardQueryService>()
-            .AddTransient<DashyDashboardManager, DashyDashboardManager>()
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<WithDefaultsServiceFactory, WithDefaultsServiceFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>();

@@ -1,7 +1,8 @@
 ---
 ManagerOptions:
-  DashboardConfigFilePath: "dashy_conf.yml"
-  DashboardManagerType: "dashy"
+  DashboardManagers:
+    - DashboardManagerType: "dashy"
+      DashboardConfigFilePath: "dashy_conf.yml"
 
 ServiceDefaultOptions:
   UseWalkxcodeDashboardIcons: true

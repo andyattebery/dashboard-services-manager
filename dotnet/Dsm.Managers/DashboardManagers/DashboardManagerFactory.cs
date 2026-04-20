@@ -1,6 +1,8 @@
+using Dsm.Managers.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dsm.Managers.DashboardManagers;
+
 public class DashboardManagerFactory
 {
     private readonly IServiceProvider _serviceProvider;
@@ -10,28 +12,16 @@ public class DashboardManagerFactory
         _serviceProvider = serviceProvider;
     }
 
-    public IDashboardManager Create(DashboardManagerType dashboardManagerType)
+    public IDashboardManager Create(DashboardManagerConfig config)
     {
-        return dashboardManagerType switch
+        return config.DashboardManagerType switch
         {
-            DashboardManagerType.Dashy => _serviceProvider.GetRequiredService<DashyDashboardManager>(),
-            _ => throw new ArgumentException($"{dashboardManagerType} is not a valid {nameof(DashboardManagerType)}")
-        };
-    }
-
-    public IDashboardManager Create(string dashboardManagerTypeString)
-    {
-        var dashboardManagerType = GetDashboardManagerType(dashboardManagerTypeString);
-        return Create(dashboardManagerType);
-    }
-
-    private DashboardManagerType GetDashboardManagerType(string dashboardManagerTypeString)
-    {
-        return dashboardManagerTypeString.ToLower() switch
-        {
-            "dashy" => DashboardManagerType.Dashy,
+            DashboardManagerType.Dashy =>
+                ActivatorUtilities.CreateInstance<DashyDashboardManager>(_serviceProvider, config),
+            DashboardManagerType.Homepage =>
+                ActivatorUtilities.CreateInstance<HomepageDashboardManager>(_serviceProvider, config),
             _ => throw new ArgumentException(
-                $"{dashboardManagerTypeString} is not a valid {nameof(DashboardManagerType)}")
+                $"{config.DashboardManagerType} is not a valid {nameof(DashboardManagerType)}")
         };
     }
 }

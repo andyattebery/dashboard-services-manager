@@ -18,7 +18,10 @@
       "Read(//opt/homebrew/bin/**)",
       "Read(//opt/homebrew/opt/**)",
       "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet build *)",
-      "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet test *)"
+      "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet test *)",
+      "WebFetch(domain:gethomepage.dev)",
+      "Bash(mise which *)",
+      "Bash(mise exec *)"
     ]
   }
 }

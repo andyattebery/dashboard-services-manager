@@ -20,11 +20,11 @@ public class DashboardController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<List<Service>> UpdateWithServices(List<Service> services)
+    public async Task<Dictionary<string, List<Service>>> UpdateWithServices(List<Service> services)
     {
         return await _dashboardCommandProcessor.UpdateWithServicesFromProvider(services);
     }
-    
+
     [HttpGet]
     public async Task<List<Service>> List()
     {

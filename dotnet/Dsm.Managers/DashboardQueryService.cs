@@ -20,7 +20,15 @@ public class DashboardQueryService
 
     public async Task<List<Service>> ListServices()
     {
-        var dashboardManager = _dashboardManagerFactory.Create(_managerOptions.DashboardManagerType);
-        return await dashboardManager.ListServices();
+        var seen = new Dictionary<(string Name, string? Hostname), Service>();
+        foreach (var managerConfig in _managerOptions.DashboardManagers)
+        {
+            var manager = _dashboardManagerFactory.Create(managerConfig);
+            foreach (var service in await manager.ListServices())
+            {
+                seen.TryAdd((service.Name, service.Hostname), service);
+            }
+        }
+        return seen.Values.ToList();
     }
 }

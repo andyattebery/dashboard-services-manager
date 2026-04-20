@@ -4,6 +4,7 @@ using Dsm.Shared.Models;
 using Dsm.Shared.Tests;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
@@ -15,7 +16,7 @@ public class DashyDashboardManagerTests : BaseTest
     [OneTimeSetUp]
     public override void OneTimeSetUp()
     {
-        // DI is built per-test in SetUp so IOptions<ManagerOptions> picks up the per-test path.
+        // DI is built per-test in SetUp so the DashboardManagerConfig picks up the per-test path.
     }
 
     [SetUp]
@@ -25,7 +26,10 @@ public class DashyDashboardManagerTests : BaseTest
         File.Copy(TestDataUtilities.GetTestDataPath("dashy_conf.yml"), _dashboardConfigPath, overwrite: true);
 
         ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
-        _dashyDashboardManager = ServiceProvider.GetRequiredService<DashyDashboardManager>();
+        var factory = ServiceProvider.GetRequiredService<DashboardManagerFactory>();
+        var config = ServiceProvider.GetRequiredService<IOptions<ManagerOptions>>()
+            .Value.DashboardManagers.Single();
+        _dashyDashboardManager = (DashyDashboardManager)factory.Create(config);
     }
 
     [TearDown]
@@ -75,8 +79,14 @@ public class DashyDashboardManagerTests : BaseTest
 
         services.Configure<ManagerOptions>(opts =>
         {
-            opts.DashboardConfigFilePath = _dashboardConfigPath;
-            opts.DashboardManagerType = DashboardManagerType.Dashy;
+            opts.DashboardManagers = new List<DashboardManagerConfig>
+            {
+                new DashboardManagerConfig
+                {
+                    DashboardManagerType = DashboardManagerType.Dashy,
+                    DashboardConfigFilePath = _dashboardConfigPath,
+                },
+            };
         });
     }
 }

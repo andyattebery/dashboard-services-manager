@@ -68,8 +68,14 @@ public class DashboardQueryServiceTests : BaseTest
 
         var managerOptions = new ManagerOptions
         {
-            DashboardManagerType = DashboardManagerType.Dashy,
-            DashboardConfigFilePath = DashboardConfigFilePath,
+            DashboardManagers = new List<DashboardManagerConfig>
+            {
+                new DashboardManagerConfig
+                {
+                    DashboardManagerType = DashboardManagerType.Dashy,
+                    DashboardConfigFilePath = DashboardConfigFilePath,
+                },
+            },
         };
         services.AddTransient<IOptions<ManagerOptions>>(_ => Options.Create(managerOptions));
     }

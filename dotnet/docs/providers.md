@@ -55,7 +55,10 @@ free-form string (`"docker"`, `"swarm"`, `"yaml"` / `"yaml_file"` / `"yamlfile"`
    list). If empty, fall back to the legacy singular `ProviderOptions.ServicesProviderType`.
 2. For each type, resolve an `IServicesProvider` from the factory and call `ListServices()`.
 3. POST the resulting services to the Manager API via the Refit
-   [`IDcmClient`](../Dsm.Shared/ApiClients/IDcmClient.cs).
+   [`IDcmClient`](../Dsm.Shared/ApiClients/IDcmClient.cs). The response is a
+   `Dictionary<string, List<Service>>` keyed by manager type name (see
+   [managers.md](managers.md#request-flow-write-path)); `ProviderService` logs the per-manager
+   counts and entries.
 
 The Refit client's `HttpClient` is built by
 [`ClientFactory`](../Dsm.Shared/ApiClients/ClientFactory.cs) using `ProviderOptions.ApiUrl` as the

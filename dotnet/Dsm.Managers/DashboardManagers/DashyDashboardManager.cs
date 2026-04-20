@@ -13,14 +13,14 @@ namespace Dsm.Managers.DashboardManagers;
 public class DashyDashboardManager : IDashboardManager
 {
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
-    private readonly ManagerOptions _managerOptions;
+    private readonly DashboardManagerConfig _config;
 
     public DashyDashboardManager(
-        IOptions<ManagerOptions> managerOptions,
+        DashboardManagerConfig config,
         IOptions<ServiceDefaultOptions> defaultOptions)
     {
         _serviceDefaultOptions = defaultOptions.Value;
-        _managerOptions = managerOptions.Value;
+        _config = config;
     }
 
     public async Task<List<Service>> ListServices()
@@ -63,7 +63,7 @@ public class DashyDashboardManager : IDashboardManager
             dashyConfigObject.Add("sections", dashySectionsObject);
         }
 
-        using (var textWriter = File.CreateText(_managerOptions.DashboardConfigFilePath))
+        using (var textWriter = File.CreateText(_config.DashboardConfigFilePath))
         {
             serializer.Serialize(textWriter, dashyConfigObject);
         }
@@ -126,16 +126,16 @@ public class DashyDashboardManager : IDashboardManager
     private async Task<T> LoadDashyConfig<T>()
         where T : new()
     {
-        if (!File.Exists(_managerOptions.DashboardConfigFilePath))
+        if (!File.Exists(_config.DashboardConfigFilePath))
         {
             throw new FileNotFoundException(
-                $"{nameof(ManagerOptions)}.{nameof(ManagerOptions.DashboardConfigFilePath)}: {_managerOptions.DashboardConfigFilePath} does not exist.");
+                $"{nameof(DashboardManagerConfig)}.{nameof(DashboardManagerConfig.DashboardConfigFilePath)}: {_config.DashboardConfigFilePath} does not exist.");
         }
 
         var deserializer = CreateDeserializer();
         return await Task.Run(() =>
         {
-            using (var reader = File.OpenText(_managerOptions.DashboardConfigFilePath))
+            using (var reader = File.OpenText(_config.DashboardConfigFilePath))
             {
                 var dashyConfig = deserializer.Deserialize<T>(reader);
                 return dashyConfig ?? new T();

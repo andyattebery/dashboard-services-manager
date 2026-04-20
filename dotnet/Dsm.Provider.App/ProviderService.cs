@@ -75,11 +75,14 @@ public class ProviderService : BackgroundService
     {
         try
         {
-            var updatedServices = await _dcmClient.UpdateDashboard(services);
-            _logger.LogDebug("UpdateDashboard response: {Count} services", updatedServices.Count);
-            foreach (var service in updatedServices)
+            var response = await _dcmClient.UpdateDashboard(services);
+            foreach (var (managerName, entries) in response)
             {
-                _logger.LogDebug("{Service}", service);
+                _logger.LogDebug("{Manager}: {Count} services", managerName, entries.Count);
+                foreach (var service in entries)
+                {
+                    _logger.LogDebug("  {Service}", service);
+                }
             }
         }
         catch (ApiException e)

@@ -5,5 +5,5 @@ namespace Dsm.Shared.ApiClients;
 public interface IDcmClient
 {
     [Post("/dashboard-services")]
-    Task<List<Service>> UpdateDashboard(IEnumerable<Service> services);
+    Task<Dictionary<string, List<Service>>> UpdateDashboard(IEnumerable<Service> services);
 }
