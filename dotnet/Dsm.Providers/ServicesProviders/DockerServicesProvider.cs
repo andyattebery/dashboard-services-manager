@@ -9,17 +9,17 @@ namespace Dsm.Providers.ServicesProviders;
 public class DockerServicesProvider : IServicesProvider
 {
     private readonly ILogger<DockerServicesProvider> _logger;
-    private readonly FromProviderServiceFactory _fromProviderServiceFactory;
+    private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
 
     public DockerServicesProvider(
         ILogger<DockerServicesProvider> logger,
-        FromProviderServiceFactory fromProviderServiceFactory,
+        ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient
     )
     {
         _logger = logger;
-        _fromProviderServiceFactory = fromProviderServiceFactory;
+        _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
     }
 
@@ -32,7 +32,6 @@ public class DockerServicesProvider : IServicesProvider
         var swarmServices = await _dockerClient.Containers.ListContainersAsync(containersListParameters);
         var services = swarmServices
             .Select(CreateServiceFromContainerListResponse)
-            .Where(s => !s.Ignore)
             .ToList();
         return services;
     }
@@ -41,7 +40,7 @@ public class DockerServicesProvider : IServicesProvider
     {
         var serviceName = GetServiceName(containerListResponse);
 
-        return _fromProviderServiceFactory.CreateFromLabels(serviceName, containerListResponse.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(serviceName, containerListResponse.Labels);
     }
 
     private static string GetServiceName(ContainerListResponse containerListResponse)

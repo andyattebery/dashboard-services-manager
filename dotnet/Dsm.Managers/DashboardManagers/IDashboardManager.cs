@@ -4,5 +4,5 @@ namespace Dsm.Managers.DashboardManagers;
 public interface IDashboardManager
 {
     Task<List<Service>> ListServices();
-    Task UpdateWithNewServices(List<Service> services);
+    Task WriteServices(List<Service> services);
 }

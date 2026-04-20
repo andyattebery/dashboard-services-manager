@@ -13,17 +13,17 @@ namespace Dsm.Providers.ServicesProviders;
 public class YamlFileServicesProvider : IServicesProvider
 {
     private readonly ILogger<YamlFileServicesProvider> _logger;
-    private readonly FromProviderServiceFactory _fromProviderServiceFactory;
+    private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly ProviderOptions _providerOptions;
 
     public YamlFileServicesProvider(
         ILogger<YamlFileServicesProvider> logger,
-        FromProviderServiceFactory fromProviderServiceFactory,
+        ContainerLabelServiceFactory containerLabelServiceFactory,
         IOptions<ProviderOptions> providerOptions
     )
     {
         _logger = logger;
-        _fromProviderServiceFactory = fromProviderServiceFactory;
+        _containerLabelServiceFactory = containerLabelServiceFactory;
         _providerOptions = providerOptions.Value;
     }
 

@@ -5,16 +5,16 @@ using Dsm.Shared.Models;
 using Dsm.Shared.Options;
 
 namespace Dsm.Providers.Services;
-public class FromProviderServiceFactory
+public class ContainerLabelServiceFactory
 {
-    private static readonly Regex LabelKeyTraefikRouterRuleRegex = new Regex(@"^traefik\.http\.routers\.(.*)\.rule");
+    private static readonly Regex LabelKeyTraefikRouterRuleRegex = new Regex(@"^traefik\.http\.routers\.([^.]+)\.rule");
 
-    private string DockerLabelPrefix => _providerOptions.DockerLabelPrefix;
+    private string? DockerLabelPrefix => _providerOptions.DockerLabelPrefix;
 
-    private readonly ILogger<FromProviderServiceFactory> _logger;
+    private readonly ILogger<ContainerLabelServiceFactory> _logger;
     private readonly ProviderOptions _providerOptions;
 
-    public FromProviderServiceFactory(ILogger<FromProviderServiceFactory> logger,
+    public ContainerLabelServiceFactory(ILogger<ContainerLabelServiceFactory> logger,
         IOptions<ProviderOptions> providerOptions)
     {
         _logger = logger;
@@ -27,8 +27,6 @@ public class FromProviderServiceFactory
 
         foreach (var label in labels)
         {
-            // _logger.LogDebug($"{label.Key}, {label.Value}");
-
             var traefikRouterRuleRegexMatch = LabelKeyTraefikRouterRuleRegex.Match(label.Key);
             if (traefikRouterRuleRegexMatch.Success &&
                 !string.IsNullOrEmpty(traefikRouterRuleRegexMatch.Groups[1].Value))
@@ -48,10 +46,16 @@ public class FromProviderServiceFactory
             {
                 fromProviderServiceBuilder.LabelImagePath = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.ignore" &&
-                     bool.Parse(label.Value))
+            else if (label.Key == $"{DockerLabelPrefix}.ignore")
             {
-                fromProviderServiceBuilder.LabelIgnore = true;
+                if (bool.TryParse(label.Value, out var ignore))
+                {
+                    fromProviderServiceBuilder.LabelIgnore = ignore;
+                }
+                else
+                {
+                    _logger.LogWarning("Ignoring unparseable '{Key}' label value: '{Value}'", label.Key, label.Value);
+                }
             }
             else if (label.Key == $"{DockerLabelPrefix}.name")
             {
@@ -74,7 +78,7 @@ public class FromProviderServiceFactory
     private class FromProviderServiceBuilder
     {
         public string DockerName { get; set; }
-        public string Hostname { get; set; }
+        public string? Hostname { get; set; }
         public string? LabelCategory { get; set; }
         public string? LabelIcon { get; set; }
         public string? LabelImagePath { get; set; }
@@ -89,7 +93,7 @@ public class FromProviderServiceFactory
 
         private static readonly Regex LabelValueTraefikRulesUrlRegex = new Regex(@"^Host\((.+)\)");
 
-        public FromProviderServiceBuilder(string dockerName, string hostname, bool areTraefikRulesHttps)
+        public FromProviderServiceBuilder(string dockerName, string? hostname, bool areTraefikRulesHttps)
         {
             DockerName = dockerName;
             Hostname = hostname;

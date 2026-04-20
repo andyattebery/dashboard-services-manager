@@ -29,7 +29,7 @@ public interface IServicesProvider
   that aren't containerized.
 
 The shared translation from provider-specific data to a `Service` lives in
-[`FromProviderServiceFactory`](../Dsm.Providers/Services/FromProviderServiceFactory.cs).
+[`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs).
 
 Provider selection is done by the
 [`ServicesProviderFactory`](../Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs), which
@@ -95,7 +95,7 @@ Dsm.Providers/
 │   ├── ServiceProviderType.cs            Enum (YamlFile, Docker, Swarm)
 │   └── ServicesProviderUtilities.cs      Shared formatting helpers
 ├── Services/
-│   └── FromProviderServiceFactory.cs     Provider-agnostic label → Service
+│   └── ContainerLabelServiceFactory.cs   Provider-agnostic label → Service
 └── ServiceCollectionConfiguration.cs     DI wiring
 
 Dsm.Provider.App/
@@ -106,7 +106,7 @@ Dsm.Provider.App/
 ## Adding a new provider
 
 1. Implement [`IServicesProvider`](../Dsm.Providers/ServicesProviders/IServicesProvider.cs).
-   Re-use [`FromProviderServiceFactory`](../Dsm.Providers/Services/FromProviderServiceFactory.cs)
+   Re-use [`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
    if your source exposes labels; otherwise build `Service` objects directly.
 2. Add a variant to
    [`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServiceProviderType.cs).

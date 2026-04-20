@@ -18,7 +18,7 @@ public static class ServiceCollectionConfiguration
         services.AddTransient<SwarmServicesProvider, SwarmServicesProvider>();
         services.AddTransient<YamlFileServicesProvider, YamlFileServicesProvider>();
         services.AddTransient<ServicesProviderFactory, ServicesProviderFactory>();
-        services.AddTransient<FromProviderServiceFactory, FromProviderServiceFactory>();
+        services.AddTransient<ContainerLabelServiceFactory, ContainerLabelServiceFactory>();
         services.AddTransient<IDcmClient>(ClientFactory.CreateDcmClient);
     }
 }

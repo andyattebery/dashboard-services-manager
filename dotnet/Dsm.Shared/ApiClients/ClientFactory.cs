@@ -15,6 +15,11 @@ public static class ClientFactory
     private static HttpClient CreateHttpClient(IServiceProvider serviceProvider)
     {
         var providerOptions = serviceProvider.GetRequiredService<IOptions<ProviderOptions>>().Value;
+        if (string.IsNullOrWhiteSpace(providerOptions.ApiUrl))
+        {
+            throw new InvalidOperationException($"{nameof(ProviderOptions)}.{nameof(ProviderOptions.ApiUrl)} must be set.");
+        }
+
         return new HttpClient()
         {
             BaseAddress = new Uri(providerOptions.ApiUrl)

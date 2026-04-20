@@ -21,10 +21,10 @@ public class DashyItem
         return new DashyItem(service.Name, service.Url, dashyIcon, tags);
     }
     
-    public DashyItem(string title, string url, string icon, List<string> tags)
+    public DashyItem(string title, string? url, string icon, List<string> tags)
     {
         Title = title;
-        Url = url;
+        Url = url ?? string.Empty;
         Icon = icon;
         Tags = tags;
     }

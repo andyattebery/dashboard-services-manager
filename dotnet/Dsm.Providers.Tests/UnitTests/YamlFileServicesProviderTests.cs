@@ -11,7 +11,7 @@ namespace Dsm.Providers.Tests.UnitTests;
 [TestFixture]
 public class YamlFileServicesProviderTests : BaseTest
 {
-    private YamlFileServicesProvider _yamlFileServicesProvider;
+    private YamlFileServicesProvider _yamlFileServicesProvider = null!;
 
     [SetUp]
     public void SetUp()
@@ -25,7 +25,7 @@ public class YamlFileServicesProviderTests : BaseTest
 
         var providerOptions = new ProviderOptions()
         {
-            ServicesProviderType = "yaml",
+            ServicesProviderTypes = ["yaml"],
             ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
         };
         var options = Options.Create(providerOptions);

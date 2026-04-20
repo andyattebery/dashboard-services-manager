@@ -6,7 +6,7 @@ using Dsm.Shared.Tests;
 namespace Dsm.Providers.Tests;
 public class BaseTest
 {
-    protected IServiceProvider ServiceProvider;
+    protected IServiceProvider ServiceProvider = null!;
 
     [OneTimeSetUp]
     public void OneTimeSetUp()

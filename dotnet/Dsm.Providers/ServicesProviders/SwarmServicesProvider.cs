@@ -8,21 +8,20 @@ using Dsm.Providers.Services;
 namespace Dsm.Providers.ServicesProviders;
 public class SwarmServicesProvider : IServicesProvider
 {
-    private readonly Regex SwarmServiceNameRegex = new Regex(@"^.+_(.*)");
     private const string DockerStackNamespaceLabel = "com.docker.stack.namespace";
 
     private readonly ILogger<SwarmServicesProvider> _logger;
-    private readonly FromProviderServiceFactory _fromProviderServiceFactory;
+    private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
 
     public SwarmServicesProvider(
         ILogger<SwarmServicesProvider> logger,
-        FromProviderServiceFactory fromProviderServiceFactory,
+        ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient
     )
     {
         _logger = logger;
-        _fromProviderServiceFactory = fromProviderServiceFactory;
+        _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
     }
 
@@ -31,26 +30,24 @@ public class SwarmServicesProvider : IServicesProvider
         var swarmServices = await _dockerClient.Swarm.ListServicesAsync();
         var services = swarmServices
             .Select(CreateServiceFromSwarmService)
-            .Where(s => !s.Ignore)
             .ToList();
         return services;
     }
 
     private Service CreateServiceFromSwarmService(SwarmService swarmService)
     {
-        var serviceName = GetServiceName(swarmService, false);
+        var serviceName = GetServiceName(swarmService);
 
         var formattedServiceName = ServicesProviderUtilities.GetFormattedServiceName(serviceName);
 
-        return _fromProviderServiceFactory.CreateFromLabels(formattedServiceName, swarmService.Spec.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(formattedServiceName, swarmService.Spec.Labels);
     }
 
-    private static string GetServiceName(SwarmService swarmService, bool includeStackName)
+    private static string GetServiceName(SwarmService swarmService)
     {
         var swarmServiceName = swarmService.Spec.Name;
 
-        if (includeStackName ||
-            !swarmService.Spec.Labels.TryGetValue(DockerStackNamespaceLabel, out var dockerStackNamespace))
+        if (!swarmService.Spec.Labels.TryGetValue(DockerStackNamespaceLabel, out var dockerStackNamespace))
         {
             return swarmServiceName;
         }

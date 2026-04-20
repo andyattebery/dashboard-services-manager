@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-using Cronos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Refit;
@@ -25,24 +23,45 @@ public class ProviderService : BackgroundService
         _dcmClient = dcmClient;
     }
 
-    protected override async Task ExecuteAsync (CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // TODO: Verify ServicesProviderType or ServicesProviderTypes has values
-
-        if (_providerOptions.ServicesProviderTypes != null &&
-            _providerOptions.ServicesProviderTypes.Any())
+        var providerTypes = ResolveProviderTypes();
+        if (providerTypes.Count == 0)
         {
-            foreach (var serviceProviderTypeString in _providerOptions.ServicesProviderTypes)
+            _logger.LogError("No provider configured — set ProviderOptions.ServicesProviderTypes. Shutting down.");
+            return;
+        }
+
+        using var timer = new PeriodicTimer(_providerOptions.RefreshInterval);
+        do
+        {
+            foreach (var providerType in providerTypes)
             {
-                var serviceProvider = _servicesProviderFactory.Create(serviceProviderTypeString);
-                await UpdateDashboardFromProvider(serviceProvider);
+                try
+                {
+                    var provider = _servicesProviderFactory.Create(providerType);
+                    await UpdateDashboardFromProvider(provider);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Provider '{ProviderType}' failed this cycle; continuing.", providerType);
+                }
             }
         }
-        else
+        while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    private List<string> ResolveProviderTypes()
+    {
+        if (_providerOptions.ServicesProviderTypes is { Count: > 0 })
         {
-            var serviceProvider = _servicesProviderFactory.Create(_providerOptions.ServicesProviderType);
-            await UpdateDashboardFromProvider(serviceProvider);
+            return _providerOptions.ServicesProviderTypes;
         }
+
+#pragma warning disable CS0618 // legacy singular option; fallback for one release
+        var legacy = _providerOptions.ServicesProviderType;
+#pragma warning restore CS0618
+        return string.IsNullOrWhiteSpace(legacy) ? new List<string>() : new List<string> { legacy };
     }
 
     private async Task UpdateDashboardFromProvider(IServicesProvider servicesProvider)
@@ -51,80 +70,15 @@ public class ProviderService : BackgroundService
         try
         {
             var updatedServices = await _dcmClient.UpdateDashboard(services);
-            _logger.LogDebug($"UpdateDashboard response: {updatedServices.Count} services");
+            _logger.LogDebug("UpdateDashboard response: {Count} services", updatedServices.Count);
             foreach (var service in updatedServices)
             {
-                _logger.LogDebug(service.ToString());
+                _logger.LogDebug("{Service}", service);
             }
         }
         catch (ApiException e)
         {
-            _logger.LogError($"{nameof(ApiException)}:: {nameof(e.Content)}: {e.Content}, {e}");
+            _logger.LogError(e, "{Exception}: Content={Content}", nameof(ApiException), e.Content);
         }
     }
 }
-
-// public class ProviderService : IHostedService, IDisposable
-// {
-//     private System.Timers.Timer _timer;
-//     private readonly CronExpression _expression;
-//     private readonly TimeZoneInfo _timeZoneInfo;
-
-//     protected ProviderService(string cronExpression, TimeZoneInfo timeZoneInfo)
-//     {
-//         _expression = CronExpression.Parse(cronExpression);
-//         _timeZoneInfo = timeZoneInfo;
-//     }
-
-//     public virtual async Task StartAsync(CancellationToken cancellationToken)
-//     {
-//         await ScheduleJob(cancellationToken);
-//     }
-
-//     protected virtual async Task ScheduleJob(CancellationToken cancellationToken)
-//     {
-//         var next = _expression.GetNextOccurrence(DateTimeOffset.Now, _timeZoneInfo);
-//         if (next.HasValue)
-//         {
-//             var delay = next.Value - DateTimeOffset.Now;
-//             if (delay.TotalMilliseconds <= 0)   // prevent non-positive values from being passed into Timer
-//             {
-//                 await ScheduleJob(cancellationToken);
-//             }
-//             _timer = new System.Timers.Timer(delay.TotalMilliseconds);
-//             _timer.Elapsed += async (sender, args) =>
-//             {
-//                 _timer.Dispose();  // reset and dispose timer
-//                 _timer = null;
-
-//                 if (!cancellationToken.IsCancellationRequested)
-//                 {
-//                     await DoWork(cancellationToken);
-//                 }
-
-//                 if (!cancellationToken.IsCancellationRequested)
-//                 {
-//                     await ScheduleJob(cancellationToken);    // reschedule next
-//                 }
-//             };
-//             _timer.Start();
-//         }
-//         await Task.CompletedTask;
-//     }
-
-//     public virtual async Task DoWork(CancellationToken cancellationToken)
-//     {
-//         await Task.Delay(5000, cancellationToken);  // do the work
-//     }
-
-//     public virtual async Task StopAsync(CancellationToken cancellationToken)
-//     {
-//         _timer?.Stop();
-//         await Task.CompletedTask;
-//     }
-
-//     public virtual void Dispose()
-//     {
-//         _timer?.Dispose();
-//     }
-// }

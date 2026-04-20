@@ -14,7 +14,7 @@ namespace Dsm.Providers.Tests.UnitTests;
 [TestFixture]
 public class DockerServicesProviderTests : BaseTest
 {
-    private DockerServicesProvider _dockerServicesProvider;
+    private DockerServicesProvider _dockerServicesProvider = null!;
 
     [SetUp]
     public void SetUp()
@@ -27,20 +27,19 @@ public class DockerServicesProviderTests : BaseTest
     {
         var services = await _dockerServicesProvider.ListServices();
 
-        var gitaService = services.SingleOrDefault(s => s.Name == "Gitea");
-
-        Assert.Multiple(() => {
+        Assert.Multiple(() =>
+        {
             var giteaService = services.SingleOrDefault(s => s.Name == "Gitea");
             Assert.That(giteaService, Is.Not.Null, "Could not find gitea service");
-            Assert.That(giteaService.Url, Is.EqualTo("https://gitea.omegaho.me"));
+            Assert.That(giteaService!.Url, Is.EqualTo("https://gitea.omegaho.me"));
 
             var minioService = services.SingleOrDefault(s => s.Name == "Minio");
             Assert.That(minioService, Is.Not.Null, "Could not find minio service");
-            Assert.That(minioService.Url, Is.EqualTo("https://minio.omegaho.me"));
+            Assert.That(minioService!.Url, Is.EqualTo("https://minio.omegaho.me"));
 
             var scrutinyService = services.SingleOrDefault(s => s.Name == "Scrutiny");
             Assert.That(scrutinyService, Is.Not.Null, "Could not find scrutiny service");
-            Assert.That(scrutinyService.Url, Is.EqualTo("https://scrutiny.omegaho.me"));
+            Assert.That(scrutinyService!.Url, Is.EqualTo("https://scrutiny.omegaho.me"));
         });
     }
 
@@ -64,7 +63,7 @@ public class DockerServicesProviderTests : BaseTest
 
         var providerOptions = new ProviderOptions()
         {
-            ServicesProviderType = "docker",
+            ServicesProviderTypes = ["docker"],
             DockerLabelPrefix = "dsm",
             AreServiceHostsHttps = true
         };

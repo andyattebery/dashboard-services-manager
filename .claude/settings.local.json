@@ -9,7 +9,16 @@
       "Bash(git -C /Users/andy/Projects/dashboard-services-manager log --oneline -10)",
       "Bash(git -C /Users/andy/Projects/dashboard-services-manager show --stat 72af93df)",
       "Bash(git -C /Users/andy/Projects/dashboard-services-manager diff --stat HEAD)",
-      "Bash(grep -E \"Program.cs|\\\\.csproj$\")"
+      "Bash(grep -E \"Program.cs|\\\\.csproj$\")",
+      "Bash(git mv *)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager ls-files)",
+      "Bash(git -C /Users/andy/Projects/dashboard-services-manager rm --cached dotnet/Dsm.sln.DotSettings.user)",
+      "Read(//usr/local/share/dotnet/**)",
+      "Read(//Users/andy/.dotnet/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//opt/homebrew/opt/**)",
+      "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet build *)",
+      "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet test *)"
     ]
   }
 }

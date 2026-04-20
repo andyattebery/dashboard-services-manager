@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Dsm.Shared.Tests;
 public static class ServiceProviderFactory
@@ -21,22 +20,5 @@ public static class ServiceProviderFactory
             });
         var host = hostBuilder.Build();
         return host.Services;
-        // var configurationBuilder = new ConfigurationBuilder()
-        //     .SetBasePath(Directory.GetCurrentDirectory())
-        //     // .AddJsonFile("appsettings.json", false)
-        //     ;
-        // configureConfiguration(configurationBuilder);
-        //
-        // var configuration = configurationBuilder.Build();
-        //
-        // var serviceCollection = new ServiceCollection();
-        //
-        // serviceCollection.AddLogging((logging) =>
-        // {
-        //     logging.AddConsole();
-        // });
-
-        // addServices(configuration, serviceCollection);
-        // return serviceCollection.BuildServiceProvider();
     }
 }
