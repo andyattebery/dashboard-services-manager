@@ -69,8 +69,9 @@ public class DashyDashboardManager : IDashboardManager
         }
     }
 
-    private static (string? icon, string? imageUrl) GetIconOrImageUrl(string icon)
+    private static (string? icon, string? imageUrl) GetIconOrImageUrl(string? icon)
     {
+        if (string.IsNullOrEmpty(icon)) return (null, null);
         return Regex.IsMatch(icon, @"^http", RegexOptions.IgnoreCase) ? (null, icon) : (icon, null);
     }
 

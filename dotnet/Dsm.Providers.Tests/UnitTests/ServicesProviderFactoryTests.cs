@@ -1,5 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Dsm.Providers.ServicesProviders;
+using Dsm.Shared.Options;
+using Microsoft.Extensions.Configuration;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
@@ -14,14 +17,31 @@ public class ServicesProviderFactoryTests : BaseTest
         _servicesProviderFactory = ServiceProvider.GetRequiredService<ServicesProviderFactory>();
     }
 
-    [TestCase("docker", typeof(DockerServicesProvider))]
-    [TestCase("swarm", typeof(SwarmServicesProvider))]
-    [TestCase("yaml", typeof(YamlFileServicesProvider))]
-    [TestCase("yaml_file", typeof(YamlFileServicesProvider))]
-    [TestCase("yamlfile", typeof(YamlFileServicesProvider))]
-    public void Test(string servicesProviderTypeString, Type type)
+    [TestCase(ServicesProviderType.Docker, typeof(DockerServicesProvider))]
+    [TestCase(ServicesProviderType.Swarm, typeof(SwarmServicesProvider))]
+    [TestCase(ServicesProviderType.YamlFile, typeof(YamlFileServicesProvider))]
+    public void Test(ServicesProviderType providerType, Type type)
     {
-        var servicesProvider = _servicesProviderFactory.Create(servicesProviderTypeString);
+        var config = new ServicesProviderConfig
+        {
+            ServicesProviderType = providerType,
+            DockerLabelPrefix = "dsm",
+            ServicesYamlFilePath = "/tmp/test.yaml"
+        };
+        var servicesProvider = _servicesProviderFactory.Create(config);
         Assert.That(servicesProvider, Is.InstanceOf(type));
+    }
+
+    protected override void AddServices(IConfiguration configuration, IServiceCollection services)
+    {
+        base.AddServices(configuration, services);
+
+        var providerOptions = new ProviderOptions
+        {
+            ApiUrl = "http://dsm.test",
+            Hostname = "test-host",
+            ServicesProviders = new List<ServicesProviderConfig>()
+        };
+        services.AddTransient<IOptions<ProviderOptions>>(_ => Options.Create(providerOptions));
     }
 }

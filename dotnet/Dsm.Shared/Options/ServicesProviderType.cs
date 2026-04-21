@@ -1,4 +1,5 @@
-namespace Dsm.Providers.ServicesProviders;
+namespace Dsm.Shared.Options;
+
 public enum ServicesProviderType
 {
     YamlFile,

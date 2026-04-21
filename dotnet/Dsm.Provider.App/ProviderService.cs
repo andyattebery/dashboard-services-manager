@@ -26,10 +26,9 @@ public class ProviderService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var providerTypes = ResolveProviderTypes();
-        if (providerTypes.Count == 0)
+        if (_providerOptions.ServicesProviders.Count == 0)
         {
-            _logger.LogError("No provider configured — set ProviderOptions.ServicesProviderTypes. Shutting down.");
+            _logger.LogError("No provider configured — set ProviderOptions.ServicesProviders. Shutting down.");
             return;
         }
 
@@ -37,16 +36,16 @@ public class ProviderService : BackgroundService
         do
         {
             var aggregated = new List<Service>();
-            foreach (var providerType in providerTypes)
+            foreach (var config in _providerOptions.ServicesProviders)
             {
                 try
                 {
-                    var provider = _servicesProviderFactory.Create(providerType);
+                    var provider = _servicesProviderFactory.Create(config);
                     aggregated.AddRange(await provider.ListServices());
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "Provider '{ProviderType}' failed this cycle; continuing.", providerType);
+                    _logger.LogError(e, "Provider '{ProviderType}' failed this cycle; continuing.", config.ServicesProviderType);
                 }
             }
 
@@ -56,19 +55,6 @@ public class ProviderService : BackgroundService
             }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
-    }
-
-    private List<string> ResolveProviderTypes()
-    {
-        if (_providerOptions.ServicesProviderTypes is { Count: > 0 })
-        {
-            return _providerOptions.ServicesProviderTypes;
-        }
-
-#pragma warning disable CS0618 // legacy singular option; fallback for one release
-        var legacy = _providerOptions.ServicesProviderType;
-#pragma warning restore CS0618
-        return string.IsNullOrWhiteSpace(legacy) ? new List<string>() : new List<string> { legacy };
     }
 
     private async Task PostServices(List<Service> services)

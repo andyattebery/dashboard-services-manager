@@ -20,17 +20,18 @@ public interface IServicesProvider
 
 - [`DockerServicesProvider`](../Dsm.Providers/ServicesProviders/DockerServicesProvider.cs) — uses
   [Docker.DotNet](https://github.com/dotnet/Docker.DotNet) to list running containers and reads
-  `ProviderOptions.DockerLabelPrefix`-prefixed labels to populate the
+  `ServicesProviderConfig.DockerLabelPrefix`-prefixed labels to populate the
   [`Service`](../Dsm.Shared/Models/Service.cs) fields.
 - [`SwarmServicesProvider`](../Dsm.Providers/ServicesProviders/SwarmServicesProvider.cs) — same
   idea against a Docker Swarm task list.
 - [`YamlFileServicesProvider`](../Dsm.Providers/ServicesProviders/YamlFileServicesProvider.cs) —
-  reads a flat YAML file at `ProviderOptions.ServicesYamlFilePath`. Useful for bare-metal services
-  that aren't containerized.
+  reads a flat YAML file at `ServicesProviderConfig.ServicesYamlFilePath`. Useful for bare-metal
+  services that aren't containerized.
 - [`TraefikServicesProvider`](../Dsm.Providers/ServicesProviders/TraefikServicesProvider.cs) —
   calls Traefik's [`GET /api/http/routers`](https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/#opt-apihttprouters)
-  and turns enabled routers with a `Host(...)` rule into services. Skips `@internal` routers and
-  strips `@provider` / `-docker-compose` suffixes from the service name.
+  at `ServicesProviderConfig.TraefikApiUrl` and turns enabled routers with a `Host(...)` rule into
+  services. Skips `@internal` routers and strips `@provider` / `-docker-compose` suffixes from the
+  service name.
 
 The shared translation from container labels to a `Service` lives in
 [`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs). The
@@ -39,9 +40,12 @@ The shared translation from container labels to a `Service` lives in
 
 Provider selection is done by the
 [`ServicesProviderFactory`](../Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs), which
-accepts either a
-[`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServicesProviderType.cs) enum value or a
-free-form string (`"docker"`, `"swarm"`, `"yaml"` / `"yaml_file"` / `"yamlfile"`, `"traefik"`).
+takes a [`ServicesProviderConfig`](../Dsm.Shared/Options/ProviderOptions.cs) entry from
+`ProviderOptions.ServicesProviders` and builds the matching provider via
+`ActivatorUtilities.CreateInstance`, threading the config into the provider's constructor.
+The enum lives in
+[`ServicesProviderType`](../Dsm.Shared/Options/ServicesProviderType.cs)
+(`YamlFile`, `Docker`, `Swarm`, `Traefik`).
 
 ## Provider.App runtime
 
@@ -51,9 +55,9 @@ free-form string (`"docker"`, `"swarm"`, `"yaml"` / `"yaml_file"` / `"yamlfile"`
 
 `ProviderService.ExecuteAsync` does, on startup:
 
-1. Read [`ProviderOptions.ServicesProviderTypes`](../Dsm.Shared/Options/ProviderOptions.cs) (plural,
-   list). If empty, fall back to the legacy singular `ProviderOptions.ServicesProviderType`.
-2. For each type, resolve an `IServicesProvider` from the factory and call `ListServices()`.
+1. Read [`ProviderOptions.ServicesProviders`](../Dsm.Shared/Options/ProviderOptions.cs) — a list of
+   typed configs, each carrying the provider's own settings.
+2. For each entry, resolve an `IServicesProvider` from the factory and call `ListServices()`.
 3. POST the resulting services to the Manager API via the Refit
    [`IDcmClient`](../Dsm.Shared/ApiClients/IDcmClient.cs). The response is a
    `Dictionary<string, List<Service>>` keyed by manager type name (see
@@ -66,29 +70,74 @@ base address.
 
 ## Configuration
 
-All fields on [`ProviderOptions`](../Dsm.Shared/Options/ProviderOptions.cs), bound from
-`DSM_ProviderOptions__*` env vars:
+[`ProviderOptions`](../Dsm.Shared/Options/ProviderOptions.cs) is bound, in this order of
+precedence (later wins), from:
+
+1. `appsettings.json` (shipped with the app)
+2. `provider-config.yml` or `provider-config.yaml` next to the binary (optional)
+3. `DSM_ProviderOptions__*` environment variables
+
+It has two layers: process-global fields, and a typed list of per-provider
+`ServicesProviderConfig` entries.
+
+**Top-level (global):**
 
 | Key | Purpose |
 |---|---|
 | `ApiUrl` | Base URL of the Manager API (e.g. `http://dsm-api:5270`) |
 | `Hostname` | Value stamped into each service's `Hostname` field; drives the `host=...` tag used by the combiner |
-| `DockerLabelPrefix` | Prefix (e.g. `dsm`) used to select labels on containers — `dsm.name`, `dsm.category`, etc. |
-| `AreServiceHostsHttps` | If true, generated URLs use `https://` |
-| `ServicesProviderType` | Legacy single-provider selector (`docker`, `swarm`, `yaml`) |
-| `ServicesProviderTypes` | Preferred plural form: a list, so one Provider.App instance can pull from several sources in turn |
-| `ServicesYamlFilePath` | Path to the YAML file when using `YamlFileServicesProvider` |
-| `TraefikApiUrl` | Base URL of the Traefik API (e.g. `http://traefik:8080`) when using `TraefikServicesProvider` |
+| `RefreshInterval` | How often to poll all providers (default 60s) |
+| `ServicesProviders` | List of `ServicesProviderConfig` entries — see below |
 
-Example:
+**Per-provider (`ServicesProviderConfig` fields):**
+
+| Key | Applies to | Purpose |
+|---|---|---|
+| `ServicesProviderType` | all | Discriminator: `Docker`, `Swarm`, `YamlFile`, `Traefik` |
+| `AreServiceHostsHttps` | Docker, Swarm, Traefik | If true, generated URLs use `https://` |
+| `DockerLabelPrefix` | Docker, Swarm | Prefix (e.g. `dsm`) used to select labels on containers — `dsm.name`, `dsm.category`, etc. |
+| `ServicesYamlFilePath` | YamlFile | Path to the YAML file |
+| `TraefikApiUrl` | Traefik | Base URL of the Traefik API (e.g. `http://traefik:8080`) |
+
+Example `appsettings.json`:
+
+```json
+{
+  "ProviderOptions": {
+    "ApiUrl": "http://localhost:5270",
+    "Hostname": "media-01",
+    "ServicesProviders": [
+      { "ServicesProviderType": "Docker",  "AreServiceHostsHttps": true,  "DockerLabelPrefix": "dsm" },
+      { "ServicesProviderType": "YamlFile", "ServicesYamlFilePath": "/etc/dsm/services.yml" }
+    ]
+  }
+}
+```
+
+Equivalent `provider-config.yml`:
+
+```yaml
+ProviderOptions:
+  ApiUrl: http://localhost:5270
+  Hostname: media-01
+  ServicesProviders:
+    - ServicesProviderType: Docker
+      AreServiceHostsHttps: true
+      DockerLabelPrefix: dsm
+    - ServicesProviderType: YamlFile
+      ServicesYamlFilePath: /etc/dsm/services.yml
+```
+
+Equivalent env-var form:
 
 ```sh
 DSM_ProviderOptions__ApiUrl=http://localhost:5270 \
 DSM_ProviderOptions__Hostname=media-01 \
-DSM_ProviderOptions__DockerLabelPrefix=dsm \
-DSM_ProviderOptions__ServicesProviderTypes__0=docker \
-DSM_ProviderOptions__ServicesProviderTypes__1=yaml \
-DSM_ProviderOptions__ServicesYamlFilePath=/etc/dsm/services.yml \
+DSM_ProviderOptions__ServicesProviders__0__ServicesProviderType=Docker \
+DSM_ProviderOptions__ServicesProviders__0__AreServiceHostsHttps=true \
+DSM_ProviderOptions__ServicesProviders__0__DockerLabelPrefix=dsm \
+DSM_ProviderOptions__ServicesProviders__1__ServicesProviderType=YamlFile \
+DSM_ProviderOptions__ServicesProviders__1__ServicesYamlFilePath=/etc/dsm/services.yml \
 dotnet run --project Dsm.Provider.App
 ```
 
@@ -107,12 +156,12 @@ Dsm.Providers/
 │   │   ├── ITraefikApiClient.cs          Refit interface for Traefik API
 │   │   ├── TraefikApiClientFactory.cs    Builds ITraefikApiClient from options
 │   │   └── TraefikRuleParser.cs          Host(...) rule → URL helper
-│   ├── ServicesProviderFactory.cs        Enum + string overloads
-│   ├── ServicesProviderType.cs           Enum (YamlFile, Docker, Swarm, Traefik)
+│   ├── ServicesProviderFactory.cs        Builds providers via ActivatorUtilities
 │   └── ServicesProviderUtilities.cs      Shared formatting helpers
 ├── Services/
 │   └── ContainerLabelServiceFactory.cs   Container label dict → Service
-└── ServiceCollectionConfiguration.cs     DI wiring
+└── Hosting/
+    └── HostBuilderConfiguration.cs       DI + provider-config.yaml wiring
 
 Dsm.Provider.App/
 ├── Program.cs                            Host builder, DSM_ env var prefix
@@ -121,16 +170,18 @@ Dsm.Provider.App/
 
 ## Adding a new provider
 
-1. Implement [`IServicesProvider`](../Dsm.Providers/ServicesProviders/IServicesProvider.cs).
-   Re-use [`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
+1. Implement [`IServicesProvider`](../Dsm.Providers/ServicesProviders/IServicesProvider.cs). The
+   constructor should accept a `ServicesProviderConfig` as its last argument; everything else
+   comes from DI. Re-use
+   [`ContainerLabelServiceFactory`](../Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
    if your source exposes labels; otherwise build `Service` objects directly.
 2. Add a variant to
-   [`ServicesProviderType`](../Dsm.Providers/ServicesProviders/ServicesProviderType.cs).
-3. Register your new class as a transient in
-   [`ServiceCollectionConfiguration`](../Dsm.Providers/ServiceCollectionConfiguration.cs).
-4. Extend both overloads of
-   [`ServicesProviderFactory.Create`](../Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs) —
-   the enum switch and the string switch in `GetServiceProviderType`.
+   [`ServicesProviderType`](../Dsm.Shared/Options/ServicesProviderType.cs).
+3. Add any new type-specific fields (nullable) to
+   [`ServicesProviderConfig`](../Dsm.Shared/Options/ProviderOptions.cs).
+4. Extend the switch in
+   [`ServicesProviderFactory.Create`](../Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs)
+   with an `ActivatorUtilities.CreateInstance<T>(sp, config)` line for your new provider.
 
 ## Testing
 

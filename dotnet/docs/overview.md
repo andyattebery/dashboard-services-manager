@@ -50,7 +50,7 @@ exposes `POST /dashboard-services` (update) and `GET /dashboard-services` (list)
 
 ## Configuration at a glance
 
-- **Manager API** loads [`config.yml`](../config.yml) via
+- **Manager API** loads [`manager-config.yaml`](../manager-config.yaml) via
   [HostBuilderConfiguration.ConfigureConfiguration](../Dsm.Managers/Hosting/HostBuilderConfiguration.cs#L27).
   Two sections: `ManagerOptions` (dashboard type + file path + ignored-name list) and
   `ServiceDefaultOptions` (per-service defaults, categories, icon strategy). Keys are **PascalCase**
@@ -72,8 +72,10 @@ dotnet run --project Dsm.Manager.Api
 
 # run the provider worker against a running API
 DSM_ProviderOptions__ApiUrl=http://localhost:5270 \
-DSM_ProviderOptions__ServicesProviderType=docker \
-DSM_ProviderOptions__DockerLabelPrefix=dsm \
+DSM_ProviderOptions__Hostname=media-01 \
+DSM_ProviderOptions__ServicesProviders__0__ServicesProviderType=Docker \
+DSM_ProviderOptions__ServicesProviders__0__DockerLabelPrefix=dsm \
+DSM_ProviderOptions__ServicesProviders__0__AreServiceHostsHttps=true \
 dotnet run --project Dsm.Provider.App
 
 # tests (skip walkxcode-icon tests that hit the public CDN)

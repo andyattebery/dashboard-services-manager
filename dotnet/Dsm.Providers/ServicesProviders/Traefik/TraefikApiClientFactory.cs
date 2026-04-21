@@ -1,24 +1,34 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Refit;
-using Dsm.Shared.Options;
 
 namespace Dsm.Providers.ServicesProviders.Traefik;
 
-public static class TraefikApiClientFactory
+public interface ITraefikApiClientFactory
 {
-    public static ITraefikApiClient Create(IServiceProvider serviceProvider)
+    ITraefikApiClient Create(string traefikApiUrl);
+}
+
+public sealed class TraefikApiClientFactory : ITraefikApiClientFactory
+{
+    private const string HttpClientName = "traefik";
+
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public TraefikApiClientFactory(IHttpClientFactory httpClientFactory)
     {
-        var providerOptions = serviceProvider.GetRequiredService<IOptions<ProviderOptions>>().Value;
-        if (string.IsNullOrWhiteSpace(providerOptions.TraefikApiUrl))
+        _httpClientFactory = httpClientFactory;
+    }
+
+    public ITraefikApiClient Create(string traefikApiUrl)
+    {
+        if (string.IsNullOrWhiteSpace(traefikApiUrl))
         {
-            throw new InvalidOperationException($"{nameof(ProviderOptions)}.{nameof(ProviderOptions.TraefikApiUrl)} must be set.");
+            throw new InvalidOperationException($"{nameof(traefikApiUrl)} must be set.");
         }
 
-        var httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(providerOptions.TraefikApiUrl)
-        };
+        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+        httpClient.BaseAddress = new Uri(traefikApiUrl);
         return RestService.For<ITraefikApiClient>(httpClient);
     }
+
+    public static string NamedClient => HttpClientName;
 }

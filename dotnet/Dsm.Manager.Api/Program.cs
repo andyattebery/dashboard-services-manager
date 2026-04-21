@@ -8,6 +8,7 @@ builder.Services.AddOpenApi();
 
 HostBuilderConfiguration.AddServices(builder.Configuration, builder.Services);
 HostBuilderConfiguration.ConfigureConfiguration(builder.Configuration);
+builder.Configuration.AddEnvironmentVariables(prefix: "DSM_");
 
 var app = builder.Build();
 

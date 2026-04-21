@@ -1,8 +1,9 @@
-using System.Linq;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
+using Dsm.Shared.Options;
 using Dsm.Providers.Services;
 
 namespace Dsm.Providers.ServicesProviders;
@@ -11,16 +12,22 @@ public class DockerServicesProvider : IServicesProvider
     private readonly ILogger<DockerServicesProvider> _logger;
     private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
+    private readonly ProviderOptions _providerOptions;
+    private readonly ServicesProviderConfig _config;
 
     public DockerServicesProvider(
         ILogger<DockerServicesProvider> logger,
         ContainerLabelServiceFactory containerLabelServiceFactory,
-        IDockerClient dockerClient
+        IDockerClient dockerClient,
+        IOptions<ProviderOptions> providerOptions,
+        ServicesProviderConfig config
     )
     {
         _logger = logger;
         _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
+        _providerOptions = providerOptions.Value;
+        _config = config;
     }
 
     public async Task<List<Service>> ListServices()
@@ -40,7 +47,7 @@ public class DockerServicesProvider : IServicesProvider
     {
         var serviceName = GetServiceName(containerListResponse);
 
-        return _containerLabelServiceFactory.CreateFromLabels(serviceName, containerListResponse.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _providerOptions.Hostname, serviceName, containerListResponse.Labels);
     }
 
     private static string GetServiceName(ContainerListResponse containerListResponse)

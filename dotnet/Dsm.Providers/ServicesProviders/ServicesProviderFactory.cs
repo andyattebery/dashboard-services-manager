@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Dsm.Shared.Options;
 
 namespace Dsm.Providers.ServicesProviders;
 public class ServicesProviderFactory
@@ -10,33 +11,15 @@ public class ServicesProviderFactory
         _serviceProvider = serviceProvider;
     }
 
-    public IServicesProvider Create(ServicesProviderType servicesProviderType)
+    public IServicesProvider Create(ServicesProviderConfig config)
     {
-        return servicesProviderType switch
+        return config.ServicesProviderType switch
         {
-            ServicesProviderType.Docker => _serviceProvider.GetRequiredService<DockerServicesProvider>(),
-            ServicesProviderType.Swarm => _serviceProvider.GetRequiredService<SwarmServicesProvider>(),
-            ServicesProviderType.YamlFile => _serviceProvider.GetRequiredService<YamlFileServicesProvider>(),
-            ServicesProviderType.Traefik => _serviceProvider.GetRequiredService<TraefikServicesProvider>(),
-            _ => throw new ArgumentException($"{servicesProviderType} is not a valid {nameof(ServicesProviderType)}.")
-        };
-    }
-
-    public IServicesProvider Create(string servicesProviderTypeString)
-    {
-        var servicesProviderType = GetServiceProviderType(servicesProviderTypeString);
-        return Create(servicesProviderType);
-    }
-
-    private static ServicesProviderType GetServiceProviderType(string servicesProviderTypeString)
-    {
-        return servicesProviderTypeString.ToLower() switch
-        {
-            "docker" => ServicesProviderType.Docker,
-            "swarm" => ServicesProviderType.Swarm,
-            "yaml" or "yaml_file" or "yamlfile" => ServicesProviderType.YamlFile,
-            "traefik" => ServicesProviderType.Traefik,
-            _ => throw new ArgumentException($"{servicesProviderTypeString} is not a valid {nameof(ServicesProviderType)}.")
+            ServicesProviderType.Docker => ActivatorUtilities.CreateInstance<DockerServicesProvider>(_serviceProvider, config),
+            ServicesProviderType.Swarm => ActivatorUtilities.CreateInstance<SwarmServicesProvider>(_serviceProvider, config),
+            ServicesProviderType.YamlFile => ActivatorUtilities.CreateInstance<YamlFileServicesProvider>(_serviceProvider, config),
+            ServicesProviderType.Traefik => ActivatorUtilities.CreateInstance<TraefikServicesProvider>(_serviceProvider, config),
+            _ => throw new ArgumentException($"{config.ServicesProviderType} is not a valid {nameof(ServicesProviderType)}.")
         };
     }
 }

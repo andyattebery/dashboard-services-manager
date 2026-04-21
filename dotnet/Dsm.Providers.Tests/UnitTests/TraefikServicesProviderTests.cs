@@ -13,12 +13,19 @@ namespace Dsm.Providers.Tests.UnitTests;
 [TestFixture]
 public class TraefikServicesProviderTests : BaseTest
 {
-    private TraefikServicesProvider _traefikServicesProvider = null!;
+    private IServicesProvider _traefikServicesProvider = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _traefikServicesProvider = ServiceProvider.GetRequiredService<TraefikServicesProvider>();
+        var factory = ServiceProvider.GetRequiredService<ServicesProviderFactory>();
+        var config = new ServicesProviderConfig
+        {
+            ServicesProviderType = ServicesProviderType.Traefik,
+            TraefikApiUrl = "http://traefik.test",
+            AreServiceHostsHttps = true
+        };
+        _traefikServicesProvider = factory.Create(config);
     }
 
     [Test]
@@ -52,14 +59,15 @@ public class TraefikServicesProviderTests : BaseTest
 
         var clientMock = new Mock<ITraefikApiClient>();
         clientMock.Setup(c => c.GetRouters()).ReturnsAsync(routers);
-        services.AddTransient<ITraefikApiClient>(_ => clientMock.Object);
+        var factoryMock = new Mock<ITraefikApiClientFactory>();
+        factoryMock.Setup(f => f.Create(It.IsAny<string>())).Returns(clientMock.Object);
+        services.AddSingleton<ITraefikApiClientFactory>(factoryMock.Object);
 
         var providerOptions = new ProviderOptions
         {
-            ServicesProviderTypes = ["traefik"],
-            TraefikApiUrl = "http://traefik.test",
+            ApiUrl = "http://dsm.test",
             Hostname = "test-host",
-            AreServiceHostsHttps = true
+            ServicesProviders = new List<ServicesProviderConfig>()
         };
         services.AddTransient<IOptions<ProviderOptions>>(_ => Options.Create(providerOptions));
     }

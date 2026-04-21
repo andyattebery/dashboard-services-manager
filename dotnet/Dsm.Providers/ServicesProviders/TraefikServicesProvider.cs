@@ -15,15 +15,22 @@ public class TraefikServicesProvider : IServicesProvider
     private readonly ILogger<TraefikServicesProvider> _logger;
     private readonly ITraefikApiClient _traefikApiClient;
     private readonly ProviderOptions _providerOptions;
+    private readonly ServicesProviderConfig _config;
 
     public TraefikServicesProvider(
         ILogger<TraefikServicesProvider> logger,
-        ITraefikApiClient traefikApiClient,
-        IOptions<ProviderOptions> providerOptions)
+        IOptions<ProviderOptions> providerOptions,
+        ITraefikApiClientFactory traefikApiClientFactory,
+        ServicesProviderConfig config)
     {
+        if (string.IsNullOrWhiteSpace(config.TraefikApiUrl))
+        {
+            throw new InvalidOperationException($"{nameof(ServicesProviderConfig)}.{nameof(ServicesProviderConfig.TraefikApiUrl)} must be set for a Traefik provider.");
+        }
         _logger = logger;
-        _traefikApiClient = traefikApiClient;
         _providerOptions = providerOptions.Value;
+        _config = config;
+        _traefikApiClient = traefikApiClientFactory.Create(config.TraefikApiUrl);
     }
 
     public async Task<List<Service>> ListServices()
@@ -65,7 +72,7 @@ public class TraefikServicesProvider : IServicesProvider
             return null;
         }
 
-        var url = TraefikRuleParser.BuildUrl(host, _providerOptions.AreServiceHostsHttps);
+        var url = TraefikRuleParser.BuildUrl(host, _config.AreServiceHostsHttps);
 
         return new Service(
             name: serviceName,

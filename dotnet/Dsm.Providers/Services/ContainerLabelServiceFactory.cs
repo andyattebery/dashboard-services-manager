@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
@@ -10,21 +9,17 @@ public class ContainerLabelServiceFactory
 {
     private static readonly Regex LabelKeyTraefikRouterRuleRegex = new Regex(@"^traefik\.http\.routers\.([^.]+)\.rule");
 
-    private string? DockerLabelPrefix => _providerOptions.DockerLabelPrefix;
-
     private readonly ILogger<ContainerLabelServiceFactory> _logger;
-    private readonly ProviderOptions _providerOptions;
 
-    public ContainerLabelServiceFactory(ILogger<ContainerLabelServiceFactory> logger,
-        IOptions<ProviderOptions> providerOptions)
+    public ContainerLabelServiceFactory(ILogger<ContainerLabelServiceFactory> logger)
     {
         _logger = logger;
-        _providerOptions = providerOptions.Value;
     }
 
-    public Service CreateFromLabels(string name, IDictionary<string, string> labels)
+    public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels)
     {
-        var fromProviderServiceBuilder = new FromProviderServiceBuilder(name, _providerOptions.Hostname, _providerOptions.AreServiceHostsHttps);
+        var dockerLabelPrefix = config.DockerLabelPrefix;
+        var fromProviderServiceBuilder = new FromProviderServiceBuilder(name, hostname, config.AreServiceHostsHttps);
 
         foreach (var label in labels)
         {
@@ -35,19 +30,19 @@ public class ContainerLabelServiceFactory
                 var traefikRouter = traefikRouterRuleRegexMatch.Groups[1].Value;
                 fromProviderServiceBuilder.TraefikRouterNameToRule.Add(traefikRouter, label.Value);
             }
-            else if (label.Key == $"{DockerLabelPrefix}.category")
+            else if (label.Key == $"{dockerLabelPrefix}.category")
             {
                 fromProviderServiceBuilder.LabelCategory = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.icon")
+            else if (label.Key == $"{dockerLabelPrefix}.icon")
             {
                 fromProviderServiceBuilder.LabelIcon = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.image_path")
+            else if (label.Key == $"{dockerLabelPrefix}.image_path")
             {
                 fromProviderServiceBuilder.LabelImagePath = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.ignore")
+            else if (label.Key == $"{dockerLabelPrefix}.ignore")
             {
                 if (bool.TryParse(label.Value, out var ignore))
                 {
@@ -58,15 +53,15 @@ public class ContainerLabelServiceFactory
                     _logger.LogWarning("Ignoring unparseable '{Key}' label value: '{Value}'", label.Key, label.Value);
                 }
             }
-            else if (label.Key == $"{DockerLabelPrefix}.name")
+            else if (label.Key == $"{dockerLabelPrefix}.name")
             {
                 fromProviderServiceBuilder.LabelName = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.traefik.router")
+            else if (label.Key == $"{dockerLabelPrefix}.traefik.router")
             {
                 fromProviderServiceBuilder.LabelTraefikRouter = label.Value;
             }
-            else if (label.Key == $"{DockerLabelPrefix}.url")
+            else if (label.Key == $"{dockerLabelPrefix}.url")
             {
                 fromProviderServiceBuilder.LabelUrl = label.Value;
             }

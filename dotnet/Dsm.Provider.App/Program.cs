@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Dsm.Providers;
+using Dsm.Providers.Hosting;
 
 namespace Dsm.Provider.App;
 class Program
@@ -18,10 +18,11 @@ class Program
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<ProviderService>();
-                ServiceCollectionConfiguration.AddServices(hostContext.Configuration, services);
+                HostBuilderConfiguration.AddServices(hostContext.Configuration, services);
             })
             .ConfigureAppConfiguration((hostContext, configuration) =>
             {
+                HostBuilderConfiguration.ConfigureConfiguration(configuration);
                 configuration.AddEnvironmentVariables(prefix: "DSM_");
             });
     }

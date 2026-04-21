@@ -11,25 +11,31 @@ namespace Dsm.Providers.Tests.UnitTests;
 [TestFixture]
 public class YamlFileServicesProviderTests : BaseTest
 {
-    private YamlFileServicesProvider _yamlFileServicesProvider = null!;
+    private IServicesProvider _yamlFileServicesProvider = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _yamlFileServicesProvider = ServiceProvider.GetRequiredService<YamlFileServicesProvider>();
+        var factory = ServiceProvider.GetRequiredService<ServicesProviderFactory>();
+        var config = new ServicesProviderConfig
+        {
+            ServicesProviderType = ServicesProviderType.YamlFile,
+            ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
+        };
+        _yamlFileServicesProvider = factory.Create(config);
     }
 
     protected override void AddServices(IConfiguration configuration, IServiceCollection services)
     {
         base.AddServices(configuration, services);
 
-        var providerOptions = new ProviderOptions()
+        var providerOptions = new ProviderOptions
         {
-            ServicesProviderTypes = ["yaml"],
-            ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
+            ApiUrl = "http://dsm.test",
+            Hostname = "test-host",
+            ServicesProviders = new List<ServicesProviderConfig>()
         };
-        var options = Options.Create(providerOptions);
-        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => options);
+        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));
     }
 
     [Test]

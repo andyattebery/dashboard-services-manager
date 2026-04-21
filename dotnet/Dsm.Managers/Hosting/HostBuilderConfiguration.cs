@@ -11,20 +11,26 @@ public static class HostBuilderConfiguration
     {
         services
             .AddOptions<ManagerOptions>()
-            .BindConfiguration(nameof(ManagerOptions));
+            .BindConfiguration(nameof(ManagerOptions))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services
             .AddOptions<ServiceDefaultOptions>()
-            .BindConfiguration(nameof(ServiceDefaultOptions));
+            .BindConfiguration(nameof(ServiceDefaultOptions))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services
             .AddTransient<DashboardCommandProcessor, DashboardCommandProcessor>()
             .AddTransient<DashboardQueryService, DashboardQueryService>()
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<WithDefaultsServiceFactory, WithDefaultsServiceFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>();
+        services.AddHttpClient(WithDefaultsServiceFactory.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
-        configurationBuilder.AddYamlFile("config.yml");
+        configurationBuilder.AddYamlFile("manager-config.yml", optional: true);
+        configurationBuilder.AddYamlFile("manager-config.yaml", optional: true);
     }
 }

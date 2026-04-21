@@ -156,7 +156,7 @@ DSM never writes a `container:` field today (`Service` doesn't carry a container
 replaced with the incoming services; any other entry is preserved in place, so hand-edited
 Homepage services stay untouched.
 
-## Defaults from `config.yml`
+## Defaults from `manager-config.yaml`
 
 Bound by [HostBuilderConfiguration](../Dsm.Managers/Hosting/HostBuilderConfiguration.cs) into
 [`ManagerOptions`](../Dsm.Managers/Configuration/ManagerOptions.cs) and
@@ -194,7 +194,7 @@ per-service dictionaries (`category`, `icon`) still bind because the match is ca
 
 ```
 Dsm.Managers/
-├── Configuration/                  Options types bound from config.yml
+├── Configuration/                  Options types bound from manager-config.yaml
 │   ├── ManagerOptions.cs
 │   ├── DashboardManagerConfig.cs   Per-entry manager type + file path
 │   ├── ServiceDefaultOptions.cs
@@ -212,7 +212,7 @@ Dsm.Managers/
 │   ├── WithDefaultsServiceFactory.cs
 │   └── ServicesCombiner.cs
 ├── Hosting/
-│   └── HostBuilderConfiguration.cs DI + config.yml wiring
+│   └── HostBuilderConfiguration.cs DI + manager-config.yaml wiring
 ├── DashboardCommandProcessor.cs    Public entry (writes)
 └── DashboardQueryService.cs        Public entry (reads)
 ```

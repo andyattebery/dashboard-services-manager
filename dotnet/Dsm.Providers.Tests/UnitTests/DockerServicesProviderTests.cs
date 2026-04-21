@@ -14,12 +14,19 @@ namespace Dsm.Providers.Tests.UnitTests;
 [TestFixture]
 public class DockerServicesProviderTests : BaseTest
 {
-    private DockerServicesProvider _dockerServicesProvider = null!;
+    private IServicesProvider _dockerServicesProvider = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _dockerServicesProvider = ServiceProvider.GetRequiredService<DockerServicesProvider>();
+        var factory = ServiceProvider.GetRequiredService<ServicesProviderFactory>();
+        var config = new ServicesProviderConfig
+        {
+            ServicesProviderType = ServicesProviderType.Docker,
+            DockerLabelPrefix = "dsm",
+            AreServiceHostsHttps = true
+        };
+        _dockerServicesProvider = factory.Create(config);
     }
 
     [Test]
@@ -61,27 +68,12 @@ public class DockerServicesProviderTests : BaseTest
 
         services.AddTransient<IDockerClient>((serviceProvider) => dockerClientMock.Object);
 
-        var providerOptions = new ProviderOptions()
+        var providerOptions = new ProviderOptions
         {
-            ServicesProviderTypes = ["docker"],
-            DockerLabelPrefix = "dsm",
-            AreServiceHostsHttps = true
+            ApiUrl = "http://dsm.test",
+            Hostname = "test-host",
+            ServicesProviders = new List<ServicesProviderConfig>()
         };
-        var options = Options.Create(providerOptions);
-        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => options);
-    }
-
-    private async Task SaveDockerContainerListResponsesJson()
-    {
-        var dockerClient = ServiceProvider.GetRequiredService<IDockerClient>();
-        var containersListParameters = new ContainersListParameters()
-        {
-            All = true
-        };
-        var containerListResponses = await dockerClient.Containers.ListContainersAsync(containersListParameters);
-
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        string jsonString = JsonSerializer.Serialize(containerListResponses, options);
-        File.WriteAllText(TestDataUtilities.GetUnitTestTestDataPath("docker_containers.json"), jsonString);
+        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));
     }
 }

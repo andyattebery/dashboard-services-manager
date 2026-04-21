@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Dsm.Managers.Configuration;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
@@ -6,17 +7,22 @@ namespace Dsm.Managers.Factories;
 
 public class WithDefaultsServiceFactory
 {
+    public const string HttpClientName = "walkxcode";
     private const string BaseWalkxcodeDashboardIconUrl = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/";
-    private static HttpClient _walkxcodeDashboardIconHttpClient = new HttpClient();
+    private static readonly ConcurrentDictionary<string, string?> WalkxcodeIconCache = new();
 
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public WithDefaultsServiceFactory(IOptions<ServiceDefaultOptions> defaultOptions)
+    public WithDefaultsServiceFactory(
+        IOptions<ServiceDefaultOptions> defaultOptions,
+        IHttpClientFactory httpClientFactory)
     {
         _serviceDefaultOptions = defaultOptions.Value;
+        _httpClientFactory = httpClientFactory;
     }
 
-    public Service CreateWithDefaults(Service service)
+    public async Task<Service> CreateWithDefaultsAsync(Service service)
     {
         _serviceDefaultOptions.Services.TryGetValue(service.Name.ToLower(), out var defaultServiceConfig);
 
@@ -30,7 +36,7 @@ public class WithDefaultsServiceFactory
             string.IsNullOrEmpty(icon) &&
             string.IsNullOrEmpty(imageUrl))
         {
-            imageUrl = GetWalkxcodeDashboardIconUrl(service.Name);
+            imageUrl = await GetWalkxcodeDashboardIconUrlAsync(service.Name);
         }
 
         return new Service(
@@ -73,8 +79,13 @@ public class WithDefaultsServiceFactory
         return imagePath;
     }
 
-    private static string? GetWalkxcodeDashboardIconUrl(string serviceName)
+    private async Task<string?> GetWalkxcodeDashboardIconUrlAsync(string serviceName)
     {
+        if (WalkxcodeIconCache.TryGetValue(serviceName, out var cached))
+        {
+            return cached;
+        }
+
         var lowerCaseServiceName = serviceName.ToLower();
         var potentialIconNames = new[]
         {
@@ -83,17 +94,20 @@ public class WithDefaultsServiceFactory
             lowerCaseServiceName.Replace(".", "-")
         };
 
+        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         foreach (var potentialIconName in potentialIconNames)
         {
             var walkxcodeDashboardIconUrl = $"{BaseWalkxcodeDashboardIconUrl}{potentialIconName}.png";
-            var request = new HttpRequestMessage(HttpMethod.Head, walkxcodeDashboardIconUrl);
-            var response = _walkxcodeDashboardIconHttpClient.Send(request);
+            using var request = new HttpRequestMessage(HttpMethod.Head, walkxcodeDashboardIconUrl);
+            using var response = await httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
+                WalkxcodeIconCache[serviceName] = walkxcodeDashboardIconUrl;
                 return walkxcodeDashboardIconUrl;
             }
         }
 
+        WalkxcodeIconCache[serviceName] = null;
         return null;
     }
 }

@@ -4,7 +4,7 @@ namespace Dsm.Providers.ServicesProviders.Traefik;
 
 public static class TraefikRuleParser
 {
-    private static readonly Regex HostRegex = new(@"^Host\((.+)\)");
+    private static readonly Regex HostRegex = new(@"Host\(([^)]+)\)");
 
     public static string? ExtractFirstHost(string? rule)
     {

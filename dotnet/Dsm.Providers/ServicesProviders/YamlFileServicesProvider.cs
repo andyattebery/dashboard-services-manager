@@ -1,43 +1,40 @@
-using System.Linq;
-using Docker.DotNet;
-using Docker.DotNet.Models;
 using Microsoft.Extensions.Logging;
 using Dsm.Shared.Models;
-using Dsm.Providers.Services;
 using YamlDotNet.Serialization;
 using Dsm.Shared.Options;
-using Microsoft.Extensions.Options;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Dsm.Providers.ServicesProviders;
 public class YamlFileServicesProvider : IServicesProvider
 {
     private readonly ILogger<YamlFileServicesProvider> _logger;
-    private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
-    private readonly ProviderOptions _providerOptions;
+    private readonly ServicesProviderConfig _config;
 
     public YamlFileServicesProvider(
         ILogger<YamlFileServicesProvider> logger,
-        ContainerLabelServiceFactory containerLabelServiceFactory,
-        IOptions<ProviderOptions> providerOptions
+        ServicesProviderConfig config
     )
     {
+        if (string.IsNullOrWhiteSpace(config.ServicesYamlFilePath))
+        {
+            throw new InvalidOperationException($"{nameof(ServicesProviderConfig)}.{nameof(ServicesProviderConfig.ServicesYamlFilePath)} must be set for a YamlFile provider.");
+        }
         _logger = logger;
-        _containerLabelServiceFactory = containerLabelServiceFactory;
-        _providerOptions = providerOptions.Value;
+        _config = config;
     }
 
     public async Task<List<Service>> ListServices()
     {
-        if (!File.Exists(_providerOptions.ServicesYamlFilePath))
+        var path = _config.ServicesYamlFilePath!;
+        if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"{_providerOptions.ServicesYamlFilePath} does not exist.");
+            throw new FileNotFoundException($"{path} does not exist.");
         }
 
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
-        using (var reader = File.OpenText(_providerOptions.ServicesYamlFilePath))
+        using (var reader = File.OpenText(path))
         {
             return await Task.Run<List<Service>>(() => {
                 var services = deserializer.Deserialize<List<Service>>(reader);

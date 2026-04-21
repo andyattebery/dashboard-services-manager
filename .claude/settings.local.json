@@ -21,7 +21,11 @@
       "Bash(/Users/andy/.local/share/mise/installs/dotnet/10/dotnet test *)",
       "WebFetch(domain:gethomepage.dev)",
       "Bash(mise which *)",
-      "Bash(mise exec *)"
+      "Bash(mise exec *)",
+      "Bash(xargs cat *)",
+      "Bash(dotnet restore *)",
+      "Bash(xargs basename *)",
+      "Bash(dotnet add *)"
     ]
   }
 }
