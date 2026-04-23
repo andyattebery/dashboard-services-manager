@@ -20,6 +20,9 @@ public class DashboardQueryService
 
     public async Task<List<Service>> ListServices()
     {
+        // Dedup across managers on (Name, Hostname) so the same service reported
+        // from multiple dashboards collapses, but the same name on different hosts
+        // remains distinct.
         var seen = new Dictionary<(string Name, string? Hostname), Service>();
         foreach (var managerConfig in _managerOptions.DashboardManagers)
         {

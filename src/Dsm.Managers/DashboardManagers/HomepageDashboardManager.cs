@@ -1,7 +1,7 @@
-using System.Text.RegularExpressions;
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers.Homepage;
 using Dsm.Shared.Models;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -12,10 +12,14 @@ public class HomepageDashboardManager : IDashboardManager
     private const string UncategorizedGroup = "Uncategorized";
 
     private readonly DashboardManagerConfig _config;
+    private readonly ILogger<HomepageDashboardManager> _logger;
 
-    public HomepageDashboardManager(DashboardManagerConfig config)
+    public HomepageDashboardManager(
+        DashboardManagerConfig config,
+        ILogger<HomepageDashboardManager> logger)
     {
         _config = config;
+        _logger = logger;
     }
 
     public async Task<List<Service>> ListServices()
@@ -79,7 +83,7 @@ public class HomepageDashboardManager : IDashboardManager
     private static (string? icon, string? imageUrl) GetIconOrImageUrl(string? icon)
     {
         if (string.IsNullOrEmpty(icon)) return (null, null);
-        return Regex.IsMatch(icon, @"^http", RegexOptions.IgnoreCase) ? (null, icon) : (icon, null);
+        return icon.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? (null, icon) : (icon, null);
     }
 
     private async Task<List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>> LoadGroups()
@@ -87,18 +91,14 @@ public class HomepageDashboardManager : IDashboardManager
         var path = _config.DashboardConfigFilePath;
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException(
-                $"{nameof(DashboardManagerConfig)}.{nameof(DashboardManagerConfig.DashboardConfigFilePath)}: {path} does not exist.");
+            _logger.LogWarning("Homepage config file '{Path}' does not exist; using empty config.", path);
+            return new List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>();
         }
 
-        var deserializer = CreateDeserializer();
-        return await Task.Run(() =>
-        {
-            using var reader = File.OpenText(path);
-            var groups = deserializer
-                .Deserialize<List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>>(reader);
-            return groups ?? new List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>();
-        });
+        var text = await File.ReadAllTextAsync(path);
+        var groups = CreateDeserializer()
+            .Deserialize<List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>>(text);
+        return groups ?? new List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>();
     }
 
     private static IDeserializer CreateDeserializer()

@@ -67,7 +67,7 @@ public class ContainerLabelServiceFactory
             }
         }
         var service = fromProviderServiceBuilder.Build();
-        _logger.LogInformation(service.ToString());
+        _logger.LogDebug("{Service}", service);
         return service;
     }
 

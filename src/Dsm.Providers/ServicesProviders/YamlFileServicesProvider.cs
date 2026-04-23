@@ -28,18 +28,14 @@ public class YamlFileServicesProvider : IServicesProvider
         var path = _config.ServicesYamlFilePath!;
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException($"{path} does not exist.");
+            _logger.LogWarning("YAML services file '{Path}' does not exist; returning no services.", path);
+            return new List<Service>();
         }
 
+        var text = await File.ReadAllTextAsync(path);
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
-        using (var reader = File.OpenText(path))
-        {
-            return await Task.Run<List<Service>>(() => {
-                var services = deserializer.Deserialize<List<Service>>(reader);
-                return services;
-            });
-        }
+        return deserializer.Deserialize<List<Service>>(text) ?? new List<Service>();
     }
 }

@@ -1,7 +1,5 @@
-using System.Text.RegularExpressions;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
@@ -12,21 +10,18 @@ public class SwarmServicesProvider : IServicesProvider
 {
     private const string DockerStackNamespaceLabel = "com.docker.stack.namespace";
 
-    private readonly ILogger<SwarmServicesProvider> _logger;
     private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
     private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderConfig _config;
 
     public SwarmServicesProvider(
-        ILogger<SwarmServicesProvider> logger,
         ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient,
         IOptions<ProviderOptions> providerOptions,
         ServicesProviderConfig config
     )
     {
-        _logger = logger;
         _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
         _providerOptions = providerOptions.Value;
@@ -53,20 +48,21 @@ public class SwarmServicesProvider : IServicesProvider
 
     private static string GetServiceName(SwarmService swarmService)
     {
-        var swarmServiceName = swarmService.Spec.Name;
+        swarmService.Spec.Labels.TryGetValue(DockerStackNamespaceLabel, out var ns);
+        return StripStackPrefix(swarmService.Spec.Name, ns);
+    }
 
-        if (!swarmService.Spec.Labels.TryGetValue(DockerStackNamespaceLabel, out var dockerStackNamespace))
+    internal static string StripStackPrefix(string name, string? stackNamespace)
+    {
+        if (string.IsNullOrEmpty(stackNamespace))
         {
-            return swarmServiceName;
+            return name;
         }
-
-        var serviceNameRegex = new Regex(@$"^{dockerStackNamespace}_(.+)$");
-        var serviceNameRegexMatch = serviceNameRegex.Match(swarmServiceName);
-        var serviceName = serviceNameRegexMatch.Success &&
-            !string.IsNullOrEmpty(serviceNameRegexMatch.Groups[1].Value) ?
-            serviceNameRegexMatch.Groups[1].Value :
-            swarmServiceName;
-
-        return serviceName;
+        var prefix = stackNamespace + "_";
+        if (name.StartsWith(prefix, StringComparison.Ordinal) && name.Length > prefix.Length)
+        {
+            return name.Substring(prefix.Length);
+        }
+        return name;
     }
 }

@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Dsm.Shared\Dsm.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Dsm.Providers.Tests" />
+  </ItemGroup>
+
 </Project>

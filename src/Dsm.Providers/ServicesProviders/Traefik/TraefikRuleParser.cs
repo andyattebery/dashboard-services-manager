@@ -19,7 +19,11 @@ public static class TraefikRuleParser
             return null;
         }
 
-        var host = match.Groups[1].Value.Replace("`", "").Split(",").FirstOrDefault();
+        var host = match.Groups[1].Value
+            .Replace("`", "")
+            .Split(',')
+            .Select(h => h.Trim())
+            .FirstOrDefault(h => !string.IsNullOrEmpty(h));
         return string.IsNullOrEmpty(host) ? null : host;
     }
 

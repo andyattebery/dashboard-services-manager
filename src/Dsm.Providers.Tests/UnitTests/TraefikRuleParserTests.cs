@@ -10,6 +10,9 @@ public class TraefikRuleParserTests
     [TestCase("PathPrefix(`/a`) && Host(`b.com`)", "b.com")]
     [TestCase("Host(`a.com`,`b.com`)", "a.com")]
     [TestCase("Host(`a.com`, `b.com`)", "a.com")]
+    [TestCase("Host( `a.com` )", "a.com")]
+    [TestCase("Host( `a.com` , `b.com` )", "a.com")]
+    [TestCase("Host(, `a.com`)", "a.com")]
     public void ExtractFirstHost_returns_first_host(string rule, string expected)
     {
         Assert.That(TraefikRuleParser.ExtractFirstHost(rule), Is.EqualTo(expected));

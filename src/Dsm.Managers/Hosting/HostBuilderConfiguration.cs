@@ -3,6 +3,7 @@ using Dsm.Managers.DashboardManagers;
 using Dsm.Managers.Factories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Hosting;
 public static class HostBuilderConfiguration
@@ -14,6 +15,7 @@ public static class HostBuilderConfiguration
             .BindConfiguration(nameof(ManagerOptions))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<ManagerOptions>, ManagerOptionsValidator>();
         services
             .AddOptions<ServiceDefaultOptions>()
             .BindConfiguration(nameof(ServiceDefaultOptions))

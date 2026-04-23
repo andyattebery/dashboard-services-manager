@@ -9,7 +9,8 @@ public class WithDefaultsServiceFactory
 {
     public const string HttpClientName = "walkxcode";
     private const string BaseWalkxcodeDashboardIconUrl = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/";
-    private static readonly ConcurrentDictionary<string, string?> WalkxcodeIconCache = new();
+    private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromHours(1);
+    private static readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> WalkxcodeIconCache = new();
 
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -24,7 +25,7 @@ public class WithDefaultsServiceFactory
 
     public async Task<Service> CreateWithDefaultsAsync(Service service)
     {
-        _serviceDefaultOptions.Services.TryGetValue(service.Name.ToLower(), out var defaultServiceConfig);
+        _serviceDefaultOptions.Services.TryGetValue(service.Name, out var defaultServiceConfig);
 
         var name = ApplyNameFormat(service, defaultServiceConfig);
         var category = !string.IsNullOrEmpty(service.Category) ? service.Category : defaultServiceConfig?.Category;
@@ -57,7 +58,7 @@ public class WithDefaultsServiceFactory
         {
             return service.Name;
         }
-        return string.Format(format.Replace("%s", "{0}"), service.Hostname);
+        return format.Replace("%s", service.Hostname);
     }
 
     private static string? ResolveImageUrl(string? imagePath, string? serviceUrl)
@@ -81,12 +82,13 @@ public class WithDefaultsServiceFactory
 
     private async Task<string?> GetWalkxcodeDashboardIconUrlAsync(string serviceName)
     {
-        if (WalkxcodeIconCache.TryGetValue(serviceName, out var cached))
+        if (WalkxcodeIconCache.TryGetValue(serviceName, out var cached) &&
+            (cached.Url is not null || DateTime.UtcNow - cached.CachedAt < NegativeCacheTtl))
         {
-            return cached;
+            return cached.Url;
         }
 
-        var lowerCaseServiceName = serviceName.ToLower();
+        var lowerCaseServiceName = serviceName.ToLowerInvariant();
         var potentialIconNames = new[]
         {
             lowerCaseServiceName.Replace(" ", string.Empty),
@@ -102,12 +104,12 @@ public class WithDefaultsServiceFactory
             using var response = await httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                WalkxcodeIconCache[serviceName] = walkxcodeDashboardIconUrl;
+                WalkxcodeIconCache[serviceName] = (walkxcodeDashboardIconUrl, DateTime.UtcNow);
                 return walkxcodeDashboardIconUrl;
             }
         }
 
-        WalkxcodeIconCache[serviceName] = null;
+        WalkxcodeIconCache[serviceName] = (null, DateTime.UtcNow);
         return null;
     }
 }

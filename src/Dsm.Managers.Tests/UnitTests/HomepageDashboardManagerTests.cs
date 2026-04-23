@@ -84,6 +84,16 @@ public class HomepageDashboardManagerTests : BaseTest
     }
 
     [Test]
+    public async Task ListServices_ReturnsEmpty_WhenConfigFileMissing()
+    {
+        File.Delete(_homepageServicesPath);
+
+        var services = await _homepageDashboardManager.ListServices();
+
+        Assert.That(services, Is.Empty);
+    }
+
+    [Test]
     public async Task WriteServicesWritesExactlyWhatItIsGiven()
     {
         await _homepageDashboardManager.WriteServices(new List<Service>());

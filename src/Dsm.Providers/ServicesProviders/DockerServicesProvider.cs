@@ -1,6 +1,5 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
@@ -9,21 +8,18 @@ using Dsm.Providers.Services;
 namespace Dsm.Providers.ServicesProviders;
 public class DockerServicesProvider : IServicesProvider
 {
-    private readonly ILogger<DockerServicesProvider> _logger;
     private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
     private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderConfig _config;
 
     public DockerServicesProvider(
-        ILogger<DockerServicesProvider> logger,
         ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient,
         IOptions<ProviderOptions> providerOptions,
         ServicesProviderConfig config
     )
     {
-        _logger = logger;
         _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
         _providerOptions = providerOptions.Value;
@@ -52,7 +48,7 @@ public class DockerServicesProvider : IServicesProvider
 
     private static string GetServiceName(ContainerListResponse containerListResponse)
     {
-        var name = containerListResponse.Names.First();
+        var name = containerListResponse.Names?.FirstOrDefault() ?? containerListResponse.ID;
 
         var formattedName = name.TrimStart('/');
         formattedName = ServicesProviderUtilities.GetFormattedServiceName(formattedName);

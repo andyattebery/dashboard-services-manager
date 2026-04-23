@@ -94,6 +94,16 @@ public class DashyDashboardManagerTests : BaseTest
     }
 
     [Test]
+    public async Task ListServices_ReturnsEmpty_WhenConfigFileMissing()
+    {
+        File.Delete(_dashboardConfigPath);
+
+        var services = await _dashyDashboardManager.ListServices();
+
+        Assert.That(services, Is.Empty);
+    }
+
+    [Test]
     public async Task WriteServicesDoesNotEmitHostTagWhenHostnameIsNull()
     {
         var service = new Service(
