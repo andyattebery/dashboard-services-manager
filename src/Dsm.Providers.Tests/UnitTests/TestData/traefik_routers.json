@@ -1,0 +1,37 @@
+[
+  {
+    "name": "jellyfin@docker",
+    "service": "jellyfin@docker",
+    "rule": "Host(`jellyfin.example.com`)",
+    "status": "enabled",
+    "provider": "docker"
+  },
+  {
+    "name": "searxng@docker",
+    "service": "searxng-docker-compose@docker",
+    "rule": "Host(`search.example.com`)",
+    "status": "enabled",
+    "provider": "docker"
+  },
+  {
+    "name": "dashboard@internal",
+    "service": "api@internal",
+    "rule": "PathPrefix(`/api`) || PathPrefix(`/dashboard`)",
+    "status": "enabled",
+    "provider": "internal"
+  },
+  {
+    "name": "disabled-service@docker",
+    "service": "disabled-service@docker",
+    "rule": "Host(`disabled.example.com`)",
+    "status": "disabled",
+    "provider": "docker"
+  },
+  {
+    "name": "path-only@docker",
+    "service": "path-only@docker",
+    "rule": "PathPrefix(`/something`)",
+    "status": "enabled",
+    "provider": "docker"
+  }
+]

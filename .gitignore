@@ -81,3 +81,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+
+# ReSharper / Rider per-user settings
+*.DotSettings.user
+
+.claude/settings.local.json
+src/.idea
+*.UserPrefs.xml

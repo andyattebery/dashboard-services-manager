@@ -1,0 +1,50 @@
+﻿<Properties StartupConfiguration="{9C036370-F5B5-4061-BC2A-1DB63DAA508D}|Unit Tests">
+  <MonoDevelop.Ide.ItemProperties.Dsm.Manager.Api PreferredExecutionTarget="/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app" />
+  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.ItemProperties.Dsm.Managers.Tests PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Dsm.Shared/Models/Service.cs">
+    <Files>
+      <File FileName="Dsm.Manager.Api/Controllers/DashboardController.cs" Line="9" Column="50" />
+      <File FileName="Dsm.Manager.Api/Properties/launchSettings.json" Line="1" Column="1" />
+      <File FileName="Dsm.Manager.Api/Program.cs" Line="12" Column="29" />
+      <File FileName="Dsm.Shared.Tests/ServiceProviderFactory.cs" Line="22" Column="10" />
+      <File FileName="Dsm.Shared.Tests/TestDataUtilities.cs" Line="1" Column="1" />
+      <File FileName="Dsm.Providers/ServiceCollectionConfiguration.cs" Line="24" Column="2" />
+      <File FileName="Dsm.Managers/Hosting/HostBuilderConfiguration.cs" Line="12" Column="17" />
+      <File FileName="Dsm.Managers.Tests/UnitTests/ServiceFactoryTests.cs" Line="20" Column="30" />
+      <File FileName="Dsm.Shared/Models/Service.cs" Line="13" Column="21" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="Dsm" expanded="True">
+            <Node name="Dsm.Manager.Api" expanded="True">
+              <Node name="Controllers" expanded="True" />
+              <Node name="Properties" expanded="True" />
+            </Node>
+            <Node name="Dsm.Managers" expanded="True">
+              <Node name="Hosting" expanded="True" />
+            </Node>
+            <Node name="Dsm.Managers.Tests" expanded="True">
+              <Node name="UnitTests" expanded="True" />
+            </Node>
+            <Node name="Dsm.Providers" expanded="True">
+              <Node name="ServicesProviders" expanded="True" />
+            </Node>
+            <Node name="Dsm.Shared" expanded="True">
+              <Node name="Models" expanded="True">
+                <Node name="Service.cs" selected="True" />
+              </Node>
+            </Node>
+            <Node name="Dsm.Shared.Tests" expanded="True" />
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+</Properties>

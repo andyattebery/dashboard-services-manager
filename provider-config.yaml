@@ -1,0 +1,8 @@
+---
+ProviderOptions:
+  ApiUrl: http://localhost:59999
+  Hostname: example-provider
+  ServicesProviders:
+    - ServicesProviderType: docker
+      AreServiceHostsHttps: true
+      DockerLabelPrefix: dcm
