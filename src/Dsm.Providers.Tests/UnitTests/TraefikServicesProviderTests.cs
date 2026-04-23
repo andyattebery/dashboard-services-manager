@@ -35,7 +35,7 @@ public class TraefikServicesProviderTests : BaseTest
 
         Assert.Multiple(() =>
         {
-            Assert.That(services, Has.Count.EqualTo(2), "Should skip @internal, disabled, and path-only routers");
+            Assert.That(services, Has.Count.EqualTo(3), "Should skip @internal, disabled, and path-only routers");
 
             var jellyfin = services.SingleOrDefault(s => s.Name == "Jellyfin");
             Assert.That(jellyfin, Is.Not.Null);
@@ -45,6 +45,11 @@ public class TraefikServicesProviderTests : BaseTest
             var searxng = services.SingleOrDefault(s => s.Name == "Searxng");
             Assert.That(searxng, Is.Not.Null, "Should strip -docker-compose and @provider suffixes");
             Assert.That(searxng!.Url, Is.EqualTo("https://search.example.com"));
+
+            var traefik = services.SingleOrDefault(s => s.Name == "traefik");
+            Assert.That(traefik, Is.Not.Null, "Routers backed by api@internal should be named 'traefik'");
+            Assert.That(traefik!.Url, Is.EqualTo("https://traefik.example.com"));
+            Assert.That(traefik.Hostname, Is.EqualTo("test-host"));
         });
     }
 

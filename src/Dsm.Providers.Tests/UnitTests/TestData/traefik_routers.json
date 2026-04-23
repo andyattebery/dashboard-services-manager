@@ -21,6 +21,13 @@
     "provider": "internal"
   },
   {
+    "name": "traefik-dashboard@file",
+    "service": "api@internal",
+    "rule": "Host(`traefik.example.com`)",
+    "status": "enabled",
+    "provider": "file"
+  },
+  {
     "name": "disabled-service@docker",
     "service": "disabled-service@docker",
     "rule": "Host(`disabled.example.com`)",

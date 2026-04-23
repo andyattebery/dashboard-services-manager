@@ -11,6 +11,8 @@ public class TraefikServicesProvider : IServicesProvider
     private const string EnabledStatus = "enabled";
     private const string InternalProviderSuffix = "@internal";
     private const string DockerComposeSuffix = "-docker-compose";
+    private const string TraefikApiService = "api@internal";
+    private const string TraefikServiceName = "traefik";
 
     private readonly ILogger<TraefikServicesProvider> _logger;
     private readonly ITraefikApiClient _traefikApiClient;
@@ -65,7 +67,9 @@ public class TraefikServicesProvider : IServicesProvider
             return null;
         }
 
-        var serviceName = CleanServiceName(router.Service ?? router.Name);
+        var serviceName = string.Equals(router.Service, TraefikApiService, StringComparison.Ordinal)
+            ? TraefikServiceName
+            : CleanServiceName(router.Service ?? router.Name);
         if (string.IsNullOrEmpty(serviceName))
         {
             _logger.LogDebug("Skipping router '{Name}': no service or name", router.Name);

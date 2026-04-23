@@ -57,6 +57,11 @@ ServiceDefaultOptions:
     prometheus:
       Category: monitoring
     proxmox:
+      NameWithHostnameFormatString: Proxmox [%s]
+      Category: infrastructure
+      ImagePath: /pve2/images/logo-128.png
+    proxmox backup server:
+      NameWithHostnameFormatString: Proxmox Backup Service
       Category: infrastructure
       ImagePath: /pve2/images/logo-128.png
     scrutiny:
