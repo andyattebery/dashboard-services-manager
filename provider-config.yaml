@@ -1,8 +1,8 @@
 ---
 ProviderOptions:
-  ApiUrl: https://dashboard-services-manager.omegaho.me
-  Hostname: swarm
+  ApiUrl: http://localhost:59999
+  Hostname: example-provider
   ServicesProviders:
-    - ServicesProviderType: Swarm
+    - ServicesProviderType: docker
       AreServiceHostsHttps: true
       DockerLabelPrefix: dcm

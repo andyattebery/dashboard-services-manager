@@ -14,9 +14,8 @@ services:
     ports:
     - 59999:59999
     volumes:
-      - ${APPLICATION_SETTINGS_DIR}/dashy/config/config.yaml:/config/dashy_config.yaml
-      - /home/services/projects/dashboard-services-manager/config.yaml:/config/config.yaml
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./manager-config.yaml:/config/manager-config.yaml:ro
+      # - /var/run/docker.sock:/var/run/docker.sock
   dashboard-services-manager-provider:
     container_name: dashboard-services-manager-provider
     build:
@@ -29,4 +28,5 @@ services:
     environment:
       - HOSTNAME=${HOSTNAME}
     volumes:
+      - ./provider-config.yaml:/config/provider-config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock

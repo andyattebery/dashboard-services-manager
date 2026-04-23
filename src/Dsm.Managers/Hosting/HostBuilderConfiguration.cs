@@ -34,5 +34,7 @@ public static class HostBuilderConfiguration
         configurationBuilder.AddYamlFile(defaultsPath, optional: false, reloadOnChange: false);
         configurationBuilder.AddYamlFile("manager-config.yml", optional: true);
         configurationBuilder.AddYamlFile("manager-config.yaml", optional: true);
+        configurationBuilder.AddYamlFile("/config/manager-config.yml", optional: true);
+        configurationBuilder.AddYamlFile("/config/manager-config.yaml", optional: true);
     }
 }

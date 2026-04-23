@@ -30,5 +30,7 @@ public static class HostBuilderConfiguration
     {
         configurationBuilder.AddYamlFile("provider-config.yml", optional: true);
         configurationBuilder.AddYamlFile("provider-config.yaml", optional: true);
+        configurationBuilder.AddYamlFile("/config/provider-config.yml", optional: true);
+        configurationBuilder.AddYamlFile("/config/provider-config.yaml", optional: true);
     }
 }
