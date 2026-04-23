@@ -57,6 +57,10 @@ public class ContainerLabelServiceFactory
             {
                 fromProviderServiceBuilder.LabelName = label.Value;
             }
+            else if (label.Key == $"{dockerLabelPrefix}.service_defaults_name")
+            {
+                fromProviderServiceBuilder.LabelServiceDefaultsName = label.Value;
+            }
             else if (label.Key == $"{dockerLabelPrefix}.traefik.router")
             {
                 fromProviderServiceBuilder.LabelTraefikRouter = label.Value;
@@ -80,6 +84,7 @@ public class ContainerLabelServiceFactory
         public string? LabelImagePath { get; set; }
         public bool   LabelIgnore { get; set; } = false;
         public string? LabelName { get; set; }
+        public string? LabelServiceDefaultsName { get; set; }
         public string? LabelUrl { get; set; }
         public string? LabelTraefikRouter { get; set; }
         public Dictionary<string, string> TraefikRouterNameToRule { get; set; } =
@@ -103,7 +108,8 @@ public class ContainerLabelServiceFactory
                 LabelIcon,
                 LabelImagePath,
                 Hostname,
-                LabelIgnore
+                LabelIgnore,
+                serviceDefaultsName: LabelServiceDefaultsName
             );
         }
 

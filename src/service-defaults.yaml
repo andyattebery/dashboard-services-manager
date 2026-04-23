@@ -22,7 +22,7 @@ ServiceDefaultOptions:
       Icon: fas fa-toolbox
   Services:
     adguardhome:
-      NameWithHostnameFormatString: AdGuard Home [%s]
+      NameWithHostnameFormatString: AdGuard Home (%s)
       Category: network
     adguardhome sync:
       NameWithHostnameFormatString: AdGuard Home Sync
@@ -37,21 +37,16 @@ ServiceDefaultOptions:
       Category: storage
     grafana:
       Category: monitoring
-      ImagePath: /public/img/grafana_icon.svg
     healthchecks:
       Category: monitoring
-      ImagePath: https://healthchecks.io/static/img/favicon.png
     homeassistant:
       Category: smart home
-      ImagePath: /static/icons/favicon-apple-180x180.png
     homebridge:
       Category: smart home
     minio:
       Category: storage
-      ImagePath: /favicon-96x96.png
     pikvm:
       Category: infrastructure
-      ImagePath: /share/apple-touch-icon.png
     plex:
       Category: media
     prometheus:
@@ -61,7 +56,7 @@ ServiceDefaultOptions:
     tautulli:
       Category: media
     traefik:
-      NameWithHostnameFormatString: Traefik [%s]
+      NameWithHostnameFormatString: Traefik (%s)
       Category: network
     unifi:
       Category: network
@@ -81,6 +76,8 @@ ServiceDefaultOptions:
       Category: container management
     forgejo:
       Category: storage
+    immich:
+      Category: storage
     jellyfin:
       Category: media
     jellystat:
@@ -91,17 +88,19 @@ ServiceDefaultOptions:
       Category: storage
     manyfold:
       Category: 3D printing
+    netbootxyz:
+      Category: utilities
     nextcloud:
       Category: storage
     octoprint:
       Category: 3D printing
     open webui:
-      Name: Open WebUI
+      NameWithHostnameFormatString: Open WebUI
       Category: information
     paperless ngx:
       Category: storage
     proxmox:
-      NameWithHostnameFormatString: Proxmox [%s]
+      NameWithHostnameFormatString: Proxmox (%s)
       Category: infrastructure
     proxmox backup server:
       NameWithHostnameFormatString: Proxmox Backup Service
