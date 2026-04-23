@@ -28,10 +28,13 @@ public class HomepageDashboardManager : IDashboardManager
         var services = new List<Service>();
         foreach (var group in groups)
         {
+            if (group is null) continue;
             foreach (var (groupName, entries) in group)
             {
+                if (entries is null) continue;
                 foreach (var entryMap in entries)
                 {
+                    if (entryMap is null) continue;
                     foreach (var (serviceName, entry) in entryMap)
                     {
                         var (icon, imageUrl) = GetIconOrImageUrl(entry.Icon);
