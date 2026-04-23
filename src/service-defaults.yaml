@@ -56,14 +56,6 @@ ServiceDefaultOptions:
       Category: media
     prometheus:
       Category: monitoring
-    proxmox:
-      NameWithHostnameFormatString: Proxmox [%s]
-      Category: infrastructure
-      ImagePath: /pve2/images/logo-128.png
-    proxmox backup server:
-      NameWithHostnameFormatString: Proxmox Backup Service
-      Category: infrastructure
-      ImagePath: /pve2/images/logo-128.png
     scrutiny:
       Category: monitoring
     tautulli:
@@ -71,6 +63,37 @@ ServiceDefaultOptions:
     traefik:
       NameWithHostnameFormatString: Traefik [%s]
       Category: network
-      ImagePath: /dashboard/statics/icons/favicon-96x96.png
     unifi:
       Category: network
+    beszel:
+      Category: monitoring
+    calibre:
+      Category: media
+    calibre-web:
+      Category: media
+    changedetection:
+      Category: utilities
+    cup:
+      Category: container management
+    dockwatch:
+      Category: container management
+    jellystat:
+      Category: media
+    octoprint:
+      Category: 3D printing
+    proxmox:
+      NameWithHostnameFormatString: Proxmox [%s]
+      Category: infrastructure
+    proxmox backup server:
+      NameWithHostnameFormatString: Proxmox Backup Service
+      Category: infrastructure
+    searxng:
+      Category: information
+    spoolman:
+      Category: 3D printing
+    uptime kuma:
+      Category: utilities
+    vaultwarden:
+      Category: utilities
+    wallos:
+      Category: finance

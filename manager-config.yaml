@@ -2,11 +2,11 @@
 ManagerOptions:
   DashboardManagers:
     - DashboardManagerType: Dashy
-      DashboardConfigFilePath: /config/dashy_config.yaml
+      DashboardConfigFilePath: /dashy_config/conf.yml
   IgnoredServiceNames:
     - Dashy
-    - Dashboard Services Manager Api
-    - Loki
+    - Dashboard Services Manager
+    - Homepage
 
 # Override or extend bundled defaults (see service-defaults.yaml shipped with the app):
 # ServiceDefaultOptions:

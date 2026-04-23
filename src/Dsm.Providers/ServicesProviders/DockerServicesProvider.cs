@@ -1,6 +1,5 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
 using Dsm.Providers.Services;
@@ -10,19 +9,16 @@ public class DockerServicesProvider : IServicesProvider
 {
     private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
-    private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderConfig _config;
 
     public DockerServicesProvider(
         ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient,
-        IOptions<ProviderOptions> providerOptions,
         ServicesProviderConfig config
     )
     {
         _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
-        _providerOptions = providerOptions.Value;
         _config = config;
     }
 
@@ -43,7 +39,7 @@ public class DockerServicesProvider : IServicesProvider
     {
         var serviceName = GetServiceName(containerListResponse);
 
-        return _containerLabelServiceFactory.CreateFromLabels(_config, _providerOptions.Hostname, serviceName, containerListResponse.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, serviceName, containerListResponse.Labels);
     }
 
     private static string GetServiceName(ContainerListResponse containerListResponse)

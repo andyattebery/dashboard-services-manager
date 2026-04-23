@@ -32,7 +32,6 @@ public class YamlFileServicesProviderTests : BaseTest
         var providerOptions = new ProviderOptions
         {
             ApiUrl = "http://dsm.test",
-            Hostname = "test-host",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
         services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));

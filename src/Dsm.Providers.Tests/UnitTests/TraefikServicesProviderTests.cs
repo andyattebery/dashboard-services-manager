@@ -23,7 +23,8 @@ public class TraefikServicesProviderTests : BaseTest
         {
             ServicesProviderType = ServicesProviderType.Traefik,
             TraefikApiUrl = "http://traefik.test",
-            AreServiceHostsHttps = true
+            AreServiceHostsHttps = true,
+            Hostname = "test-host"
         };
         _traefikServicesProvider = factory.Create(config);
     }
@@ -35,21 +36,20 @@ public class TraefikServicesProviderTests : BaseTest
 
         Assert.Multiple(() =>
         {
-            Assert.That(services, Has.Count.EqualTo(3), "Should skip @internal, disabled, and path-only routers");
-
-            var jellyfin = services.SingleOrDefault(s => s.Name == "Jellyfin");
-            Assert.That(jellyfin, Is.Not.Null);
-            Assert.That(jellyfin!.Url, Is.EqualTo("https://jellyfin.example.com"));
-            Assert.That(jellyfin.Hostname, Is.EqualTo("test-host"));
+            Assert.That(services, Has.Count.EqualTo(22), "Should skip @internal, disabled, and path-only routers");
 
             var searxng = services.SingleOrDefault(s => s.Name == "Searxng");
             Assert.That(searxng, Is.Not.Null, "Should strip -docker-compose and @provider suffixes");
-            Assert.That(searxng!.Url, Is.EqualTo("https://search.example.com"));
+            Assert.That(searxng!.Url, Is.EqualTo("https://searxng.example.com"));
+            Assert.That(searxng.Hostname, Is.EqualTo("test-host"));
 
             var traefik = services.SingleOrDefault(s => s.Name == "traefik");
             Assert.That(traefik, Is.Not.Null, "Routers backed by api@internal should be named 'traefik'");
-            Assert.That(traefik!.Url, Is.EqualTo("https://traefik.example.com"));
+            Assert.That(traefik!.Url, Is.EqualTo("https://traefik.docker-01.example.com"));
             Assert.That(traefik.Hostname, Is.EqualTo("test-host"));
+
+            Assert.That(services.Any(s => s.Url == "https://disabled.example.com"), Is.False, "Disabled routers should be skipped");
+            Assert.That(services.Any(s => s.Name == "Path Only"), Is.False, "Routers without a Host(...) rule should be skipped");
         });
     }
 
@@ -71,7 +71,6 @@ public class TraefikServicesProviderTests : BaseTest
         var providerOptions = new ProviderOptions
         {
             ApiUrl = "http://dsm.test",
-            Hostname = "test-host",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
         services.AddTransient<IOptions<ProviderOptions>>(_ => Options.Create(providerOptions));

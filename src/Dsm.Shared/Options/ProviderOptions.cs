@@ -8,9 +8,6 @@ public sealed class ProviderOptions
     [Required(AllowEmptyStrings = false)]
     public required string ApiUrl { get; set; }
 
-    [Required(AllowEmptyStrings = false)]
-    public required string Hostname { get; set; }
-
     public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromSeconds(60);
 
     [MinLength(1)]
@@ -23,6 +20,8 @@ public sealed class ServicesProviderConfig
     public required ServicesProviderType ServicesProviderType { get; set; }
 
     public bool AreServiceHostsHttps { get; set; }
+
+    public string? Hostname { get; set; }
 
     public string? TraefikApiUrl { get; set; }
     public string? ServicesYamlFilePath { get; set; }
@@ -41,6 +40,8 @@ public sealed class ProviderOptionsValidator : IValidateOptions<ProviderOptions>
                 case ServicesProviderType.Traefik:
                     if (string.IsNullOrWhiteSpace(config.TraefikApiUrl))
                         failures.Add($"ServicesProviders[{i}] (Traefik): TraefikApiUrl is required.");
+                    if (string.IsNullOrWhiteSpace(config.Hostname))
+                        failures.Add($"ServicesProviders[{i}] (Traefik): Hostname is required.");
                     break;
                 case ServicesProviderType.YamlFile:
                     if (string.IsNullOrWhiteSpace(config.ServicesYamlFilePath))
@@ -50,6 +51,8 @@ public sealed class ProviderOptionsValidator : IValidateOptions<ProviderOptions>
                 case ServicesProviderType.Swarm:
                     if (string.IsNullOrWhiteSpace(config.DockerLabelPrefix))
                         failures.Add($"ServicesProviders[{i}] ({config.ServicesProviderType}): DockerLabelPrefix is required.");
+                    if (string.IsNullOrWhiteSpace(config.Hostname))
+                        failures.Add($"ServicesProviders[{i}] ({config.ServicesProviderType}): Hostname is required.");
                     break;
             }
         }

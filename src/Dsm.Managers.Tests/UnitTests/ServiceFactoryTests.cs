@@ -41,7 +41,7 @@ public class ServiceFactoryTests : BaseTest
 
         var result = await _withDefaultsServiceFactory.CreateWithDefaultsAsync(service);
 
-        Assert.That(result.ImageUrl, Is.EqualTo("https://example.com/pve2/images/logo-128.png"));
+        Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/proxmox.png"));
     }
 
     [Test]

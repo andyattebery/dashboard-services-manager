@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
@@ -16,12 +15,10 @@ public class TraefikServicesProvider : IServicesProvider
 
     private readonly ILogger<TraefikServicesProvider> _logger;
     private readonly ITraefikApiClient _traefikApiClient;
-    private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderConfig _config;
 
     public TraefikServicesProvider(
         ILogger<TraefikServicesProvider> logger,
-        IOptions<ProviderOptions> providerOptions,
         ITraefikApiClientFactory traefikApiClientFactory,
         ServicesProviderConfig config)
     {
@@ -30,7 +27,6 @@ public class TraefikServicesProvider : IServicesProvider
             throw new InvalidOperationException($"{nameof(ServicesProviderConfig)}.{nameof(ServicesProviderConfig.TraefikApiUrl)} must be set for a Traefik provider.");
         }
         _logger = logger;
-        _providerOptions = providerOptions.Value;
         _config = config;
         _traefikApiClient = traefikApiClientFactory.Create(config.TraefikApiUrl);
     }
@@ -84,7 +80,7 @@ public class TraefikServicesProvider : IServicesProvider
             category: null,
             icon: null,
             imageUrl: null,
-            hostname: _providerOptions.Hostname,
+            hostname: _config.Hostname,
             ignore: false);
     }
 

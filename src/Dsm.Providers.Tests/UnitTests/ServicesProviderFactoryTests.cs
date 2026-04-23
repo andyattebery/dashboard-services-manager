@@ -26,7 +26,8 @@ public class ServicesProviderFactoryTests : BaseTest
         {
             ServicesProviderType = providerType,
             DockerLabelPrefix = "dsm",
-            ServicesYamlFilePath = "/tmp/test.yaml"
+            ServicesYamlFilePath = "/tmp/test.yaml",
+            Hostname = "test-host"
         };
         var servicesProvider = _servicesProviderFactory.Create(config);
         Assert.That(servicesProvider, Is.InstanceOf(type));
@@ -39,7 +40,6 @@ public class ServicesProviderFactoryTests : BaseTest
         var providerOptions = new ProviderOptions
         {
             ApiUrl = "http://dsm.test",
-            Hostname = "test-host",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
         services.AddTransient<IOptions<ProviderOptions>>(_ => Options.Create(providerOptions));

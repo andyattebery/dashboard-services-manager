@@ -24,7 +24,8 @@ public class DockerServicesProviderTests : BaseTest
         {
             ServicesProviderType = ServicesProviderType.Docker,
             DockerLabelPrefix = "dsm",
-            AreServiceHostsHttps = true
+            AreServiceHostsHttps = true,
+            Hostname = "test-host"
         };
         _dockerServicesProvider = factory.Create(config);
     }
@@ -71,7 +72,6 @@ public class DockerServicesProviderTests : BaseTest
         var providerOptions = new ProviderOptions
         {
             ApiUrl = "http://dsm.test",
-            Hostname = "test-host",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
         services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));

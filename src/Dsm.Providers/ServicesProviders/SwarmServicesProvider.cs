@@ -1,6 +1,5 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
 using Dsm.Shared.Options;
 using Dsm.Providers.Services;
@@ -12,19 +11,16 @@ public class SwarmServicesProvider : IServicesProvider
 
     private readonly ContainerLabelServiceFactory _containerLabelServiceFactory;
     private readonly IDockerClient _dockerClient;
-    private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderConfig _config;
 
     public SwarmServicesProvider(
         ContainerLabelServiceFactory containerLabelServiceFactory,
         IDockerClient dockerClient,
-        IOptions<ProviderOptions> providerOptions,
         ServicesProviderConfig config
     )
     {
         _containerLabelServiceFactory = containerLabelServiceFactory;
         _dockerClient = dockerClient;
-        _providerOptions = providerOptions.Value;
         _config = config;
     }
 
@@ -43,7 +39,7 @@ public class SwarmServicesProvider : IServicesProvider
 
         var formattedServiceName = ServicesProviderUtilities.GetFormattedServiceName(serviceName);
 
-        return _containerLabelServiceFactory.CreateFromLabels(_config, _providerOptions.Hostname, formattedServiceName, swarmService.Spec.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, formattedServiceName, swarmService.Spec.Labels);
     }
 
     private static string GetServiceName(SwarmService swarmService)
