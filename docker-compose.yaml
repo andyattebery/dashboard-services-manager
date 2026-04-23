@@ -12,7 +12,7 @@ services:
     environment:
       - HOSTNAME=${HOSTNAME}
     ports:
-    - 59999:59999
+    - 8080:8080
     volumes:
       - ./manager-config.yaml:/config/manager-config.yaml:ro
       # - /var/run/docker.sock:/var/run/docker.sock

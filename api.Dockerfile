@@ -21,4 +21,6 @@ COPY --from=build /app .
 
 VOLUME [ "/config" ]
 
+EXPOSE 8080
+
 ENTRYPOINT ["dotnet", "Dsm.Manager.Api.dll"]

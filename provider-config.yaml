@@ -1,6 +1,6 @@
 ---
 ProviderOptions:
-  ApiUrl: http://localhost:59999
+  ApiUrl: http://localhost:8080
   Hostname: example-provider
   ServicesProviders:
     - ServicesProviderType: docker
