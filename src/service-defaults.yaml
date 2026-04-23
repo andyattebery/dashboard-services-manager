@@ -1,6 +1,6 @@
 ---
 ServiceDefaultOptions:
-  UseWalkxcodeDashboardIcons: true
+  UseHomarrLabsDashboardIcons: true
   Categories:
     downloading:
       Icon: fas fa-download
@@ -24,16 +24,13 @@ ServiceDefaultOptions:
     adguardhome:
       NameWithHostnameFormatString: AdGuard Home [%s]
       Category: network
-      Icon: hl-adguardhome
     adguardhome sync:
       NameWithHostnameFormatString: AdGuard Home Sync
       Category: utilities
-      Icon: hl-adguard-home
     changedetectionio:
       Category: utilities
     flexget:
       Category: downloading
-      Icon: hl-flexget
     flood:
       Category: downloading
     gitea:
@@ -57,16 +54,13 @@ ServiceDefaultOptions:
       ImagePath: /share/apple-touch-icon.png
     plex:
       Category: media
-      Icon: hl-plex
     prometheus:
       Category: monitoring
-      Icon: hl-prometheus
     proxmox:
       Category: infrastructure
       ImagePath: /pve2/images/logo-128.png
     scrutiny:
       Category: monitoring
-      Icon: hl-scrutiny
     tautulli:
       Category: media
     traefik:

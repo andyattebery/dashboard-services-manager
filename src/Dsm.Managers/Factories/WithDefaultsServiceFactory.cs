@@ -7,10 +7,10 @@ namespace Dsm.Managers.Factories;
 
 public class WithDefaultsServiceFactory
 {
-    public const string HttpClientName = "walkxcode";
-    private const string BaseWalkxcodeDashboardIconUrl = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/";
+    public const string HttpClientName = "homarrlabs";
+    private const string BaseHomarrLabsDashboardIconUrl = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/";
     private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromHours(1);
-    private static readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> WalkxcodeIconCache = new();
+    private static readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> HomarrLabsIconCache = new();
 
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -33,11 +33,11 @@ public class WithDefaultsServiceFactory
         var imagePath = !string.IsNullOrEmpty(service.ImageUrl) ? service.ImageUrl : defaultServiceConfig?.ImagePath;
         var imageUrl = ResolveImageUrl(imagePath, service.Url);
 
-        if (_serviceDefaultOptions.UseWalkxcodeDashboardIcons &&
+        if (_serviceDefaultOptions.UseHomarrLabsDashboardIcons &&
             string.IsNullOrEmpty(icon) &&
             string.IsNullOrEmpty(imageUrl))
         {
-            imageUrl = await GetWalkxcodeDashboardIconUrlAsync(service.Name);
+            imageUrl = await GetHomarrLabsDashboardIconUrlAsync(service.Name);
         }
 
         return new Service(
@@ -80,9 +80,9 @@ public class WithDefaultsServiceFactory
         return imagePath;
     }
 
-    private async Task<string?> GetWalkxcodeDashboardIconUrlAsync(string serviceName)
+    private async Task<string?> GetHomarrLabsDashboardIconUrlAsync(string serviceName)
     {
-        if (WalkxcodeIconCache.TryGetValue(serviceName, out var cached) &&
+        if (HomarrLabsIconCache.TryGetValue(serviceName, out var cached) &&
             (cached.Url is not null || DateTime.UtcNow - cached.CachedAt < NegativeCacheTtl))
         {
             return cached.Url;
@@ -99,17 +99,17 @@ public class WithDefaultsServiceFactory
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         foreach (var potentialIconName in potentialIconNames)
         {
-            var walkxcodeDashboardIconUrl = $"{BaseWalkxcodeDashboardIconUrl}{potentialIconName}.png";
-            using var request = new HttpRequestMessage(HttpMethod.Head, walkxcodeDashboardIconUrl);
+            var homarrLabsDashboardIconUrl = $"{BaseHomarrLabsDashboardIconUrl}{potentialIconName}.png";
+            using var request = new HttpRequestMessage(HttpMethod.Head, homarrLabsDashboardIconUrl);
             using var response = await httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                WalkxcodeIconCache[serviceName] = (walkxcodeDashboardIconUrl, DateTime.UtcNow);
-                return walkxcodeDashboardIconUrl;
+                HomarrLabsIconCache[serviceName] = (homarrLabsDashboardIconUrl, DateTime.UtcNow);
+                return homarrLabsDashboardIconUrl;
             }
         }
 
-        WalkxcodeIconCache[serviceName] = (null, DateTime.UtcNow);
+        HomarrLabsIconCache[serviceName] = (null, DateTime.UtcNow);
         return null;
     }
 }

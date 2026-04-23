@@ -17,16 +17,31 @@ public class ServiceFactoryTests : BaseTest
         _withDefaultsServiceFactory = ServiceProvider.GetRequiredService<WithDefaultsServiceFactory>();
     }
 
-    [TestCase("Proxmox", "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/proxmox.png")]
-    [TestCase("AdGuard Home", "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/adguard-home.png")]
-    [TestCase("Resilio Sync", "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/resiliosync.png")]
+    [TestCase("Portainer", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/portainer.png")]
+    [TestCase("AdGuard Home", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/adguard-home.png")]
+    [TestCase("AdGuard Home Sync", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/adguard-home-sync.png")]
+    [TestCase("Resilio Sync", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/resiliosync.png")]
+    [TestCase("Flexget", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/flexget.png")]
+    [TestCase("Plex", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/plex.png")]
+    [TestCase("Prometheus", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/prometheus.png")]
+    [TestCase("Scrutiny", "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/scrutiny.png")]
     [Category("Network")]
-    public async Task WalkxcodeDashboardIcons_Test(string serviceName, string expectedImageUrl)
+    public async Task HomarrLabsDashboardIcons_Test(string serviceName, string expectedImageUrl)
     {
         var service = new Service(serviceName, "https://example.com", null, null, null, null, false);
         var serviceWithDefaults = await _withDefaultsServiceFactory.CreateWithDefaultsAsync(service);
 
         Assert.That(serviceWithDefaults.ImageUrl, Is.EqualTo(expectedImageUrl));
+    }
+
+    [Test]
+    public async Task DefaultImagePath_AppliedFromServiceDefaults()
+    {
+        var service = new Service("Proxmox", "https://example.com", null, null, null, null, false);
+
+        var result = await _withDefaultsServiceFactory.CreateWithDefaultsAsync(service);
+
+        Assert.That(result.ImageUrl, Is.EqualTo("https://example.com/pve2/images/logo-128.png"));
     }
 
     [Test]

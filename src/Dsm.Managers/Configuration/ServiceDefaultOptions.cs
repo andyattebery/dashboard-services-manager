@@ -2,7 +2,7 @@ namespace Dsm.Managers.Configuration;
 
 public class ServiceDefaultOptions
 {
-    public bool UseWalkxcodeDashboardIcons { get; set; }
+    public bool UseHomarrLabsDashboardIcons { get; set; }
     public Dictionary<string, CategoryConfig> Categories { get; set; } =
         new Dictionary<string, CategoryConfig>(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, ServiceConfig> Services { get; set; } =
