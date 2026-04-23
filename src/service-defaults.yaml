@@ -1,0 +1,77 @@
+---
+ServiceDefaultOptions:
+  UseWalkxcodeDashboardIcons: true
+  Categories:
+    downloading:
+      Icon: fas fa-download
+    infrastructure:
+      Icon: fas fa-chart-network
+    media:
+      Icon: fas fa-tv
+    monitoring:
+      Icon: fas fa-chart-line
+    network:
+      Icon: fas fa-network-wired
+    smart home:
+      Icon: fas fa-house-signal
+    storage:
+      Icon: fas fa-database
+    uncategorized:
+      Icon: fas fa-question
+    utilities:
+      Icon: fas fa-toolbox
+  Services:
+    adguardhome:
+      NameWithHostnameFormatString: AdGuard Home [%s]
+      Category: network
+      Icon: hl-adguardhome
+    adguardhome sync:
+      NameWithHostnameFormatString: AdGuard Home Sync
+      Category: utilities
+      Icon: hl-adguard-home
+    changedetectionio:
+      Category: utilities
+    flexget:
+      Category: downloading
+      Icon: hl-flexget
+    flood:
+      Category: downloading
+    gitea:
+      Category: storage
+    grafana:
+      Category: monitoring
+      ImagePath: /public/img/grafana_icon.svg
+    healthchecks:
+      Category: monitoring
+      ImagePath: https://healthchecks.io/static/img/favicon.png
+    homeassistant:
+      Category: smart home
+      ImagePath: /static/icons/favicon-apple-180x180.png
+    homebridge:
+      Category: smart home
+    minio:
+      Category: storage
+      ImagePath: /favicon-96x96.png
+    pikvm:
+      Category: infrastructure
+      ImagePath: /share/apple-touch-icon.png
+    plex:
+      Category: media
+      Icon: hl-plex
+    prometheus:
+      Category: monitoring
+      Icon: hl-prometheus
+    proxmox:
+      Category: infrastructure
+      ImagePath: /pve2/images/logo-128.png
+    scrutiny:
+      Category: monitoring
+      Icon: hl-scrutiny
+    tautulli:
+      Category: media
+    traefik:
+      NameWithHostnameFormatString: Traefik [%s]
+      Category: network
+      ImagePath: /dashboard/statics/icons/favicon-96x96.png
+    unifi:
+      Category: network

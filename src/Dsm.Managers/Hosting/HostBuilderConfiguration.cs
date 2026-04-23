@@ -30,6 +30,8 @@ public static class HostBuilderConfiguration
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
+        var defaultsPath = Path.Combine(AppContext.BaseDirectory, "service-defaults.yaml");
+        configurationBuilder.AddYamlFile(defaultsPath, optional: false, reloadOnChange: false);
         configurationBuilder.AddYamlFile("manager-config.yml", optional: true);
         configurationBuilder.AddYamlFile("manager-config.yaml", optional: true);
     }
