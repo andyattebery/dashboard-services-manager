@@ -16,8 +16,4 @@
     <ProjectReference Include="..\Dsm.Providers\Dsm.Providers.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\provider-config.yaml" CopyToOutputDirectory="Always" />
-  </ItemGroup>
-
 </Project>

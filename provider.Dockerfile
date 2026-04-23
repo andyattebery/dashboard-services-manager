@@ -2,11 +2,11 @@ ARG DOTNET_VERSION=10.0
 
 FROM mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION AS build
 
-ENV PROVIDER_PROJECT_NAME=Dsm.Manager.Api
+ENV PROVIDER_PROJECT_NAME=Dsm.Provider.App
 
 WORKDIR /source
 
-COPY . .
+COPY src/ .
 
 RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj
 
@@ -14,11 +14,8 @@ RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj
 RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj --configuration Release --output /app --no-restore
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION AS app
+FROM mcr.microsoft.com/dotnet/runtime:$DOTNET_VERSION
 
 WORKDIR /app
 COPY --from=build /app .
-
-VOLUME [ "/config" ]
-
-ENTRYPOINT ["dotnet", "Dsm.Manager.Api.dll"]
+ENTRYPOINT ["dotnet", "Dsm.Provider.App.dll"]

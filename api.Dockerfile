@@ -1,44 +1,24 @@
-FROM ruby:3.1-alpine3.16 AS builder
+ARG DOTNET_VERSION=10.0
 
-ADD src/Gemfile* .
-RUN apk upgrade && \
-    apk add --no-cache g++ make && \
-    bundle install
+FROM mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION AS build
 
-FROM ruby:3.1-alpine3.16
+ENV PROVIDER_PROJECT_NAME=Dsm.Manager.Api
 
-ARG PUID=1000
-ARG PGID=1000
-ARG DOCKER_GID=998
+WORKDIR /source
 
-ENV APP_HOME /app
-ENV APP_CONFIG_DIR /config
+COPY src/ .
 
-RUN addgroup -g $PGID ruby && \
-    addgroup -g $DOCKER_GID docker && \
-    adduser --system --shell /bin/ash --home /home/ruby --uid $PUID --ingroup ruby ruby && \
-    addgroup ruby docker && \
-    apk update
+RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj
 
-RUN mkdir $APP_HOME && \
-    mkdir $APP_CONFIG_DIR && \
-    chown ruby:ruby $APP_HOME && \
-    chown ruby:ruby $APP_CONFIG_DIR && \
-    bundle config set with api
+# publish app and libraries
+RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj --configuration Release --output /app --no-restore
 
-WORKDIR $APP_HOME
+# final stage/image
+FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION AS app
 
-USER ruby
+WORKDIR /app
+COPY --from=build /app .
 
-COPY --from=builder /usr/local/bundle/ /usr/local/bundle/
+VOLUME [ "/config" ]
 
-ADD --chown=ruby:ruby src/ $APP_HOME/
-
-# Grab generated Gemfile.lock from builder. This will allow bundle exec to run without running bundle install again.
-COPY --from=builder --chown=ruby:ruby Gemfile.lock $APP_HOME/Gemfile.lock
-
-EXPOSE 59999
-
-VOLUME $APP_CONFIG_DIR
-
-CMD ["bundle", "exec", "rackup", "--host", "0.0.0.0", "--port", "59999", "--env", "development" ]
+ENTRYPOINT ["dotnet", "Dsm.Manager.Api.dll"]

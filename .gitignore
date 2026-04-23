@@ -84,3 +84,7 @@ bld/
 
 # ReSharper / Rider per-user settings
 *.DotSettings.user
+
+.claude/settings.local.json
+src/.idea
+*.UserPrefs.xml

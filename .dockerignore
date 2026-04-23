@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.vs
+.vscode
+src/**/bin
+src/**/obj
+src/**/out
+.dotnet
+.Microsoft.DotNet.ImageBuilder
