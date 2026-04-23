@@ -65,6 +65,8 @@ ServiceDefaultOptions:
       Category: network
     unifi:
       Category: network
+    audiobookshelf:
+      Category: media
     beszel:
       Category: monitoring
     calibre:
@@ -77,20 +79,43 @@ ServiceDefaultOptions:
       Category: container management
     dockwatch:
       Category: container management
+    forgejo:
+      Category: storage
+    jellyfin:
+      Category: media
     jellystat:
       Category: media
+    linkding:
+      Category: storage
+    linkwarden:
+      Category: storage
+    manyfold:
+      Category: 3D printing
+    nextcloud:
+      Category: stroage
     octoprint:
       Category: 3D printing
+    open webui:
+      Name: Open WebUI
+      Category: information
+    paperless ngx:
+      Category: storage
     proxmox:
       NameWithHostnameFormatString: Proxmox [%s]
       Category: infrastructure
     proxmox backup server:
       NameWithHostnameFormatString: Proxmox Backup Service
       Category: infrastructure
+    resilio sync:
+      Category: storage
     searxng:
       Category: information
     spoolman:
       Category: 3D printing
+    syncthing:
+      Category: storage
+    tdarr:
+      Category: utilities
     uptime kuma:
       Category: utilities
     vaultwarden:
