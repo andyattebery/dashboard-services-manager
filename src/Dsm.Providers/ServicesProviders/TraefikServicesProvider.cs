@@ -65,7 +65,7 @@ public class TraefikServicesProvider : IServicesProvider
 
         var serviceName = string.Equals(router.Service, TraefikApiService, StringComparison.Ordinal)
             ? TraefikServiceName
-            : CleanServiceName(router.Service ?? router.Name);
+            : CleanServiceName(router.Name);
         if (string.IsNullOrEmpty(serviceName))
         {
             _logger.LogDebug("Skipping router '{Name}': no service or name", router.Name);

@@ -92,7 +92,7 @@ ServiceDefaultOptions:
     manyfold:
       Category: 3D printing
     nextcloud:
-      Category: stroage
+      Category: storage
     octoprint:
       Category: 3D printing
     open webui:
