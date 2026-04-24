@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Refit;
@@ -61,6 +62,7 @@ public class ProviderService : BackgroundService
     {
         try
         {
+            _logger.LogDebug("POST /dashboard-services payload: {Payload}", JsonSerializer.Serialize(services));
             var response = await _dcmClient.UpdateDashboard(services);
             foreach (var (managerName, entries) in response)
             {
