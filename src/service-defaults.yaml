@@ -4,24 +4,32 @@ ServiceDefaultOptions:
     - HomarrLabs
     - SelfhSt
   Categories:
+    3d printing:
+      Icon: mdi-printer-3d
+    container management:
+      Icon: mdi-docker
     downloading:
-      Icon: fas fa-download
+      Icon: mdi-download
+    finance:
+      Icon: mdi-cash-multiple
+    information:
+      Icon: mdi-search-web
     infrastructure:
-      Icon: fas fa-chart-network
+      Icon: mdi-server-network
     media:
-      Icon: fas fa-tv
+      Icon: mdi-multimedia
     monitoring:
-      Icon: fas fa-chart-line
+      Icon: mdi-chart-multiple
     network:
-      Icon: fas fa-network-wired
+      Icon: mdi-network
     smart home:
-      Icon: fas fa-house-signal
+      Icon: mdi-home-automation
     storage:
-      Icon: fas fa-database
+      Icon: mdi-database
     uncategorized:
-      Icon: fas fa-question
+      Icon: mdi-help
     utilities:
-      Icon: fas fa-toolbox
+      Icon: mdi-tools
   Services:
     adguardhome:
       NameWithHostnameFormatString: AdGuard Home (%s)
