@@ -153,7 +153,8 @@ single-key group maps, each holding a list of single-key service maps:
 ```
 
 [`HomepageDashboardManager`](../Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs)
-points at the `services.yaml` via the `DashboardConfigFilePath` on its `DashboardManagers` entry.
+points at the directory containing `services.yaml` via the `DashboardConfigDirectoryPath` on its
+`DashboardManagers` entry.
 Field mapping:
 
 | `Service` | Homepage field |
@@ -181,9 +182,9 @@ shape is:
 ManagerOptions:
   DashboardManagers:
     - DashboardManagerType: dashy
-      DashboardConfigFilePath: dashy_conf.yml
+      DashboardConfigDirectoryPath: /dashy_config       # DSM reads/writes <dir>/conf.yml
     - DashboardManagerType: homepage
-      DashboardConfigFilePath: services.yaml
+      DashboardConfigDirectoryPath: /homepage_config    # DSM reads/writes <dir>/services.yaml
   IgnoredServiceNames: []
 ```
 
@@ -228,8 +229,10 @@ Four changes, no surprises:
 
 1. Implement [`IDashboardManager`](../Dsm.Managers/DashboardManagers/IDashboardManager.cs). Take a
    [`DashboardManagerConfig`](../Dsm.Managers/Configuration/DashboardManagerConfig.cs) as a ctor
-   parameter and read the target file from `config.DashboardConfigFilePath` — the factory injects
-   that value via `ActivatorUtilities.CreateInstance`, so the manager never needs `IOptions<ManagerOptions>`.
+   parameter and build the target file path by combining `config.DashboardConfigDirectoryPath`
+   with your dashboard's well-known filename (see `DashyDashboardManager.ConfigFileName` /
+   `HomepageDashboardManager.ServicesFileName` for examples) — the factory injects the config via
+   `ActivatorUtilities.CreateInstance`, so the manager never needs `IOptions<ManagerOptions>`.
 2. Add a variant to
    [`DashboardManagerType`](../Dsm.Managers/DashboardManagers/DashboardManagerType.cs).
 3. Extend the `switch` in

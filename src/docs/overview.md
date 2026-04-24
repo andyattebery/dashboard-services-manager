@@ -39,7 +39,7 @@ Dsm.Manager.Api → DashboardCommandProcessor
         │  apply defaults (WithDefaultsServiceFactory)
         │  merge with existing (ServicesCombiner)
         ▼
-IDashboardManager (only Dashy today) → dashy_conf.yml
+IDashboardManager (Dashy, Homepage) → <dashboard-dir>/conf.yml or <dashboard-dir>/services.yaml
 ```
 
 The wire contract is [`Service`](../Dsm.Shared/Models/Service.cs) in `Dsm.Shared`; Refit serializes

@@ -13,8 +13,8 @@ public class ManagerOptionsValidatorTests
         {
             DashboardManagers = new List<DashboardManagerConfig>
             {
-                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigFilePath = "/tmp/a" },
-                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigFilePath = "/tmp/b" },
+                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigDirectoryPath = "/tmp/a" },
+                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigDirectoryPath = "/tmp/b" },
             },
         };
 
@@ -31,8 +31,8 @@ public class ManagerOptionsValidatorTests
         {
             DashboardManagers = new List<DashboardManagerConfig>
             {
-                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigFilePath = "/tmp/a" },
-                new() { DashboardManagerType = DashboardManagerType.Homepage, DashboardConfigFilePath = "/tmp/b" },
+                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigDirectoryPath = "/tmp/a" },
+                new() { DashboardManagerType = DashboardManagerType.Homepage, DashboardConfigDirectoryPath = "/tmp/b" },
             },
         };
 

@@ -11,6 +11,7 @@ namespace Dsm.Managers.Tests.UnitTests;
 public class HomepageDashboardManagerTests : BaseTest
 {
     private HomepageDashboardManager _homepageDashboardManager = null!;
+    private string _homepageServicesDir = null!;
     private string _homepageServicesPath = null!;
 
     [OneTimeSetUp]
@@ -22,7 +23,9 @@ public class HomepageDashboardManagerTests : BaseTest
     [SetUp]
     public void Setup()
     {
-        _homepageServicesPath = Path.Combine(Path.GetTempPath(), $"dsm_homepage_{Guid.NewGuid():N}.yml");
+        _homepageServicesDir = Path.Combine(Path.GetTempPath(), $"dsm_homepage_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_homepageServicesDir);
+        _homepageServicesPath = Path.Combine(_homepageServicesDir, HomepageDashboardManager.ServicesFileName);
         File.Copy(TestDataUtilities.GetTestDataPath("homepage_services.yml"), _homepageServicesPath, overwrite: true);
 
         ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
@@ -35,9 +38,9 @@ public class HomepageDashboardManagerTests : BaseTest
     [TearDown]
     public void TearDown()
     {
-        if (File.Exists(_homepageServicesPath))
+        if (Directory.Exists(_homepageServicesDir))
         {
-            File.Delete(_homepageServicesPath);
+            Directory.Delete(_homepageServicesDir, recursive: true);
         }
     }
 
@@ -154,7 +157,7 @@ public class HomepageDashboardManagerTests : BaseTest
         return (HomepageDashboardManager)factory.Create(new DashboardManagerConfig
         {
             DashboardManagerType = DashboardManagerType.Homepage,
-            DashboardConfigFilePath = _homepageServicesPath,
+            DashboardConfigDirectoryPath = _homepageServicesDir,
             EnableStatusMonitoring = enabled
         });
     }
@@ -238,7 +241,7 @@ public class HomepageDashboardManagerTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Homepage,
-                    DashboardConfigFilePath = _homepageServicesPath,
+                    DashboardConfigDirectoryPath = _homepageServicesDir,
                 },
             };
         });

@@ -11,11 +11,13 @@ public class DashboardCommandProcessorTests : BaseTest
 {
     private DashboardCommandProcessor _dashboardCommandProcessor;
 
-    private const string DashboardConfigFilePath = $"{nameof(DashboardCommandProcessorTests)}_dashy_conf.yml";
+    private const string DashboardConfigDir = $"{nameof(DashboardCommandProcessorTests)}_dashy";
+    private static readonly string DashboardConfigFilePath = Path.Combine(DashboardConfigDir, DashyDashboardManager.ConfigFileName);
 
     [SetUp]
     public void Setup()
     {
+        Directory.CreateDirectory(DashboardConfigDir);
         File.WriteAllText(DashboardConfigFilePath, """
             ---
             sections:
@@ -39,9 +41,9 @@ public class DashboardCommandProcessorTests : BaseTest
     [TearDown]
     public void TearDown()
     {
-        if (File.Exists(DashboardConfigFilePath))
+        if (Directory.Exists(DashboardConfigDir))
         {
-            File.Delete(DashboardConfigFilePath);
+            Directory.Delete(DashboardConfigDir, recursive: true);
         }
     }
 
@@ -97,7 +99,7 @@ public class DashboardCommandProcessorTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Dashy,
-                    DashboardConfigFilePath = DashboardConfigFilePath,
+                    DashboardConfigDirectoryPath = DashboardConfigDir,
                 },
             },
         };

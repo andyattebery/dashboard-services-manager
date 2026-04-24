@@ -10,6 +10,8 @@ namespace Dsm.Managers.Tests.UnitTests;
 public class DashboardQueryServiceDedupTests : BaseTest
 {
     private DashboardQueryService _queryService = null!;
+    private string _dashyDir = null!;
+    private string _homepageDir = null!;
     private string _dashyPath = null!;
     private string _homepagePath = null!;
 
@@ -21,8 +23,12 @@ public class DashboardQueryServiceDedupTests : BaseTest
     [SetUp]
     public void Setup()
     {
-        _dashyPath = Path.Combine(Path.GetTempPath(), $"dsm_dedup_dashy_{Guid.NewGuid():N}.yml");
-        _homepagePath = Path.Combine(Path.GetTempPath(), $"dsm_dedup_hp_{Guid.NewGuid():N}.yml");
+        _dashyDir = Path.Combine(Path.GetTempPath(), $"dsm_dedup_dashy_{Guid.NewGuid():N}");
+        _homepageDir = Path.Combine(Path.GetTempPath(), $"dsm_dedup_hp_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_dashyDir);
+        Directory.CreateDirectory(_homepageDir);
+        _dashyPath = Path.Combine(_dashyDir, DashyDashboardManager.ConfigFileName);
+        _homepagePath = Path.Combine(_homepageDir, HomepageDashboardManager.ServicesFileName);
 
         // Dashy: Jellyfin@media-01 + DashyOnly@media-01
         File.WriteAllText(_dashyPath, """
@@ -60,9 +66,9 @@ public class DashboardQueryServiceDedupTests : BaseTest
     [TearDown]
     public void TearDown()
     {
-        foreach (var path in new[] { _dashyPath, _homepagePath })
+        foreach (var dir in new[] { _dashyDir, _homepageDir })
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
         }
     }
 
@@ -92,12 +98,12 @@ public class DashboardQueryServiceDedupTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Dashy,
-                    DashboardConfigFilePath = _dashyPath,
+                    DashboardConfigDirectoryPath = _dashyDir,
                 },
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Homepage,
-                    DashboardConfigFilePath = _homepagePath,
+                    DashboardConfigDirectoryPath = _homepageDir,
                 },
             };
         });

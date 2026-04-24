@@ -2,7 +2,7 @@
 ManagerOptions:
   DashboardManagers:
     - DashboardManagerType: Dashy
-      DashboardConfigFilePath: /dashy_config/conf.yml
+      DashboardConfigDirectoryPath: /dashy_config
   IgnoredServiceNames:
     - Dashy
     - Dashboard Services Manager

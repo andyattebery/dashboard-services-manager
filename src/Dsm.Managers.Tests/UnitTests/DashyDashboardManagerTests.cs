@@ -11,6 +11,7 @@ namespace Dsm.Managers.Tests.UnitTests;
 public class DashyDashboardManagerTests : BaseTest
 {
     private DashyDashboardManager _dashyDashboardManager = null!;
+    private string _dashboardConfigDir = null!;
     private string _dashboardConfigPath = null!;
 
     [OneTimeSetUp]
@@ -22,7 +23,9 @@ public class DashyDashboardManagerTests : BaseTest
     [SetUp]
     public void Setup()
     {
-        _dashboardConfigPath = Path.Combine(Path.GetTempPath(), $"dsm_dashy_{Guid.NewGuid():N}.yml");
+        _dashboardConfigDir = Path.Combine(Path.GetTempPath(), $"dsm_dashy_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_dashboardConfigDir);
+        _dashboardConfigPath = Path.Combine(_dashboardConfigDir, DashyDashboardManager.ConfigFileName);
         File.Copy(TestDataUtilities.GetTestDataPath("dashy_conf.yml"), _dashboardConfigPath, overwrite: true);
 
         ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
@@ -35,9 +38,9 @@ public class DashyDashboardManagerTests : BaseTest
     [TearDown]
     public void TearDown()
     {
-        if (File.Exists(_dashboardConfigPath))
+        if (Directory.Exists(_dashboardConfigDir))
         {
-            File.Delete(_dashboardConfigPath);
+            Directory.Delete(_dashboardConfigDir, recursive: true);
         }
     }
 
@@ -122,7 +125,7 @@ public class DashyDashboardManagerTests : BaseTest
         return (DashyDashboardManager)factory.Create(new DashboardManagerConfig
         {
             DashboardManagerType = DashboardManagerType.Dashy,
-            DashboardConfigFilePath = _dashboardConfigPath,
+            DashboardConfigDirectoryPath = _dashboardConfigDir,
             EnableStatusMonitoring = enabled
         });
     }
@@ -172,7 +175,7 @@ public class DashyDashboardManagerTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Dashy,
-                    DashboardConfigFilePath = _dashboardConfigPath,
+                    DashboardConfigDirectoryPath = _dashboardConfigDir,
                 },
             };
         });

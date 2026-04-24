@@ -12,6 +12,8 @@ namespace Dsm.Managers.DashboardManagers;
 
 public class DashyDashboardManager : IDashboardManager
 {
+    public const string ConfigFileName = "conf.yml";
+
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly DashboardManagerConfig _config;
     private readonly ILogger<DashyDashboardManager> _logger;
@@ -25,6 +27,8 @@ public class DashyDashboardManager : IDashboardManager
         _config = config;
         _logger = logger;
     }
+
+    private string ConfigFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ConfigFileName);
 
     public async Task<List<Service>> ListServices()
     {
@@ -69,7 +73,7 @@ public class DashyDashboardManager : IDashboardManager
             dashyConfigObject.Add("sections", dashySectionsObject);
         }
 
-        using (var textWriter = File.CreateText(_config.DashboardConfigFilePath))
+        using (var textWriter = File.CreateText(ConfigFilePath))
         {
             serializer.Serialize(textWriter, dashyConfigObject);
         }
@@ -134,14 +138,14 @@ public class DashyDashboardManager : IDashboardManager
     private async Task<T> LoadDashyConfig<T>()
         where T : new()
     {
-        if (!File.Exists(_config.DashboardConfigFilePath))
+        if (!File.Exists(ConfigFilePath))
         {
             _logger.LogWarning("Dashy config file '{Path}' does not exist; using empty config.",
-                _config.DashboardConfigFilePath);
+                ConfigFilePath);
             return new T();
         }
 
-        var text = await File.ReadAllTextAsync(_config.DashboardConfigFilePath);
+        var text = await File.ReadAllTextAsync(ConfigFilePath);
         return CreateDeserializer().Deserialize<T>(text) ?? new T();
     }
 

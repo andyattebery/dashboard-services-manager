@@ -11,6 +11,8 @@ namespace Dsm.Managers.DashboardManagers;
 
 public class HomepageDashboardManager : IDashboardManager
 {
+    public const string ServicesFileName = "services.yaml";
+
     private const string UncategorizedGroup = "Uncategorized";
     private static readonly Regex LetterAfterDigit = new(@"(?<=\d)[a-z]", RegexOptions.Compiled);
 
@@ -24,6 +26,8 @@ public class HomepageDashboardManager : IDashboardManager
         _config = config;
         _logger = logger;
     }
+
+    private string ServicesFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ServicesFileName);
 
     public async Task<List<Service>> ListServices()
     {
@@ -69,7 +73,7 @@ public class HomepageDashboardManager : IDashboardManager
             .ToList();
 
         var serializer = CreateSerializer();
-        await using var textWriter = File.CreateText(_config.DashboardConfigFilePath);
+        await using var textWriter = File.CreateText(ServicesFilePath);
         serializer.Serialize(textWriter, output);
     }
 
@@ -101,7 +105,7 @@ public class HomepageDashboardManager : IDashboardManager
 
     private async Task<List<Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>>> LoadGroups()
     {
-        var path = _config.DashboardConfigFilePath;
+        var path = ServicesFilePath;
         if (!File.Exists(path))
         {
             _logger.LogWarning("Homepage config file '{Path}' does not exist; using empty config.", path);

@@ -10,11 +10,13 @@ public class DashboardQueryServiceTests : BaseTest
 {
     private DashboardQueryService _dashboardQueryService;
 
-    private const string DashboardConfigFilePath = $"{nameof(DashboardQueryServiceTests)}_dashy_conf.yml";
+    private const string DashboardConfigDir = $"{nameof(DashboardQueryServiceTests)}_dashy";
+    private static readonly string DashboardConfigFilePath = Path.Combine(DashboardConfigDir, DashyDashboardManager.ConfigFileName);
 
     [SetUp]
     public void Setup()
     {
+        Directory.CreateDirectory(DashboardConfigDir);
         File.WriteAllText(DashboardConfigFilePath, """
             ---
             sections:
@@ -38,9 +40,9 @@ public class DashboardQueryServiceTests : BaseTest
     [TearDown]
     public void TearDown()
     {
-        if (File.Exists(DashboardConfigFilePath))
+        if (Directory.Exists(DashboardConfigDir))
         {
-            File.Delete(DashboardConfigFilePath);
+            Directory.Delete(DashboardConfigDir, recursive: true);
         }
     }
 
@@ -73,7 +75,7 @@ public class DashboardQueryServiceTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Dashy,
-                    DashboardConfigFilePath = DashboardConfigFilePath,
+                    DashboardConfigDirectoryPath = DashboardConfigDir,
                 },
             },
         };
