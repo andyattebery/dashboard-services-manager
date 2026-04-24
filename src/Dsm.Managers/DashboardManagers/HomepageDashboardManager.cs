@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers.Homepage;
 using Dsm.Shared.Models;
@@ -10,6 +12,7 @@ namespace Dsm.Managers.DashboardManagers;
 public class HomepageDashboardManager : IDashboardManager
 {
     private const string UncategorizedGroup = "Uncategorized";
+    private static readonly Regex LetterAfterDigit = new(@"(?<=\d)[a-z]", RegexOptions.Compiled);
 
     private readonly DashboardManagerConfig _config;
     private readonly ILogger<HomepageDashboardManager> _logger;
@@ -57,7 +60,7 @@ public class HomepageDashboardManager : IDashboardManager
     public async Task WriteServices(List<Service> services)
     {
         var output = services
-            .GroupBy(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : s.Category!)
+            .GroupBy(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
             .OrderBy(g => g.Key)
             .Select(g => new Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>
             {
@@ -68,6 +71,12 @@ public class HomepageDashboardManager : IDashboardManager
         var serializer = CreateSerializer();
         await using var textWriter = File.CreateText(_config.DashboardConfigFilePath);
         serializer.Serialize(textWriter, output);
+    }
+
+    private static string TitleCaseCategory(string category)
+    {
+        var titled = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(category);
+        return LetterAfterDigit.Replace(titled, m => m.Value.ToUpperInvariant());
     }
 
     private static Dictionary<string, HomepageServiceEntry> ToEntryMap(Service service, bool enableStatusMonitoring)
