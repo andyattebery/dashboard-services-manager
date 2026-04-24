@@ -17,6 +17,11 @@ public sealed class ManagerOptionsValidator : IValidateOptions<ManagerOptions>
                     $"DashboardManagers[{i}]: duplicate {nameof(DashboardManagerConfig.DashboardManagerType)} '{key}'. " +
                     "Per-entry disambiguation (e.g. a name field) is not yet supported.");
             }
+            if (string.IsNullOrWhiteSpace(config.DashboardConfigDirectoryPath))
+            {
+                failures.Add(
+                    $"DashboardManagers[{i}] ({key}): {nameof(DashboardManagerConfig.DashboardConfigDirectoryPath)} is required.");
+            }
         }
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

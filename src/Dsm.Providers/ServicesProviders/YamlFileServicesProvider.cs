@@ -34,7 +34,7 @@ public class YamlFileServicesProvider : IServicesProvider
 
         var text = await File.ReadAllTextAsync(path);
         var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .Build();
         return deserializer.Deserialize<List<Service>>(text) ?? new List<Service>();
     }
