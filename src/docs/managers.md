@@ -171,6 +171,14 @@ DSM never writes a `container:` field today (`Service` doesn't carry a container
 replaced with the incoming services; any other entry is preserved in place, so hand-edited
 Homepage services stay untouched.
 
+`WriteServices` also updates `<dir>/settings.yaml` with per-category icons pulled from
+`ServiceDefaultOptions.Categories`. For each category that has services in the current write
+**and** a non-null `Icon` default, DSM sets `layout.<Category>.icon` in `settings.yaml`. Every
+other top-level key in `settings.yaml` (`theme`, `providers`, etc.) and every non-icon key within
+a layout entry (`style`, `columns`, `header`, …) is preserved. If no present category has a default
+icon, DSM doesn't touch the file at all. See
+[Homepage layout docs](https://gethomepage.dev/configs/settings/#category-icons).
+
 ## Config from `manager-config.yaml`
 
 Bound by [HostBuilderConfiguration](../Dsm.Managers/Hosting/HostBuilderConfiguration.cs) into

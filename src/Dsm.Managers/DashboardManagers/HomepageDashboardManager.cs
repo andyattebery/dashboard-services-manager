@@ -4,6 +4,7 @@ using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers.Homepage;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -12,22 +13,29 @@ namespace Dsm.Managers.DashboardManagers;
 public class HomepageDashboardManager : IDashboardManager
 {
     public const string ServicesFileName = "services.yaml";
+    public const string SettingsFileName = "settings.yaml";
+    private const string LayoutKey = "layout";
+    private const string IconKey = "icon";
 
     private const string UncategorizedGroup = "Uncategorized";
     private static readonly Regex LetterAfterDigit = new(@"(?<=\d)[a-z]", RegexOptions.Compiled);
 
     private readonly DashboardManagerConfig _config;
+    private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly ILogger<HomepageDashboardManager> _logger;
 
     public HomepageDashboardManager(
         DashboardManagerConfig config,
+        IOptions<ServiceDefaultOptions> defaultOptions,
         ILogger<HomepageDashboardManager> logger)
     {
         _config = config;
+        _serviceDefaultOptions = defaultOptions.Value;
         _logger = logger;
     }
 
     private string ServicesFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ServicesFileName);
+    private string SettingsFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, SettingsFileName);
 
     public async Task<List<Service>> ListServices()
     {
@@ -73,8 +81,71 @@ public class HomepageDashboardManager : IDashboardManager
             .ToList();
 
         var serializer = CreateSerializer();
-        await using var textWriter = File.CreateText(ServicesFilePath);
-        serializer.Serialize(textWriter, output);
+        await using (var textWriter = File.CreateText(ServicesFilePath))
+        {
+            serializer.Serialize(textWriter, output);
+        }
+
+        await UpdateSettingsLayoutIcons(services);
+    }
+
+    private async Task UpdateSettingsLayoutIcons(List<Service> services)
+    {
+        var groupIcons = services
+            .Select(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(name => (Name: name,
+                             Icon: _serviceDefaultOptions.Categories.TryGetValue(name, out var c) ? c.Icon : null))
+            .Where(p => !string.IsNullOrEmpty(p.Icon))
+            .ToList();
+        if (groupIcons.Count == 0) return;
+
+        var settings = await LoadSettings();
+        var layout = GetOrCreateLayoutMap(settings);
+
+        foreach (var (name, icon) in groupIcons)
+        {
+            if (layout.TryGetValue(name, out var existing) && existing is IDictionary<object, object> existingMap)
+            {
+                existingMap[IconKey] = icon!;
+            }
+            else
+            {
+                layout[name] = new Dictionary<object, object> { [IconKey] = icon! };
+            }
+        }
+
+        var serializer = CreateSerializer();
+        await using var textWriter = File.CreateText(SettingsFilePath);
+        serializer.Serialize(textWriter, settings);
+    }
+
+    private async Task<Dictionary<object, object>> LoadSettings()
+    {
+        if (!File.Exists(SettingsFilePath))
+        {
+            return new Dictionary<object, object>();
+        }
+        var text = await File.ReadAllTextAsync(SettingsFilePath);
+        var parsed = CreateDeserializer().Deserialize<Dictionary<object, object>>(text);
+        return parsed ?? new Dictionary<object, object>();
+    }
+
+    private IDictionary<object, object> GetOrCreateLayoutMap(Dictionary<object, object> settings)
+    {
+        if (settings.TryGetValue(LayoutKey, out var existing))
+        {
+            if (existing is IDictionary<object, object> asMap)
+            {
+                return asMap;
+            }
+            _logger.LogWarning("Homepage settings.yaml 'layout' was not a map ({Type}); replacing it.",
+                existing?.GetType().Name ?? "null");
+        }
+
+        var layout = new Dictionary<object, object>();
+        settings[LayoutKey] = layout;
+        return layout;
     }
 
     private static string TitleCaseCategory(string category)
