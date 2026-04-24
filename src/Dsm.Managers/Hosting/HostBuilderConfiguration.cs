@@ -1,6 +1,7 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
 using Dsm.Managers.Factories;
+using Dsm.Shared.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -33,10 +34,10 @@ public static class HostBuilderConfiguration
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
         var defaultsPath = Path.Combine(AppContext.BaseDirectory, "service-defaults.yaml");
-        configurationBuilder.AddYamlFile(defaultsPath, optional: false, reloadOnChange: false);
-        configurationBuilder.AddYamlFile("manager-config.yml", optional: true);
-        configurationBuilder.AddYamlFile("manager-config.yaml", optional: true);
-        configurationBuilder.AddYamlFile("/config/manager-config.yml", optional: true);
-        configurationBuilder.AddYamlFile("/config/manager-config.yaml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile(defaultsPath, optional: false, reloadOnChange: false);
+        configurationBuilder.AddNormalizedYamlFile("manager-config.yml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("manager-config.yaml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("/config/manager-config.yml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("/config/manager-config.yaml", optional: true);
     }
 }

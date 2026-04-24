@@ -6,6 +6,7 @@ using Dsm.Providers.Services;
 using Dsm.Providers.ServicesProviders;
 using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.ApiClients;
+using Dsm.Shared.Configuration;
 using Dsm.Shared.Options;
 
 namespace Dsm.Providers.Hosting;
@@ -28,9 +29,9 @@ public static class HostBuilderConfiguration
 
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
-        configurationBuilder.AddYamlFile("provider-config.yml", optional: true);
-        configurationBuilder.AddYamlFile("provider-config.yaml", optional: true);
-        configurationBuilder.AddYamlFile("/config/provider-config.yml", optional: true);
-        configurationBuilder.AddYamlFile("/config/provider-config.yaml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("provider-config.yml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("provider-config.yaml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("/config/provider-config.yml", optional: true);
+        configurationBuilder.AddNormalizedYamlFile("/config/provider-config.yaml", optional: true);
     }
 }
