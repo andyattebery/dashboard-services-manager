@@ -100,7 +100,7 @@ public class DashyDashboardManager : IDashboardManager
         var sectionNameToItemsMapping = new Dictionary<string, List<DashyItem>>();
         foreach (var service in services)
         {
-            var dashyItem = DashyItem.Create(service);
+            var dashyItem = DashyItem.Create(service, _config.EnableStatusMonitoring);
             sectionNameToItemsMapping.AddToLookup((service.Category ?? string.Empty).ToLowerInvariant(), dashyItem);
         }
 
@@ -157,6 +157,7 @@ public class DashyDashboardManager : IDashboardManager
     {
         return new SerializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
             .Build();
     }
 }

@@ -68,7 +68,10 @@ ServiceDefaultOptions:
       Category: monitoring
     calibre:
       Category: media
-    calibre-web:
+    calibre server:
+      Category: media
+      Icon: hl-calibre
+    calibre web:
       Category: media
     changedetection:
       Category: utilities
@@ -100,6 +103,7 @@ ServiceDefaultOptions:
       NameWithHostnameFormatString: Open WebUI
       Category: information
     paperless ngx:
+      NameWithHostnameFormatString: Paperless-ngx
       Category: storage
     proxmox:
       NameWithHostnameFormatString: Proxmox (%s)
@@ -107,6 +111,7 @@ ServiceDefaultOptions:
     proxmox backup server:
       NameWithHostnameFormatString: Proxmox Backup Service
       Category: infrastructure
+      Icon: hl-proxmox-light
     resilio sync:
       Category: storage
     searxng:
