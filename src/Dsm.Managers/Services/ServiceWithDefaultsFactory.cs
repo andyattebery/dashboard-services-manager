@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using Dsm.Managers.Configuration;
+using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
 
@@ -7,20 +7,15 @@ namespace Dsm.Managers.Services;
 
 public class ServiceWithDefaultsFactory
 {
-    public const string HttpClientName = "homarrlabs";
-    private const string BaseHomarrLabsDashboardIconUrl = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/";
-    private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromHours(1);
-    private static readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> HomarrLabsIconCache = new();
-
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly Dictionary<DashboardIconSourceType, IDashboardIconSource> _iconSources;
 
     public ServiceWithDefaultsFactory(
         IOptions<ServiceDefaultOptions> defaultOptions,
-        IHttpClientFactory httpClientFactory)
+        IEnumerable<IDashboardIconSource> iconSources)
     {
         _serviceDefaultOptions = defaultOptions.Value;
-        _httpClientFactory = httpClientFactory;
+        _iconSources = iconSources.ToDictionary(s => s.Type);
     }
 
     public async Task<Service> CreateWithDefaultsAsync(Service service)
@@ -37,11 +32,29 @@ public class ServiceWithDefaultsFactory
         var imagePath = !string.IsNullOrEmpty(service.ImageUrl) ? service.ImageUrl : defaultServiceConfig?.ImagePath;
         var imageUrl = ResolveImageUrl(imagePath, service.Url);
 
-        if (_serviceDefaultOptions.UseHomarrLabsDashboardIcons &&
-            string.IsNullOrEmpty(icon) &&
-            string.IsNullOrEmpty(imageUrl))
+        if (!string.IsNullOrEmpty(icon))
         {
-            imageUrl = await GetHomarrLabsDashboardIconUrlAsync(lookupName);
+            var match = _iconSources.Values.FirstOrDefault(
+                s => icon.StartsWith(s.Prefix, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                var resolved = await match.GetIconUrl(icon[match.Prefix.Length..]);
+                if (!string.IsNullOrEmpty(resolved))
+                {
+                    imageUrl = resolved;
+                    icon = null;
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(icon) && string.IsNullOrEmpty(imageUrl))
+        {
+            foreach (var type in _serviceDefaultOptions.FallbackIconSourceProviders)
+            {
+                if (!_iconSources.TryGetValue(type, out var source)) continue;
+                imageUrl = await source.GetIconUrl(lookupName);
+                if (!string.IsNullOrEmpty(imageUrl)) break;
+            }
         }
 
         return new Service(
@@ -83,38 +96,5 @@ public class ServiceWithDefaultsFactory
             return new Uri(baseUri, imagePath).ToString();
         }
         return imagePath;
-    }
-
-    private async Task<string?> GetHomarrLabsDashboardIconUrlAsync(string serviceName)
-    {
-        if (HomarrLabsIconCache.TryGetValue(serviceName, out var cached) &&
-            (cached.Url is not null || DateTime.UtcNow - cached.CachedAt < NegativeCacheTtl))
-        {
-            return cached.Url;
-        }
-
-        var lowerCaseServiceName = serviceName.ToLowerInvariant();
-        var potentialIconNames = new[]
-        {
-            lowerCaseServiceName.Replace(" ", string.Empty),
-            lowerCaseServiceName.Replace(" ", "-"),
-            lowerCaseServiceName.Replace(".", "-")
-        };
-
-        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-        foreach (var potentialIconName in potentialIconNames)
-        {
-            var homarrLabsDashboardIconUrl = $"{BaseHomarrLabsDashboardIconUrl}{potentialIconName}.png";
-            using var request = new HttpRequestMessage(HttpMethod.Head, homarrLabsDashboardIconUrl);
-            using var response = await httpClient.SendAsync(request);
-            if (response.IsSuccessStatusCode)
-            {
-                HomarrLabsIconCache[serviceName] = (homarrLabsDashboardIconUrl, DateTime.UtcNow);
-                return homarrLabsDashboardIconUrl;
-            }
-        }
-
-        HomarrLabsIconCache[serviceName] = (null, DateTime.UtcNow);
-        return null;
     }
 }

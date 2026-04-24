@@ -1,6 +1,7 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
 using Dsm.Managers.Services;
+using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,8 @@ public static class HostBuilderConfiguration
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>();
-        services.AddHttpClient(ServiceWithDefaultsFactory.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+        services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
+        services.AddHttpClient(HomarrLabsDashboardIconSource.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)

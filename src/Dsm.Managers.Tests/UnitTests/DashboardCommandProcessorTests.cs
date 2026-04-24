@@ -103,7 +103,7 @@ public class DashboardCommandProcessorTests : BaseTest
         };
         services.AddTransient<IOptions<ManagerOptions>>(_ => Options.Create(managerOptions));
 
-        var defaultOptions = new ServiceDefaultOptions { UseHomarrLabsDashboardIcons = false };
+        var defaultOptions = new ServiceDefaultOptions();
         services.AddTransient<IOptions<ServiceDefaultOptions>>(_ => Options.Create(defaultOptions));
     }
 }

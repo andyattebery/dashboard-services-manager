@@ -103,6 +103,6 @@ public class DashboardQueryServiceDedupTests : BaseTest
         });
 
         services.AddTransient<IOptions<ServiceDefaultOptions>>(_ =>
-            Options.Create(new ServiceDefaultOptions { UseHomarrLabsDashboardIcons = false }));
+            Options.Create(new ServiceDefaultOptions()));
     }
 }

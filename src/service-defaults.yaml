@@ -1,6 +1,7 @@
 ---
 ServiceDefaultOptions:
-  UseHomarrLabsDashboardIcons: true
+  FallbackIconSourceProviders:
+    - HomarrLabs
   Categories:
     downloading:
       Icon: fas fa-download

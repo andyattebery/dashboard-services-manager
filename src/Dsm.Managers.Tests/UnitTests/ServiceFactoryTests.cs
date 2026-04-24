@@ -66,6 +66,51 @@ public class ServiceFactoryTests : BaseTest
     }
 
     [Test]
+    [Category("Network")]
+    public async Task HlPrefixedIcon_ResolvesToImageUrlAndClearsIcon()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "hl-jellyfin", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyfin.png"));
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task HlPrefixedIcon_IsCaseInsensitive()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "HL-jellyfin", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyfin.png"));
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task HlPrefixedIcon_NoMatchAtCdn_KeepsOriginalIcon()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "hl-definitely-not-a-real-icon-xyz", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("hl-definitely-not-a-real-icon-xyz"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
     public async Task NameWithHostnameFormatString_IsApplied()
     {
         var service = new Service("Traefik", "https://example.com", null, null, null, "host1", false);
