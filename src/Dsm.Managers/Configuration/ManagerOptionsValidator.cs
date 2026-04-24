@@ -22,6 +22,19 @@ public sealed class ManagerOptionsValidator : IValidateOptions<ManagerOptions>
                 failures.Add(
                     $"DashboardManagers[{i}] ({key}): {nameof(DashboardManagerConfig.DashboardConfigDirectoryPath)} is required.");
             }
+            if (config.SourceHomepageServiceWidgetsFilePath is not null)
+            {
+                if (config.DashboardManagerType != DashboardManagers.DashboardManagerType.Homepage)
+                {
+                    failures.Add(
+                        $"DashboardManagers[{i}] ({key}): {nameof(DashboardManagerConfig.SourceHomepageServiceWidgetsFilePath)} is only supported for Homepage managers.");
+                }
+                else if (string.IsNullOrWhiteSpace(config.SourceHomepageServiceWidgetsFilePath))
+                {
+                    failures.Add(
+                        $"DashboardManagers[{i}] ({key}): {nameof(DashboardManagerConfig.SourceHomepageServiceWidgetsFilePath)} must be non-empty when set.");
+                }
+            }
         }
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }

@@ -9,4 +9,5 @@ public sealed class DashboardManagerConfig
     public required DashboardManagerType DashboardManagerType { get; set; }
     public required string DashboardConfigDirectoryPath { get; set; }
     public bool EnableStatusMonitoring { get; set; }
+    public string? SourceHomepageServiceWidgetsFilePath { get; set; }
 }

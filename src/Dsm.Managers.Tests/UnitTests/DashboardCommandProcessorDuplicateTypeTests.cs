@@ -40,4 +40,47 @@ public class ManagerOptionsValidatorTests
 
         Assert.That(result.Succeeded, Is.True);
     }
+
+    [Test]
+    public void FailsWhenWidgetsPathSetOnNonHomepageManager()
+    {
+        var options = new ManagerOptions
+        {
+            DashboardManagers = new List<DashboardManagerConfig>
+            {
+                new()
+                {
+                    DashboardManagerType = DashboardManagerType.Dashy,
+                    DashboardConfigDirectoryPath = "/tmp/a",
+                    SourceHomepageServiceWidgetsFilePath = "/tmp/widgets.yaml",
+                },
+            },
+        };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Failed, Is.True);
+        Assert.That(result.Failures, Has.Some.Contains("only supported for Homepage"));
+    }
+
+    [Test]
+    public void SucceedsWithWidgetsPathOnHomepageManager()
+    {
+        var options = new ManagerOptions
+        {
+            DashboardManagers = new List<DashboardManagerConfig>
+            {
+                new()
+                {
+                    DashboardManagerType = DashboardManagerType.Homepage,
+                    DashboardConfigDirectoryPath = "/tmp/a",
+                    SourceHomepageServiceWidgetsFilePath = "/tmp/widgets.yaml",
+                },
+            },
+        };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Succeeded, Is.True);
+    }
 }
