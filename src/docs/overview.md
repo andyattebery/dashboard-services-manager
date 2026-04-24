@@ -50,12 +50,16 @@ exposes `POST /dashboard-services` (update) and `GET /dashboard-services` (list)
 
 ## Configuration at a glance
 
-- **Manager API** loads [`manager-config.yaml`](../manager-config.yaml) via
-  [HostBuilderConfiguration.ConfigureConfiguration](../Dsm.Managers/Hosting/HostBuilderConfiguration.cs#L27).
+- **Manager API** loads [`service-defaults.yaml`](../service-defaults.yaml) (shipped, required) and
+  then [`manager-config.yaml`](../manager-config.yaml) (user, optional; overrides the shipped
+  defaults) via
+  [HostBuilderConfiguration.ConfigureConfiguration](../Dsm.Managers/Hosting/HostBuilderConfiguration.cs).
   Two sections: `ManagerOptions` (dashboard type + file path + ignored-name list) and
-  `ServiceDefaultOptions` (per-service defaults, categories, icon strategy). Keys are **PascalCase**
-  because `Microsoft.Extensions.Configuration` is case-insensitive but does not convert
-  snake_case to PascalCase.
+  `ServiceDefaultOptions` (per-service defaults, categories, icon sources) — see
+  [service-defaults.md](service-defaults.md).
+- Both files go through [`AddNormalizedYamlFile`](../Dsm.Shared/Configuration/NormalizedYamlConfigurationSource.cs)
+  which strips underscores from keys at load time, so `snake_case`, `camelCase`, and `PascalCase`
+  all bind. Dashes in dict keys (e.g. `calibre-web`) are preserved.
 - **Provider App** reads `DSM_`-prefixed environment variables
   ([Program.cs:25](../Dsm.Provider.App/Program.cs#L25)) and binds `ProviderOptions` from them.
 
@@ -89,4 +93,6 @@ Docker images are built from [api.Dockerfile](../api.Dockerfile) and
 
 - [managers.md](managers.md) — how the manager side is put together, the combiner rule, and how to
   plug in a new dashboard format.
+- [service-defaults.md](service-defaults.md) — the defaulting factory, `service-defaults.yaml`,
+  per-service override rules, and the icon-lookup chain.
 - [providers.md](providers.md) — how providers discover services and how to add a new one.

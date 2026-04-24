@@ -30,7 +30,9 @@ public static class HostBuilderConfiguration
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>();
         services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
-        services.AddHttpClient(HomarrLabsDashboardIconSource.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+        services.AddSingleton<IDashboardIconSource, SelfhStDashboardIconSource>();
+        services.AddHttpClient(HomarrLabsDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient(SelfhStDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)

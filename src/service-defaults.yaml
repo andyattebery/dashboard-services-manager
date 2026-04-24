@@ -2,6 +2,7 @@
 ServiceDefaultOptions:
   FallbackIconSourceProviders:
     - HomarrLabs
+    - SelfhSt
   Categories:
     downloading:
       Icon: fas fa-download
