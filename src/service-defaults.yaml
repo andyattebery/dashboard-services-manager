@@ -34,6 +34,7 @@ ServiceDefaultOptions:
     adguardhome:
       NameWithHostnameFormatString: AdGuard Home (%s)
       Category: network
+      Icon: hl-adguard-home
     adguardhome sync:
       NameWithHostnameFormatString: AdGuard Home Sync
       Category: utilities
@@ -49,7 +50,7 @@ ServiceDefaultOptions:
       Category: monitoring
     healthchecks:
       Category: monitoring
-    homeassistant:
+    home assistant:
       Category: smart home
     homebridge:
       Category: smart home
