@@ -4,7 +4,7 @@ namespace Dsm.Managers.Services.IconSources;
 
 public abstract class JsDelivrIconSource : IDashboardIconSource
 {
-    private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromHours(1);
+    private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromDays(7);
 
     private readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> _cache = new();
     private readonly IHttpClientFactory _httpClientFactory;
