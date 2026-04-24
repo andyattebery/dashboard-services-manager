@@ -1,6 +1,6 @@
 using Dsm.Shared.Models;
 
-namespace Dsm.Managers.Factories;
+namespace Dsm.Managers.Services;
 
 public class ServicesCombiner
 {

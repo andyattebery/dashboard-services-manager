@@ -1,6 +1,6 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
-using Dsm.Managers.Factories;
+using Dsm.Managers.Services;
 using Dsm.Shared.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,9 +26,9 @@ public static class HostBuilderConfiguration
             .AddTransient<DashboardCommandProcessor, DashboardCommandProcessor>()
             .AddTransient<DashboardQueryService, DashboardQueryService>()
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
-            .AddTransient<WithDefaultsServiceFactory, WithDefaultsServiceFactory>()
+            .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>();
-        services.AddHttpClient(WithDefaultsServiceFactory.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient(ServiceWithDefaultsFactory.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)

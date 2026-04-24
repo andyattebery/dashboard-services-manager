@@ -3,9 +3,9 @@ using Dsm.Managers.Configuration;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
 
-namespace Dsm.Managers.Factories;
+namespace Dsm.Managers.Services;
 
-public class WithDefaultsServiceFactory
+public class ServiceWithDefaultsFactory
 {
     public const string HttpClientName = "homarrlabs";
     private const string BaseHomarrLabsDashboardIconUrl = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/";
@@ -15,7 +15,7 @@ public class WithDefaultsServiceFactory
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public WithDefaultsServiceFactory(
+    public ServiceWithDefaultsFactory(
         IOptions<ServiceDefaultOptions> defaultOptions,
         IHttpClientFactory httpClientFactory)
     {
