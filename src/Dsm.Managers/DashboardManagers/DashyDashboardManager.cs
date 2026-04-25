@@ -73,10 +73,9 @@ public class DashyDashboardManager : IDashboardManager
             dashyConfigObject.Add("sections", dashySectionsObject);
         }
 
-        using (var textWriter = File.CreateText(ConfigFilePath))
-        {
-            serializer.Serialize(textWriter, dashyConfigObject);
-        }
+        var sw = new StringWriter();
+        serializer.Serialize(sw, dashyConfigObject);
+        await YamlFileWriter.WriteIfChanged(ConfigFilePath, sw.ToString());
     }
 
     private static (string? icon, string? imageUrl) GetIconOrImageUrl(string? icon)

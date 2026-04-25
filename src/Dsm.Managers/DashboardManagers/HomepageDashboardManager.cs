@@ -83,10 +83,9 @@ public class HomepageDashboardManager : IDashboardManager
             .ToList();
 
         var serializer = CreateSerializer();
-        await using (var textWriter = File.CreateText(ServicesFilePath))
-        {
-            serializer.Serialize(textWriter, output);
-        }
+        var sw = new StringWriter();
+        serializer.Serialize(sw, output);
+        await YamlFileWriter.WriteIfChanged(ServicesFilePath, sw.ToString());
 
         await UpdateSettingsLayoutIcons(services);
     }
@@ -118,8 +117,9 @@ public class HomepageDashboardManager : IDashboardManager
         }
 
         var serializer = CreateSerializer();
-        await using var textWriter = File.CreateText(SettingsFilePath);
-        serializer.Serialize(textWriter, settings);
+        var sw = new StringWriter();
+        serializer.Serialize(sw, settings);
+        await YamlFileWriter.WriteIfChanged(SettingsFilePath, sw.ToString());
     }
 
     private async Task<Dictionary<object, object>> LoadSettings()
