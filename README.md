@@ -21,18 +21,22 @@ DSM splits the file into "stuff that came from infra" (auto-managed) and "stuff 
 
 ## At a glance
 
-- **[Manager API](src/Dsm.Manager.Api/)** — ASP.NET Core. Owns the dashboard YAML file. Two
-  endpoints: `POST /dashboard-services` (push) and `GET /dashboard-services` (pull).
-- **[Provider App](src/Dsm.Provider.App/)** — `BackgroundService`. Polls one or more configured
-  providers on a `RefreshInterval` (default 60 s) and POSTs the results.
+- **[Manager API](src/Dsm.Manager.Api/)** — Receives services from providers and updates the dashboard YAML file(s).
+- **[Provider App](src/Dsm.Provider.App/)** — Polls one or more configured providers on a `RefreshInterval` (default 60 s) and sends the services to the manager API.
 
 Multiple Provider Apps — one per host, each with its own configured sources — can fan into a
 single Manager API. The manager dedupes services per `(Name, Hostname)`.
 
 ### Supported sources and sinks
 
-- **Sources (providers):** Docker · Docker Swarm · Traefik · YAML file
-- **Sinks (dashboards):** [Dashy](https://dashy.to/) · [Homepage](https://gethomepage.dev/)
+- **Sources (providers):** 
+  - Docker
+  - Docker Swarm
+  - Traefik
+  - YAML file
+- **Sinks (dashboards):** 
+  - [Dashy](https://dashy.to/)
+  - [Homepage](https://gethomepage.dev/)
 
 ## Quick start
 
