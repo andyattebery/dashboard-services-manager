@@ -23,7 +23,7 @@ jobs:
       - name: Build and push API Docker images
         uses: docker/build-push-action@v7
         with:
-          file: api.Dockerfile
+          file: docker/api.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -31,7 +31,7 @@ jobs:
       - name: Build and push Provider Docker images
         uses: docker/build-push-action@v7
         with:
-          file: provider.Dockerfile
+          file: docker/provider.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
