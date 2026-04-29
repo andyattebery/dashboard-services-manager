@@ -1,10 +1,11 @@
-.git
-.github
-.idea
-.vs
-.vscode
+# Exclude everything by default
+*
+
+# Allow only what the image build actually copies
+!src
+!docker
+
+# Build artifacts inside the allowed dirs
 src/**/bin
 src/**/obj
 src/**/out
-.dotnet
-.Microsoft.DotNet.ImageBuilder
