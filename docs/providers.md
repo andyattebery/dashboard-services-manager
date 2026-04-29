@@ -1,261 +1,178 @@
-# Dsm.Providers + Dsm.Provider.App
+# Configuring providers
 
-Discover the services running in an environment and push them to the Manager API. The library
-([Dsm.Providers](../src/Dsm.Providers/)) holds the provider implementations; the host
-([Dsm.Provider.App](../src/Dsm.Provider.App/)) runs them on a schedule and does the HTTP call.
+A provider runs on each host where you want to discover services. It enumerates whatever sources
+you configure (Docker, Docker Swarm, Traefik, a hand-maintained YAML file) and POSTs the result
+to the manager API on every refresh tick. Multiple provider hosts can fan into the same manager
+— each host's services keep their own `Hostname`, and the manager dedupes per `(Name, Hostname)`.
 
-See [overview.md](overview.md) for how this fits into the larger system and
-[managers.md](managers.md) for what happens after the POST lands.
+Configuration lives in [`provider-config.yaml`](../docker-compose/provider-config.yaml).
 
-## Provider abstraction
-
-One interface, four implementations:
-
-```csharp
-public interface IServicesProvider
-{
-    Task<List<Service>> ListServices();
-}
-```
-
-- [`DockerServicesProvider`](../src/Dsm.Providers/ServicesProviders/DockerServicesProvider.cs) — uses
-  [Docker.DotNet](https://github.com/dotnet/Docker.DotNet) to list running containers and reads
-  `<DockerLabelPrefix>.*` labels (see [Container label vocabulary](#container-label-vocabulary)
-  below) to populate the [`Service`](../src/Dsm.Shared/Models/Service.cs) fields. Containers without
-  a non-empty service `Url` (either set explicitly via the `url` label or recovered from a
-  Traefik `Host(...)` router rule) are dropped.
-- [`SwarmServicesProvider`](../src/Dsm.Providers/ServicesProviders/SwarmServicesProvider.cs) — same
-  label vocabulary as Docker, but enumerates Swarm services. Strips the Docker stack namespace
-  prefix from the service name (`mystack_jellyfin` → `jellyfin`) before label-driven Name overrides
-  apply.
-- [`YamlFileServicesProvider`](../src/Dsm.Providers/ServicesProviders/YamlFileServicesProvider.cs) —
-  reads a flat YAML file at `ServicesProviderConfig.ServicesYamlFilePath`. Useful for bare-metal
-  services that aren't containerized. The file deserializes with `UnderscoredNamingConvention`,
-  so keys like `service_defaults_name` and `image_url` bind directly. If the file doesn't exist
-  the provider logs a warning and returns an empty list (a configured-but-missing file isn't
-  treated as a hard error so a single missing file doesn't take the worker down).
-- [`TraefikServicesProvider`](../src/Dsm.Providers/ServicesProviders/TraefikServicesProvider.cs) —
-  calls Traefik's [`GET /api/http/routers`](https://doc.traefik.io/traefik/reference/install-configuration/api-dashboard/#opt-apihttprouters)
-  at `ServicesProviderConfig.TraefikApiUrl`. Filtering rules:
-  - Skip routers whose `Status` isn't `enabled`.
-  - Skip routers whose name ends with `@internal` (Traefik's own dashboard / API routers).
-  - Skip routers whose `Rule` doesn't contain a `Host(...)` clause — DSM needs a hostname to
-    build a service URL, and `PathPrefix`-only routers don't give us one.
-  - Strip the `@provider` suffix (`my-router@docker` → `my-router`) and a trailing
-    `-docker-compose` suffix (Traefik's auto-generated compose names) from the service name
-    before emitting the `Service`.
-
-The shared translation from container labels to a `Service` lives in
-[`ContainerLabelServiceFactory`](../src/Dsm.Providers/Services/ContainerLabelServiceFactory.cs). The
-`Host(...)` rule-parsing helper it shares with the Traefik provider lives in
-[`TraefikRuleParser`](../src/Dsm.Providers/ServicesProviders/Traefik/TraefikRuleParser.cs).
-
-Provider selection is done by the
-[`ServicesProviderFactory`](../src/Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs), which
-takes a [`ServicesProviderConfig`](../src/Dsm.Shared/Options/ProviderOptions.cs) entry from
-`ProviderOptions.ServicesProviders` and builds the matching provider via
-`ActivatorUtilities.CreateInstance`, threading the config into the provider's constructor.
-The enum lives in
-[`ServicesProviderType`](../src/Dsm.Shared/Options/ServicesProviderType.cs)
-(`YamlFile`, `Docker`, `Swarm`, `Traefik`).
-
-## Provider.App runtime
-
-[`Program.cs`](../src/Dsm.Provider.App/Program.cs) builds a generic host, loads configuration from
-appsettings.json, the YAML config files (see [Configuration](#configuration) below), and
-`DSM_`-prefixed env vars, and registers
-[`ProviderService`](../src/Dsm.Provider.App/ProviderService.cs) as a `BackgroundService`.
-
-`ProviderService.ExecuteAsync` runs a continuous loop driven by a `PeriodicTimer` ticking every
-`ProviderOptions.RefreshInterval` (default 60 s). On each tick:
-
-1. Read [`ProviderOptions.ServicesProviders`](../src/Dsm.Shared/Options/ProviderOptions.cs) — a
-   list of typed configs, each carrying the provider's own settings.
-2. For each entry, resolve an `IServicesProvider` from the factory and call `ListServices()`.
-   Per-provider exceptions are caught and logged; one failing provider doesn't take the others
-   down or stop the loop.
-3. If the aggregated service list is non-empty, POST it to the Manager API via the Refit
-   [`IDcmClient`](../src/Dsm.Shared/ApiClients/IDcmClient.cs). The response is a
-   `Dictionary<string, List<Service>>` keyed by manager type name (see
-   [managers.md](managers.md#request-flow-write-path)); `ProviderService` logs the per-manager
-   counts and entries. An empty aggregated list is a no-op — useful when the worker starts before
-   any containers exist.
-
-The Refit client's `HttpClient` is built by
-[`ClientFactory`](../src/Dsm.Shared/ApiClients/ClientFactory.cs) using `ProviderOptions.ApiUrl` as
-the base address.
-
-## Configuration
-
-[`ProviderOptions`](../src/Dsm.Shared/Options/ProviderOptions.cs) is bound, in this order of
-precedence (later wins), from:
-
-1. `appsettings.json` (loaded by `Host.CreateDefaultBuilder`).
-2. `provider-config.yml` or `provider-config.yaml` next to the binary, *and* the same filenames
-   under `/config/` — both locations are searched, both are optional. The `/config/` mount is the
-   conventional path used by [provider.Dockerfile](../docker/provider.Dockerfile).
-3. `DSM_ProviderOptions__*` environment variables.
-
-It has two layers: process-global fields, and a typed list of per-provider
-`ServicesProviderConfig` entries.
-
-**Top-level (global, on `ProviderOptions`):**
-
-| Key | Required | Purpose |
-|---|---|---|
-| `ApiUrl` | yes | Base URL of the Manager API (e.g. `http://dsm-api:5270`) |
-| `RefreshInterval` | no (default 60s) | How often to poll all providers and POST the result |
-| `ServicesProviders` | yes (≥1 entry) | List of `ServicesProviderConfig` entries — see below |
-
-**Per-provider (`ServicesProviderConfig` fields):**
-
-| Key | Applies to | Purpose |
-|---|---|---|
-| `ServicesProviderType` | all | Discriminator: `Docker`, `Swarm`, `YamlFile`, `Traefik` |
-| `Hostname` | required for Docker, Swarm, Traefik | Value stamped onto every service's `Hostname` field — drives the `(Name, Hostname)` dedupe key the combiner uses, and the `server` field in Homepage YAML / `host=…` tag in Dashy |
-| `AreServiceHostsHttps` | Docker, Swarm, Traefik | If true, generated URLs use `https://` |
-| `DockerLabelPrefix` | required for Docker, Swarm | Prefix (e.g. `dsm`) used to select labels on containers — `dsm.name`, `dsm.category`, etc. See [Container label vocabulary](#container-label-vocabulary) |
-| `ServicesYamlFilePath` | required for YamlFile | Path to the YAML file |
-| `TraefikApiUrl` | required for Traefik | Base URL of the Traefik API (e.g. `http://traefik:8080`) |
-
-### Validation
-
-[`ProviderOptionsValidator`](../src/Dsm.Shared/Options/ProviderOptions.cs) runs at startup and
-fails the host with a list of errors if any per-provider required field is missing. Specifically:
-
-- `Traefik` — `TraefikApiUrl` and `Hostname` must be set.
-- `YamlFile` — `ServicesYamlFilePath` must be set. (`Hostname` is optional — bare-metal services
-  often want their own hostnames per entry.)
-- `Docker` / `Swarm` — `DockerLabelPrefix` and `Hostname` must both be set.
-
-A misconfigured deployment fails fast with a clear message rather than silently producing an
-empty service list.
-
-Example `provider-config.yml` (the production-typical form):
+## Provider config shape
 
 ```yaml
 ProviderOptions:
-  ApiUrl: http://dsm-api:5270
+  ApiUrl: http://dashboard-services-manager-api:8080   # where to POST results
+  RefreshInterval: 00:01:00                            # optional, default 60s
   ServicesProviders:
     - ServicesProviderType: Docker
       Hostname: media-01
       AreServiceHostsHttps: true
       DockerLabelPrefix: dsm
-    - ServicesProviderType: YamlFile
-      ServicesYamlFilePath: /etc/dsm/services.yml
+    # ...more providers...
 ```
 
-Equivalent `appsettings.json`:
+`ServicesProviders` is a list — you can run several on the same host. Each tick, the provider
+calls every entry, aggregates the results, and POSTs them as a single batch. If one source
+fails on a tick (e.g. Traefik unreachable), the others still post; the failing one logs a
+warning and is retried on the next tick.
 
-```json
-{
-  "ProviderOptions": {
-    "ApiUrl": "http://dsm-api:5270",
-    "ServicesProviders": [
-      { "ServicesProviderType": "Docker", "Hostname": "media-01", "AreServiceHostsHttps": true, "DockerLabelPrefix": "dsm" },
-      { "ServicesProviderType": "YamlFile", "ServicesYamlFilePath": "/etc/dsm/services.yml" }
-    ]
-  }
-}
+## Provider types
+
+### Docker
+
+```yaml
+- ServicesProviderType: Docker
+  Hostname: media-01
+  AreServiceHostsHttps: true
+  DockerLabelPrefix: dsm
 ```
 
-Equivalent env-var form:
+Runs on a host with a Docker daemon (the provider container bind-mounts `/var/run/docker.sock`
+in the stock compose file). Reads `<DockerLabelPrefix>.*` labels off running containers and
+turns each container with a usable URL into a service.
 
-```sh
-DSM_ProviderOptions__ApiUrl=http://dsm-api:5270 \
-DSM_ProviderOptions__ServicesProviders__0__ServicesProviderType=Docker \
-DSM_ProviderOptions__ServicesProviders__0__Hostname=media-01 \
-DSM_ProviderOptions__ServicesProviders__0__AreServiceHostsHttps=true \
-DSM_ProviderOptions__ServicesProviders__0__DockerLabelPrefix=dsm \
-DSM_ProviderOptions__ServicesProviders__1__ServicesProviderType=YamlFile \
-DSM_ProviderOptions__ServicesProviders__1__ServicesYamlFilePath=/etc/dsm/services.yml \
-dotnet run --project src/Dsm.Provider.App
+A container is dropped from the discovery if there's nothing to put in `Url` — that means no
+`<prefix>.url` label and no Traefik router rule that the provider can recover a hostname from.
+Containers running purely as backends without a public URL are intentionally invisible to the
+dashboard.
+
+Required: `Hostname`, `DockerLabelPrefix`.
+
+### Docker Swarm
+
+```yaml
+- ServicesProviderType: Swarm
+  Hostname: swarm-01
+  AreServiceHostsHttps: true
+  DockerLabelPrefix: dsm
 ```
 
-### Container label vocabulary
+Same label vocabulary as the Docker provider, but enumerates Swarm services instead of running
+containers. The Docker stack namespace is stripped from service names — `mystack_jellyfin`
+becomes `jellyfin` before any label-based name override applies, so your dashboard entries
+don't end up prefixed with the stack name.
 
-`Docker` and `Swarm` providers translate container labels into `Service` fields via
-[`ContainerLabelServiceFactory`](../src/Dsm.Providers/Services/ContainerLabelServiceFactory.cs).
-For prefix `dsm`, the recognized labels are:
+Required: same as Docker.
 
-| Label | `Service` field | Notes |
+### Traefik
+
+```yaml
+- ServicesProviderType: Traefik
+  Hostname: edge-01
+  TraefikApiUrl: http://traefik:8080
+  AreServiceHostsHttps: true
+```
+
+Calls Traefik's [`/api/http/routers`](https://doc.traefik.io/traefik/operations/api/) endpoint
+and turns each enabled router with a `Host(...)` rule into a service.
+
+Filtering rules:
+- Disabled routers are skipped.
+- Routers whose name ends in `@internal` (Traefik's own dashboard / API routers) are skipped.
+- Routers whose rule doesn't include a `Host(...)` clause are skipped — the provider needs a
+  hostname to construct the service URL, and `PathPrefix`-only routers don't give it one.
+- The `@<provider>` suffix (`my-router@docker`) and a trailing `-docker-compose` suffix
+  (Traefik's auto-generated compose names) are stripped from the service name.
+
+Required: `TraefikApiUrl`, `Hostname`.
+
+### YAML file
+
+```yaml
+- ServicesProviderType: YamlFile
+  ServicesYamlFilePath: /etc/dsm/services.yml
+```
+
+A hand-maintained YAML file you POST through. Useful for bare-metal services, external SaaS
+links, or anything else that isn't containerized. The file is a flat list of services:
+
+```yaml
+- name: Backblaze
+  url: https://backblaze.com
+  category: storage
+  icon: hl-backblaze
+
+- name: PiKVM HID
+  url: https://pikvm.example
+  hostname: rack-01
+  service_defaults_name: pikvm
+```
+
+Field names are snake_case in this file; they map 1:1 onto `Service` fields. If the file is
+missing, the provider logs a warning and posts nothing rather than crashing — useful for
+bootstrapping a new host where the YAML file isn't there yet.
+
+Required: `ServicesYamlFilePath`. `Hostname` on the provider entry is optional for this type
+since each YAML entry can carry its own.
+
+## Container label vocabulary
+
+The Docker and Swarm providers translate container labels into services. For a label prefix of
+`dsm`, the recognized labels are:
+
+| Label | Maps to | Notes |
 |---|---|---|
-| `dsm.name` | `Name` | Defaults to the container name (Swarm: with the stack namespace stripped) |
-| `dsm.url` | `Url` | If absent, recovered from a Traefik `Host(...)` router rule (see `dsm.traefik.router` below) |
-| `dsm.category` | `Category` | Free-form; matched case-insensitively against `ServiceDefaultOptions.Categories` for icons |
-| `dsm.icon` | `Icon` | Plain icon name, or a prefixed lookup (`hl-…`, `sh-…`) — see [service-defaults.md](service-defaults.md#icon-lookup) |
-| `dsm.image_path` | `ImageUrl` | Absolute URL or path relative to `Url`; resolved by the manager-side defaults factory |
-| `dsm.ignore` | `Ignore` | `"true"` to drop this container before the manager even sees it |
-| `dsm.service_defaults_name` | `ServiceDefaultsName` | Alias to a different defaults entry — e.g. `dsm.service_defaults_name=plex` on a service named "Plex Beta" |
-| `dsm.traefik.router` | (Url recovery) | Name of a Traefik router whose `Host(...)` rule should be used to derive the service URL when `dsm.url` is absent. The provider parses `traefik.http.routers.<router>.rule` from the same container's labels via [`TraefikRuleParser`](../src/Dsm.Providers/ServicesProviders/Traefik/TraefikRuleParser.cs) |
+| `dsm.name` | service name | Defaults to the container name (Swarm: with the stack namespace stripped) |
+| `dsm.url` | URL | If absent, recovered from a Traefik router rule via `dsm.traefik.router` below |
+| `dsm.category` | category | Free-form; used by the manager to group entries on the dashboard and look up a category icon |
+| `dsm.icon` | icon | Plain icon name, or a CDN-prefix lookup (`hl-jellyfin`, `sh-jellyfin`) |
+| `dsm.image_path` | image URL | Absolute URL or a path resolved against `dsm.url` |
+| `dsm.ignore` | ignore flag | `"true"` to drop this container before the manager sees it |
+| `dsm.service_defaults_name` | defaults alias | Picks up defaults for a different service name — `dsm.service_defaults_name=plex` on a container called "Plex Beta" gives it the shipped `plex` defaults |
+| `dsm.traefik.router` | (URL recovery) | Name of a Traefik router whose `Host(...)` rule should be used to build the URL when `dsm.url` is absent. Useful when Traefik already declares the hostname and you don't want to duplicate it |
 
-Labels without the configured prefix are ignored. `Url` recovery from Traefik labels is a
-convenience for containers that already declare their hostname to Traefik — you don't need to
-duplicate it in `dsm.url`.
+Labels without your configured prefix are ignored entirely. A typical `compose.yaml` snippet:
 
-### Wire model fields the provider stamps
-
-`Service` (the wire contract) carries two fields the provider can populate that aren't already in
-the table above:
-
-- `Autogenerated` — the manager always overwrites this to `true` on POST, so providers can leave
-  it at its default. Documented for completeness because it ships across the wire.
-- `ServiceDefaultsName` — set explicitly via `dsm.service_defaults_name`, or via the YAML file
-  provider's `service_defaults_name` key. Used by the manager-side defaults factory and the
-  Homepage widget matcher; see [service-defaults.md](service-defaults.md#lookup-key) and
-  [managers.md](managers.md#service-widgets).
-
-## Folder map
-
-```
-Dsm.Providers/
-├── ServicesProviders/
-│   ├── IServicesProvider.cs              Extension point
-│   ├── DockerServicesProvider.cs
-│   ├── SwarmServicesProvider.cs
-│   ├── YamlFileServicesProvider.cs
-│   ├── TraefikServicesProvider.cs
-│   ├── Traefik/
-│   │   ├── TraefikRouter.cs              DTO for /api/http/routers
-│   │   ├── ITraefikApiClient.cs          Refit interface for Traefik API
-│   │   ├── TraefikApiClientFactory.cs    Builds ITraefikApiClient from options
-│   │   └── TraefikRuleParser.cs          Host(...) rule → URL helper
-│   ├── ServicesProviderFactory.cs        Builds providers via ActivatorUtilities
-│   └── ServicesProviderUtilities.cs      Shared formatting helpers
-├── Services/
-│   └── ContainerLabelServiceFactory.cs   Container label dict → Service
-└── Hosting/
-    └── HostBuilderConfiguration.cs       DI + provider-config.yaml wiring
-
-Dsm.Provider.App/
-├── Program.cs                            Host builder, DSM_ env var prefix
-└── ProviderService.cs                    BackgroundService loop
+```yaml
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    labels:
+      - dsm.name=Jellyfin
+      - dsm.category=media
+      - dsm.url=https://jellyfin.example
+      - dsm.icon=hl-jellyfin
 ```
 
-## Adding a new provider
+## Hostname stamping
 
-1. Implement [`IServicesProvider`](../src/Dsm.Providers/ServicesProviders/IServicesProvider.cs). The
-   constructor should accept a `ServicesProviderConfig` as its last argument; everything else
-   comes from DI. Re-use
-   [`ContainerLabelServiceFactory`](../src/Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
-   if your source exposes labels; otherwise build `Service` objects directly.
-2. Add a variant to
-   [`ServicesProviderType`](../src/Dsm.Shared/Options/ServicesProviderType.cs).
-3. Add any new type-specific fields (nullable) to
-   [`ServicesProviderConfig`](../src/Dsm.Shared/Options/ProviderOptions.cs).
-4. Extend the switch in
-   [`ServicesProviderFactory.Create`](../src/Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs)
-   with an `ActivatorUtilities.CreateInstance<T>(sp, config)` line for your new provider.
+`Hostname` on each provider entry is stamped onto every service that provider posts. The
+manager surfaces it as Dashy's `host=<hostname>` tag and Homepage's `server:` field. It's also
+the key Homepage widgets match on when you scope a widget with `server:` (see the
+[managers guide](managers.md#homepage-service-widgets)).
 
-## Testing
+For the YAML file provider, `Hostname` on the provider entry is the default; individual YAML
+entries can carry their own `hostname:` to override.
 
-```sh
-dotnet test src/Dsm.Providers.Tests
-```
+## Refresh interval
 
-The `DockerServicesProvider` tests run against whatever Docker daemon your environment exposes to
-`Docker.DotNet`'s default client configuration. If you don't have Docker locally, scope the run:
+The provider polls all configured sources every `RefreshInterval` (default 60 seconds) and
+POSTs the aggregate. Cut it down (e.g. `00:00:15`) for snappier updates during active changes;
+extend it for stable production hosts where you don't need second-by-second freshness.
 
-```sh
-dotnet test src/Dsm.Providers.Tests --filter "FullyQualifiedName!~DockerServicesProvider"
-```
+If the merged result is identical to the last POST and your dashboard YAML didn't drift in
+between, the manager skips the file write entirely — so a fast refresh interval doesn't churn
+mtimes on the dashboard config files.
+
+## Validation
+
+Every required field is checked at startup. A misconfigured provider fails fast with a clear
+error message ("ServicesProviders[0] (Docker): DockerLabelPrefix is required.") instead of
+silently producing an empty service list and confusing you for an hour.
+
+## More
+
+- [managers.md](managers.md) — configure the manager API that receives these POSTs and writes
+  the dashboard YAML.
+- [development/providers.md](development/providers.md) — implementation details: how the
+  factory wires up new provider types, how to add one.

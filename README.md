@@ -21,11 +21,13 @@ DSM splits the file into "stuff that came from infra" (auto-managed) and "stuff 
 
 ## At a glance
 
-- **[Manager API](src/Dsm.Manager.Api/)** — Receives services from providers and updates the dashboard YAML file(s).
-- **[Provider App](src/Dsm.Provider.App/)** — Polls one or more configured providers on a `RefreshInterval` (default 60 s) and sends the services to the manager API.
+- **Manager API** — receives services from providers and updates one or more dashboard YAML
+  files. Two endpoints: `POST /dashboard-services` (push) and `GET /dashboard-services` (pull).
+- **Provider app** — polls one or more configured providers on a `RefreshInterval` (default
+  60 s) and sends the discovered services to the manager API.
 
-Multiple Provider Apps — one per host, each with its own configured sources — can fan into a
-single Manager API. The manager dedupes services per `(Name, Hostname)`.
+Multiple provider apps — one per host, each with its own configured sources — can fan into a
+single manager API. The manager dedupes services per `(Name, Hostname)`.
 
 ### Supported sources and sinks
 
@@ -39,8 +41,6 @@ single Manager API. The manager dedupes services per `(Name, Hostname)`.
   - [Homepage](https://gethomepage.dev/)
 
 ## Quick start
-
-### Running this app
 
 Copy the four files in [docker-compose/](docker-compose/) — `docker-compose.yaml`, `env`,
 `manager-config.yaml`, and `provider-config.yaml` — to a host with Docker, then:
@@ -62,29 +62,6 @@ along with the `HOSTNAME` stamped onto every discovered service. The provider co
 bind-mounts `/var/run/docker.sock`, so it also reads `DOCKER_GID` — set this to the GID that
 owns `/var/run/docker.sock` on the host (commonly `998` on Linux, `0` under Docker Desktop).
 The entrypoint adds the `dsm` user to a group with that GID so it can read the socket.
-
-### Local development from this repo
-
-```sh
-cd docker-compose
-docker compose --env-file env up --build -d
-```
-
-Compose auto-merges [docker-compose/docker-compose.override.yaml](docker-compose/docker-compose.override.yaml),
-which adds `build:` directives so the API and provider images are built locally from
-[docker/api.Dockerfile](docker/api.Dockerfile) and [docker/provider.Dockerfile](docker/provider.Dockerfile)
-instead of pulled from the registry. The override file is dev-only — production hosts that
-copied just the four files above never see it.
-
-For the .NET dev loop without containers:
-
-```sh
-dotnet build src/Dsm.sln
-dotnet run --project src/Dsm.Manager.Api
-dotnet test src/Dsm.sln --filter "TestCategory!=Network"
-```
-
-The `TestCategory!=Network` filter skips tests that hit the public jsDelivr CDN for icon resolution.
 
 ## Configuration
 
@@ -163,11 +140,47 @@ index lists with `__0`, `__1`, etc. Whatever you set this way wins over the YAML
 
 ## Documentation
 
-- **[docs/overview.md](docs/overview.md)** — architecture, data flow, configuration model,
-  build / run / test
-- **[docs/managers.md](docs/managers.md)** — `Dsm.Managers` internals: the combiner rule that
-  preserves hand edits, dashboard-specific YAML mapping, Homepage service widgets
-- **[docs/providers.md](docs/providers.md)** — `Dsm.Providers` and `Dsm.Provider.App`: how
-  services are discovered, the container label vocabulary, how to add a new provider
-- **[docs/service-defaults.md](docs/service-defaults.md)** — per-service defaults, icon-source
-  resolution, override rules between `service-defaults.yaml` and `manager-config.yaml`
+User guide:
+
+- **[docs/managers.md](docs/managers.md)** — configure Dashy and Homepage outputs, status
+  monitoring, Homepage widgets, per-service defaults
+- **[docs/providers.md](docs/providers.md)** — configure Docker, Docker Swarm, Traefik, and
+  YAML-file providers; container label vocabulary
+
+Development:
+
+- **[docs/development/overview.md](docs/development/overview.md)** — architecture, data flow
+- **[docs/development/managers.md](docs/development/managers.md)** — `Dsm.Managers` internals,
+  the combiner rule, how to add a new dashboard backend
+- **[docs/development/providers.md](docs/development/providers.md)** — `Dsm.Providers`
+  internals, how to add a new provider
+- **[docs/development/service-defaults.md](docs/development/service-defaults.md)** — defaulting
+  factory, icon-source resolution
+
+## Development
+
+To build and run the images locally from a working tree (so you can iterate on code without
+publishing):
+
+```sh
+cd docker-compose
+docker compose --env-file env up --build -d
+```
+
+Compose auto-merges [docker-compose/docker-compose.override.yaml](docker-compose/docker-compose.override.yaml),
+which adds `build:` directives so the API and provider images are built locally from
+[docker/api.Dockerfile](docker/api.Dockerfile) and
+[docker/provider.Dockerfile](docker/provider.Dockerfile) instead of pulled from the registry.
+The override file is dev-only — production hosts that copied just the four files from the
+[Quick start](#quick-start) never see it.
+
+For the .NET dev loop without containers:
+
+```sh
+dotnet build src/Dsm.sln
+dotnet run --project src/Dsm.Manager.Api
+dotnet test src/Dsm.sln --filter "TestCategory!=Network"
+```
+
+The `TestCategory!=Network` filter skips tests that hit the public jsDelivr CDN for icon
+resolution.
