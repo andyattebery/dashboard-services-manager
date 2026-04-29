@@ -111,6 +111,8 @@ ServiceDefaultOptions:
     open webui:
       NameWithHostnameFormatString: Open WebUI
       Category: information
+    owntone:
+      Category: media
     paperless ngx:
       NameWithHostnameFormatString: Paperless-ngx
       Category: storage
