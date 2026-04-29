@@ -12,7 +12,7 @@ changed, so dashboards don't reload spuriously.
 
 ## Why
 
-Dashy and Homepage are great, but their YAML config files drift out of sync with reality every
+Dashboards are great, but their YAML config files drift out of sync with reality every
 time you spin a new container, retire an old one, or move a service to a different host.
 Hand-editing the file on every change is tedious; nuking and regenerating it loses the
 hand-curated entries that aren't auto-discoverable (external links, notes, links to bookmarks).
