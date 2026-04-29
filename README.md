@@ -36,17 +36,25 @@ single Manager API. The manager dedupes services per `(Name, Hostname)`.
 
 ## Quick start
 
-The production path is Docker Compose — [docker-compose.yaml](docker-compose.yaml) already wires
-the manager and a single Docker-source provider together:
+The production path is Docker Compose — [docker-compose/](docker-compose/) wires the manager and
+a single Docker-source provider together:
 
 ```sh
-docker compose up -d
+cd docker-compose
+docker compose --env-file env up -d
 ```
 
-Configure the manager with [manager-config.yaml](manager-config.yaml) (dashboard type, file paths,
-per-service overrides) and the provider with [provider-config.yaml](provider-config.yaml) (API
-URL, hostname, which providers to enable). Both can also be driven by `DSM_`-prefixed environment
-variables.
+Both containers run as a non-root `dsm` user whose UID/GID are set at runtime from `PUID` and
+`PGID` (default `1000:1000`); the [docker-compose/env](docker-compose/env) file supplies them
+along with the `HOSTNAME` stamped onto every discovered service. The provider container
+bind-mounts `/var/run/docker.sock`, so it also reads `DOCKER_GID` — set this to the GID that
+owns `/var/run/docker.sock` on the host (commonly `998` on Linux, `0` under Docker Desktop).
+The entrypoint adds the `dsm` user to a group with that GID so it can read the socket.
+
+Configure the manager with [docker-compose/manager-config.yaml](docker-compose/manager-config.yaml)
+(dashboard type, file paths, per-service overrides) and the provider with
+[docker-compose/provider-config.yaml](docker-compose/provider-config.yaml) (API URL, hostname,
+which providers to enable). Both can also be driven by `DSM_`-prefixed environment variables.
 
 For local development:
 

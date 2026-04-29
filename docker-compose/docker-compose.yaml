@@ -1,0 +1,36 @@
+---
+name: dashboard-services-manager
+services:
+  dashboard-services-manager-api:
+    container_name: dashboard-services-manager-api
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - HOSTNAME=${HOSTNAME}
+    ports:
+    - 8080:8080
+    volumes:
+      - ./manager-config.yaml:/config/manager-config.yaml:ro
+      # Replace this named volume with a bind-mount to your real Dashy config directory,
+      # e.g. `- /path/to/dashy/config:/dashy_config`. The named volume just keeps the pipeline
+      # functional in this stock compose file by giving WriteServices a directory to write into.
+      - dashy_config:/dashy_config
+  dashboard-services-manager-provider:
+    container_name: dashboard-services-manager-provider
+    build:
+      context: ..
+      dockerfile: docker/provider.Dockerfile
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - DOCKER_GID=${DOCKER_GID}
+      - HOSTNAME=${HOSTNAME}
+    volumes:
+      - ./provider-config.yaml:/config/provider-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  dashy_config:

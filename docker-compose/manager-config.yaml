@@ -4,8 +4,9 @@ ManagerOptions:
     - DashboardManagerType: Dashy
       DashboardConfigDirectoryPath: /dashy_config
   IgnoredServiceNames:
-    - Dashy
     - Dashboard Services Manager
+    - Dashboard Services Manager Api
+    - Dashy
     - Homepage
 
 # Override or extend bundled defaults (see service-defaults.yaml shipped with the app):

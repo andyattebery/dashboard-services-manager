@@ -93,7 +93,7 @@ precedence (later wins), from:
 1. `appsettings.json` (loaded by `Host.CreateDefaultBuilder`).
 2. `provider-config.yml` or `provider-config.yaml` next to the binary, *and* the same filenames
    under `/config/` — both locations are searched, both are optional. The `/config/` mount is the
-   conventional path used by [provider.Dockerfile](../provider.Dockerfile).
+   conventional path used by [provider.Dockerfile](../docker/provider.Dockerfile).
 3. `DSM_ProviderOptions__*` environment variables.
 
 It has two layers: process-global fields, and a typed list of per-provider

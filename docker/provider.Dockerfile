@@ -16,6 +16,17 @@ RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj --config
 # final stage/image
 FROM mcr.microsoft.com/dotnet/runtime:$DOTNET_VERSION
 
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends gosu \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -o -g 1000 dsm \
+ && useradd -o -u 1000 -g dsm -d /home/dsm -m -s /bin/sh dsm
+
 WORKDIR /app
 COPY --from=build /app .
-ENTRYPOINT ["dotnet", "Dsm.Provider.App.dll"]
+COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+VOLUME [ "/config" ]
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh", "dotnet", "Dsm.Provider.App.dll"]

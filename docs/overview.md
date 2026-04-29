@@ -103,8 +103,9 @@ DSM reads three layers, later wins:
    required). Defines the built-in `ServiceConfig` overlays (icons, categories,
    `NameWithHostnameFormatString`) and the `FallbackIconSourceProviders` chain. See
    [service-defaults.md](service-defaults.md).
-2. **User config** — [manager-config.yaml](../manager-config.yaml) for the API and
-   [provider-config.yaml](../provider-config.yaml) for the worker. Both optional. The API loads
+2. **User config** — [manager-config.yaml](../docker-compose/manager-config.yaml) for the API
+   and [provider-config.yaml](../docker-compose/provider-config.yaml) for the worker. Both
+   optional. The API loads
    `manager-config.yaml` from the binary directory and from `/config/`; the worker does the same
    with `provider-config.{yml,yaml}`. Bind into `ManagerOptions` / `ServiceDefaultOptions` /
    `ProviderOptions` respectively.
@@ -122,12 +123,14 @@ The HTTP surface is small:
 
 ## Build / Run / Test
 
-The production path is Docker Compose — [docker-compose.yaml](../docker-compose.yaml) wires the
-manager and a single Docker-source provider together. Images are built from
-[api.Dockerfile](../api.Dockerfile) and [provider.Dockerfile](../provider.Dockerfile):
+The production path is Docker Compose — [docker-compose/](../docker-compose/) wires the manager
+and a single Docker-source provider together. Images are built from
+[docker/api.Dockerfile](../docker/api.Dockerfile) and
+[docker/provider.Dockerfile](../docker/provider.Dockerfile):
 
 ```sh
-docker compose up -d
+cd docker-compose
+docker compose --env-file env up -d
 ```
 
 For local development, run the .NET projects directly from the repo root:
