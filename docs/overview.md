@@ -123,17 +123,31 @@ The HTTP surface is small:
 
 ## Build / Run / Test
 
-The production path is Docker Compose — [docker-compose/](../docker-compose/) wires the manager
-and a single Docker-source provider together. Images are built from
-[docker/api.Dockerfile](../docker/api.Dockerfile) and
-[docker/provider.Dockerfile](../docker/provider.Dockerfile):
+The production path is Docker Compose. [docker-compose/docker-compose.yaml](../docker-compose/docker-compose.yaml)
+references the published images at `ghcr.io/andyattebery/dashboard-services-manager:{api,provider}-latest`
+(built and pushed by [.github/workflows/ci.yaml](../.github/workflows/ci.yaml) on every push to
+`main`). Copy that file plus `env`, `manager-config.yaml`, and `provider-config.yaml` to a deploy
+host, then:
 
 ```sh
-cd docker-compose
+docker compose --env-file env pull
 docker compose --env-file env up -d
 ```
 
-For local development, run the .NET projects directly from the repo root:
+For local development from a working tree, [docker-compose/docker-compose.override.yaml](../docker-compose/docker-compose.override.yaml)
+adds `build:` directives pointing at [docker/api.Dockerfile](../docker/api.Dockerfile) and
+[docker/provider.Dockerfile](../docker/provider.Dockerfile). Compose auto-merges it when both
+files are in the same directory, so devs run:
+
+```sh
+cd docker-compose
+docker compose --env-file env up --build -d
+```
+
+The override file is dev-only — production hosts that copied just the four production files
+never see it.
+
+For the .NET dev loop without containers, run the projects directly from the repo root:
 
 ```sh
 # build

@@ -36,13 +36,21 @@ single Manager API. The manager dedupes services per `(Name, Hostname)`.
 
 ## Quick start
 
-The production path is Docker Compose — [docker-compose/](docker-compose/) wires the manager and
-a single Docker-source provider together:
+### Running this app
+
+Copy the four files in [docker-compose/](docker-compose/) — `docker-compose.yaml`, `env`,
+`manager-config.yaml`, and `provider-config.yaml` — to a host with Docker, then:
 
 ```sh
-cd docker-compose
+docker compose --env-file env pull
 docker compose --env-file env up -d
 ```
+
+That pulls the published images from `ghcr.io/andyattebery/dashboard-services-manager` and starts
+the manager API on port 8080 plus a single Docker-source provider. Edit `manager-config.yaml`
+(dashboard type, file paths, per-service overrides) and `provider-config.yaml` (API URL,
+hostname, which providers to enable) for your environment. Both can also be driven by
+`DSM_`-prefixed environment variables.
 
 Both containers run as a non-root `dsm` user whose UID/GID are set at runtime from `PUID` and
 `PGID` (default `1000:1000`); the [docker-compose/env](docker-compose/env) file supplies them
@@ -51,12 +59,20 @@ bind-mounts `/var/run/docker.sock`, so it also reads `DOCKER_GID` — set this t
 owns `/var/run/docker.sock` on the host (commonly `998` on Linux, `0` under Docker Desktop).
 The entrypoint adds the `dsm` user to a group with that GID so it can read the socket.
 
-Configure the manager with [docker-compose/manager-config.yaml](docker-compose/manager-config.yaml)
-(dashboard type, file paths, per-service overrides) and the provider with
-[docker-compose/provider-config.yaml](docker-compose/provider-config.yaml) (API URL, hostname,
-which providers to enable). Both can also be driven by `DSM_`-prefixed environment variables.
+### Local development from this repo
 
-For local development:
+```sh
+cd docker-compose
+docker compose --env-file env up --build -d
+```
+
+Compose auto-merges [docker-compose/docker-compose.override.yaml](docker-compose/docker-compose.override.yaml),
+which adds `build:` directives so the API and provider images are built locally from
+[docker/api.Dockerfile](docker/api.Dockerfile) and [docker/provider.Dockerfile](docker/provider.Dockerfile)
+instead of pulled from the registry. The override file is dev-only — production hosts that
+copied just the four files above never see it.
+
+For the .NET dev loop without containers:
 
 ```sh
 dotnet build src/Dsm.sln

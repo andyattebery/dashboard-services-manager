@@ -3,9 +3,7 @@ name: dashboard-services-manager
 services:
   dashboard-services-manager-api:
     container_name: dashboard-services-manager-api
-    build:
-      context: ..
-      dockerfile: docker/api.Dockerfile
+    image: ghcr.io/andyattebery/dashboard-services-manager:api-latest
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -20,9 +18,7 @@ services:
       - dashy_config:/dashy_config
   dashboard-services-manager-provider:
     container_name: dashboard-services-manager-provider
-    build:
-      context: ..
-      dockerfile: docker/provider.Dockerfile
+    image: ghcr.io/andyattebery/dashboard-services-manager:provider-latest
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
