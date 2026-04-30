@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class DashboardQueryServiceDedupTests : BaseTest
 {
     private DashboardQueryService _queryService = null!;

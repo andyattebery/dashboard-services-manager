@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class DockerServicesProviderTests : BaseTest
 {
     private IServicesProvider _dockerServicesProvider = null!;

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class HomepageDashboardManagerWidgetsTests : BaseTest
 {
     private string _homepageServicesDir = null!;

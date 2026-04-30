@@ -3,6 +3,7 @@ using Dsm.Providers.ServicesProviders.Traefik;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class TraefikRuleParserTests
 {
     [TestCase("Host(`a.com`)", "a.com")]

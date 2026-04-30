@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class NormalizedYamlConfigurationTests
 {
     private string _tempPath = null!;

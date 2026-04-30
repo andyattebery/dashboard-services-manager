@@ -2,6 +2,7 @@ using Dsm.Providers.ServicesProviders;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class SwarmServicesProviderTests
 {
     [TestCase("mystack_api", "mystack", "api")]

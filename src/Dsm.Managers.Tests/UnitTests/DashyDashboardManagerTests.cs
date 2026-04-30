@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class DashyDashboardManagerTests : BaseTest
 {
     private DashyDashboardManager _dashyDashboardManager = null!;

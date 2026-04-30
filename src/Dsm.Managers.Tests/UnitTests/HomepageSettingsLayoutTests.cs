@@ -11,6 +11,7 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Dsm.Managers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class HomepageSettingsLayoutTests
 {
     private string _dir = null!;

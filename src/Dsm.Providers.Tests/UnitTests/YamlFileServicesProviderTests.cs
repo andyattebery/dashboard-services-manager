@@ -9,6 +9,7 @@ using Dsm.Shared.Tests;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class YamlFileServicesProviderTests : BaseTest
 {
     private IServicesProvider _yamlFileServicesProvider = null!;

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [TestFixture]
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class ServicesProviderFactoryTests : BaseTest
 {
     private ServicesProviderFactory _servicesProviderFactory = null!;

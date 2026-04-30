@@ -3,6 +3,7 @@ using Dsm.Shared.Models;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class ServicesCombinerTests
 {
     private readonly ServicesCombiner _servicesCombiner = new ServicesCombiner();

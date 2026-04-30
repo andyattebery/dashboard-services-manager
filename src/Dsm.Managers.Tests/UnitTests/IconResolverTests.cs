@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
+[CancelAfter(TestTimeouts.HungThresholdMs)]
 public class IconResolverTests : BaseTest
 {
     private IEnumerable<IDashboardIconSource> _iconSources = null!;
