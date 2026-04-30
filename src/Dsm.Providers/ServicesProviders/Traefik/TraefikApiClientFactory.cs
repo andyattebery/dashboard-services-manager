@@ -2,11 +2,6 @@ using Refit;
 
 namespace Dsm.Providers.ServicesProviders.Traefik;
 
-public interface ITraefikApiClientFactory
-{
-    ITraefikApiClient Create(string traefikApiUrl);
-}
-
 public sealed class TraefikApiClientFactory : ITraefikApiClientFactory
 {
     private const string HttpClientName = "traefik";
