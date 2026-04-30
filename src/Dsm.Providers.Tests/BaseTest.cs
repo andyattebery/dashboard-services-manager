@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Dsm.Providers.Hosting;
+using Dsm.Providers.HostBuilder;
 using Dsm.Shared.Tests;
 
 namespace Dsm.Providers.Tests;
@@ -16,7 +16,7 @@ public class BaseTest
 
     protected virtual void AddServices(IConfiguration configuration, IServiceCollection services)
     {
-        HostBuilderConfiguration.AddServices(configuration, services);
+        services.AddDsmProviderServices();
     }
 
     protected virtual void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)

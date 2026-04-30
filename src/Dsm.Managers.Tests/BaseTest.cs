@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Dsm.Managers;
-using Dsm.Managers.Hosting;
+using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Tests;
 
 namespace Dsm.Managers.Tests;
@@ -17,11 +17,11 @@ public class BaseTest
 
     protected virtual void AddServices(IConfiguration configuration, IServiceCollection services)
     {
-        HostBuilderConfiguration.AddServices(configuration, services);
+        services.AddDsmManagerServices();
     }
 
     protected virtual void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
     {
-        HostBuilderConfiguration.ConfigureConfiguration(configurationBuilder);
+        configurationBuilder.AddDsmManagerConfiguration();
     }
 }

@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Dsm.Providers.Hosting;
+using Dsm.Providers.HostBuilder;
+using Dsm.Shared.Configuration;
 
 namespace Dsm.Provider.App;
 class Program
@@ -18,12 +19,12 @@ class Program
             .ConfigureServices((hostContext, services) =>
             {
                 services.AddHostedService<ProviderService>();
-                HostBuilderConfiguration.AddServices(hostContext.Configuration, services);
+                services.AddDsmProviderServices();
             })
             .ConfigureAppConfiguration((hostContext, configuration) =>
             {
-                HostBuilderConfiguration.ConfigureConfiguration(configuration);
-                configuration.AddEnvironmentVariables(prefix: "DSM_");
+                configuration.AddDsmProviderConfiguration();
+                configuration.AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
             });
     }
 }

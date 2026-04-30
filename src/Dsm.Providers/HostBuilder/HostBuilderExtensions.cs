@@ -9,10 +9,10 @@ using Dsm.Shared.ApiClients;
 using Dsm.Shared.Configuration;
 using Dsm.Shared.Options;
 
-namespace Dsm.Providers.Hosting;
-public static class HostBuilderConfiguration
+namespace Dsm.Providers.HostBuilder;
+public static class HostBuilderExtensions
 {
-    public static void AddServices(IConfiguration configuration, IServiceCollection services)
+    public static IServiceCollection AddDsmProviderServices(this IServiceCollection services)
     {
         services.AddOptions<ProviderOptions>()
             .BindConfiguration(nameof(ProviderOptions))
@@ -25,13 +25,17 @@ public static class HostBuilderConfiguration
         services.AddDcmClient();
         services.AddHttpClient(TraefikApiClientFactory.NamedClient, c => c.Timeout = TimeSpan.FromSeconds(30));
         services.AddSingleton<ITraefikApiClientFactory, TraefikApiClientFactory>();
+
+        return services;
     }
 
-    public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
+    public static IConfigurationBuilder AddDsmProviderConfiguration(this IConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.AddNormalizedYamlFile("provider-config.yml", optional: true);
         configurationBuilder.AddNormalizedYamlFile("provider-config.yaml", optional: true);
         configurationBuilder.AddNormalizedYamlFile("/config/provider-config.yml", optional: true);
         configurationBuilder.AddNormalizedYamlFile("/config/provider-config.yaml", optional: true);
+
+        return configurationBuilder;
     }
 }

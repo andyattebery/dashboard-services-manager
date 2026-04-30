@@ -43,16 +43,16 @@ _All AI generated code/documentation has been human-reviewed and when needed, it
 Multiple provider apps — one per host, each with its own configured sources — can fan into a
 single manager API. The manager dedupes services per `(Name, Hostname)`.
 
-### Supported sources and sinks
+### Supported Dashboards and Providers
 
-- **Sources (providers):** 
+- **Dashboards:** 
+  - [Dashy](https://dashy.to/)
+  - [Homepage](https://gethomepage.dev/)
+- **Providers:** 
   - Docker
   - Docker Swarm
   - Traefik
   - YAML file
-- **Sinks (dashboards):** 
-  - [Dashy](https://dashy.to/)
-  - [Homepage](https://gethomepage.dev/)
 
 ## Quick start
 

@@ -7,10 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Dsm.Managers.Hosting;
-public static class HostBuilderConfiguration
+namespace Dsm.Managers.HostBuilder;
+public static class HostBuilderExtensions
 {
-    public static void AddServices(IConfiguration configuration, IServiceCollection services)
+    public static IServiceCollection AddDsmManagerServices(this IServiceCollection services)
     {
         services
             .AddOptions<ManagerOptions>()
@@ -36,9 +36,11 @@ public static class HostBuilderConfiguration
         services.AddHttpClient(HomarrLabsDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
         services.AddHttpClient(SelfhStDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
         services.AddHttpClient(MaterialDesignIconsDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+
+        return services;
     }
-    
-    public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
+
+    public static IConfigurationBuilder AddDsmManagerConfiguration(this IConfigurationBuilder configurationBuilder)
     {
         var defaultsPath = Path.Combine(AppContext.BaseDirectory, "service-defaults.yaml");
         configurationBuilder.AddNormalizedYamlFile(defaultsPath, optional: false, reloadOnChange: false);
@@ -46,5 +48,7 @@ public static class HostBuilderConfiguration
         configurationBuilder.AddNormalizedYamlFile("manager-config.yaml", optional: true);
         configurationBuilder.AddNormalizedYamlFile("/config/manager-config.yml", optional: true);
         configurationBuilder.AddNormalizedYamlFile("/config/manager-config.yaml", optional: true);
+
+        return configurationBuilder;
     }
 }

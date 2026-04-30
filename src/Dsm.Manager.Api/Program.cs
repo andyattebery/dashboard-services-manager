@@ -1,4 +1,5 @@
-using Dsm.Managers.Hosting;
+using Dsm.Managers.HostBuilder;
+using Dsm.Shared.Configuration;
 using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,9 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-HostBuilderConfiguration.AddServices(builder.Configuration, builder.Services);
-HostBuilderConfiguration.ConfigureConfiguration(builder.Configuration);
-builder.Configuration.AddEnvironmentVariables(prefix: "DSM_");
+builder.Services.AddDsmManagerServices();
+builder.Configuration.AddDsmManagerConfiguration();
+builder.Configuration.AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
 
 var app = builder.Build();
 
