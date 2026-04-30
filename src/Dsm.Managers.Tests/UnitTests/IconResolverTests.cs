@@ -298,30 +298,16 @@ public class IconResolverTests : BaseTest
         });
     }
 
-    [Test]
-    public async Task ResolveIcon_NullInput_ReturnsNullPair_NoFallbackChain()
+    [TestCase(null)]
+    [TestCase("")]
+    public async Task ResolveIcon_NullOrEmptyInput_ReturnsNullPair_NoFallbackChain(string? input)
     {
         // Even with a populated fallback chain, a category with no icon set returns null —
         // unlike services, categories don't auto-pick from the fallback.
         var resolver = CreateResolver(DashboardIconSourceType.HomarrLabs);
         var manager = StubManager();
 
-        var result = await resolver.ResolveIcon(null, manager);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(result.Icon, Is.Null);
-            Assert.That(result.ImageUrl, Is.Null);
-        });
-    }
-
-    [Test]
-    public async Task ResolveIcon_EmptyInput_ReturnsNullPair()
-    {
-        var resolver = CreateResolver(DashboardIconSourceType.HomarrLabs);
-        var manager = StubManager();
-
-        var result = await resolver.ResolveIcon("", manager);
+        var result = await resolver.ResolveIcon(input, manager);
 
         Assert.Multiple(() =>
         {
