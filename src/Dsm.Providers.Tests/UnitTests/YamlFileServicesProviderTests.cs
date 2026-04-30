@@ -38,7 +38,7 @@ public class YamlFileServicesProviderTests : BaseTest
     }
 
     [Test]
-    public async Task Test()
+    public async Task ListServices_ReturnsServicesFromYamlFile()
     {
         var services = await _yamlFileServicesProvider.ListServices();
         Assert.Multiple(() => {

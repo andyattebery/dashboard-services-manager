@@ -30,7 +30,7 @@ public class TraefikServicesProviderTests : BaseTest
     }
 
     [Test]
-    public async Task ListServicesFiltersAndMapsRouters()
+    public async Task ListServices_FiltersAndMapsRouters()
     {
         var services = await _traefikServicesProvider.ListServices();
 

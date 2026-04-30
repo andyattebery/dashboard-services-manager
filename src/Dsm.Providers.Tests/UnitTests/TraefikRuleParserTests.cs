@@ -13,7 +13,7 @@ public class TraefikRuleParserTests
     [TestCase("Host( `a.com` )", "a.com")]
     [TestCase("Host( `a.com` , `b.com` )", "a.com")]
     [TestCase("Host(, `a.com`)", "a.com")]
-    public void ExtractFirstHost_returns_first_host(string rule, string expected)
+    public void ExtractFirstHost_ReturnsFirstHost(string rule, string expected)
     {
         Assert.That(TraefikRuleParser.ExtractFirstHost(rule), Is.EqualTo(expected));
     }
@@ -21,13 +21,13 @@ public class TraefikRuleParserTests
     [TestCase("")]
     [TestCase(null)]
     [TestCase("Path(`/x`)")]
-    public void ExtractFirstHost_returns_null_when_no_host(string? rule)
+    public void ExtractFirstHost_ReturnsNull_WhenNoHost(string? rule)
     {
         Assert.That(TraefikRuleParser.ExtractFirstHost(rule), Is.Null);
     }
 
     [Test]
-    public void BuildUrl_uses_scheme()
+    public void BuildUrl_UsesScheme()
     {
         Assert.Multiple(() =>
         {

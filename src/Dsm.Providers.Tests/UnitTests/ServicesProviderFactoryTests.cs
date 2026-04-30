@@ -20,7 +20,7 @@ public class ServicesProviderFactoryTests : BaseTest
     [TestCase(ServicesProviderType.Docker, typeof(DockerServicesProvider))]
     [TestCase(ServicesProviderType.Swarm, typeof(SwarmServicesProvider))]
     [TestCase(ServicesProviderType.YamlFile, typeof(YamlFileServicesProvider))]
-    public void Test(ServicesProviderType providerType, Type type)
+    public void Create_ResolvesProviderImplementationForType(ServicesProviderType providerType, Type type)
     {
         var config = new ServicesProviderConfig
         {

@@ -31,7 +31,7 @@ public class DockerServicesProviderTests : BaseTest
     }
 
     [Test]
-    public async Task Test()
+    public async Task ListServices_ReturnsServicesFromContainerLabels()
     {
         var services = await _dockerServicesProvider.ListServices();
 

@@ -12,7 +12,7 @@ public class SwarmServicesProviderTests
     [TestCase("mystack_", "mystack", "mystack_")]
     [TestCase("api", null, "api")]
     [TestCase("api", "", "api")]
-    public void StripStackPrefix(string name, string? ns, string expected)
+    public void StripStackPrefix_RemovesNamespacePrefix(string name, string? ns, string expected)
     {
         Assert.That(SwarmServicesProvider.StripStackPrefix(name, ns), Is.EqualTo(expected));
     }
