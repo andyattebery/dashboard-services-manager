@@ -28,7 +28,8 @@ public static class HostBuilderConfiguration
             .AddTransient<DashboardQueryService, DashboardQueryService>()
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
-            .AddTransient<ServicesCombiner, ServicesCombiner>();
+            .AddTransient<ServicesCombiner, ServicesCombiner>()
+            .AddSingleton<IconResolver, IconResolver>();
         services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, SelfhStDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, MaterialDesignIconsDashboardIconSource>();

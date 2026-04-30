@@ -172,11 +172,16 @@ Icons can also come from a CDN. Prefix the icon name to pick a source:
 - `mdi-` — [Material Design Icons](https://pictogrammers.com/library/mdi/) via the `@mdi/svg`
   package, e.g. `Icon: mdi-account`.
 
-The manager probes the CDN and writes a URL into the dashboard entry's image field, clearing
-the literal icon name. If you want the literal `mdi-X` written through to your dashboard YAML
-(so Dashy or Homepage renders MDI natively, instead of fetching the SVG from the CDN), don't
-use the `mdi-` prefix — set the icon a different way, e.g. via a category icon under
-`Categories.<n>.Icon` (those bypass the prefix resolver).
+Both Dashy and Homepage support all three of these natively. When the target dashboard
+recognises the prefix, DSM passes the prefix-form name straight through (translating to the
+dashboard's expected prefix when needed — for example Homepage's default Homarr Labs lookup
+strips the `hl-` so `hl-jellyfin` is written as `icon: jellyfin`). The dashboard then renders
+the icon using its own built-in resolver and no extra HTTP request is made when DSM writes
+the YAML.
+
+If you wire up a custom dashboard backend that doesn't natively support a given source, DSM
+falls back to its old behaviour: it probes the source's CDN and writes the resulting URL into
+the dashboard entry's image field.
 
 If a service ends up without an icon and without an image URL, the manager probes the
 `FallbackIconSourceProviders` chain (default: Homarr Labs, then selfh.st) using the service's

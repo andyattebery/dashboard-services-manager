@@ -1,5 +1,4 @@
 using Dsm.Managers.Configuration;
-using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
 
@@ -8,17 +7,13 @@ namespace Dsm.Managers.Services;
 public class ServiceWithDefaultsFactory
 {
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
-    private readonly Dictionary<DashboardIconSourceType, IDashboardIconSource> _iconSources;
 
-    public ServiceWithDefaultsFactory(
-        IOptions<ServiceDefaultOptions> defaultOptions,
-        IEnumerable<IDashboardIconSource> iconSources)
+    public ServiceWithDefaultsFactory(IOptions<ServiceDefaultOptions> defaultOptions)
     {
         _serviceDefaultOptions = defaultOptions.Value;
-        _iconSources = iconSources.ToDictionary(s => s.Type);
     }
 
-    public async Task<Service> CreateWithDefaultsAsync(Service service)
+    public Service CreateWithDefaults(Service service)
     {
         var lookupName = !string.IsNullOrEmpty(service.ServiceDefaultsName)
             ? service.ServiceDefaultsName
@@ -31,31 +26,6 @@ public class ServiceWithDefaultsFactory
         var icon = !string.IsNullOrEmpty(service.Icon) ? service.Icon : defaultServiceConfig?.Icon;
         var imagePath = !string.IsNullOrEmpty(service.ImageUrl) ? service.ImageUrl : defaultServiceConfig?.ImagePath;
         var imageUrl = ResolveImageUrl(imagePath, service.Url);
-
-        if (!string.IsNullOrEmpty(icon))
-        {
-            var match = _iconSources.Values.FirstOrDefault(
-                s => icon.StartsWith(s.Prefix, StringComparison.OrdinalIgnoreCase));
-            if (match is not null)
-            {
-                var resolved = await match.GetIconUrl(icon[match.Prefix.Length..]);
-                if (!string.IsNullOrEmpty(resolved))
-                {
-                    imageUrl = resolved;
-                    icon = null;
-                }
-            }
-        }
-
-        if (string.IsNullOrEmpty(icon) && string.IsNullOrEmpty(imageUrl))
-        {
-            foreach (var type in _serviceDefaultOptions.FallbackIconSourceProviders)
-            {
-                if (!_iconSources.TryGetValue(type, out var source)) continue;
-                imageUrl = await source.GetIconUrl(lookupName);
-                if (!string.IsNullOrEmpty(imageUrl)) break;
-            }
-        }
 
         return new Service(
             name,

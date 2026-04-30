@@ -1,5 +1,7 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
+using Dsm.Managers.Services;
+using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -37,6 +39,7 @@ public class HomepageSettingsLayoutTests
             Categories = new Dictionary<string, CategoryConfig>(
                 categories ?? new Dictionary<string, CategoryConfig>(), StringComparer.OrdinalIgnoreCase)
         });
+        var iconResolver = new IconResolver(options, Array.Empty<IDashboardIconSource>());
         return new HomepageDashboardManager(
             new DashboardManagerConfig
             {
@@ -44,6 +47,7 @@ public class HomepageSettingsLayoutTests
                 DashboardConfigDirectoryPath = _dir
             },
             options,
+            iconResolver,
             NullLogger<HomepageDashboardManager>.Instance);
     }
 

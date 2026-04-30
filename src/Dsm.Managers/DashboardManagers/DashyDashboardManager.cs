@@ -1,6 +1,8 @@
 using System.Globalization;
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers.Dashy;
+using Dsm.Managers.Services;
+using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Extensions;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Logging;
@@ -16,17 +18,28 @@ public class DashyDashboardManager : IDashboardManager
 
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly DashboardManagerConfig _config;
+    private readonly IconResolver _iconResolver;
     private readonly ILogger<DashyDashboardManager> _logger;
 
     public DashyDashboardManager(
         DashboardManagerConfig config,
         IOptions<ServiceDefaultOptions> defaultOptions,
+        IconResolver iconResolver,
         ILogger<DashyDashboardManager> logger)
     {
         _serviceDefaultOptions = defaultOptions.Value;
         _config = config;
+        _iconResolver = iconResolver;
         _logger = logger;
     }
+
+    public IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePrefixes { get; }
+        = new Dictionary<DashboardIconSourceType, string>
+        {
+            [DashboardIconSourceType.HomarrLabs] = "hl-",
+            [DashboardIconSourceType.SelfhSt] = "sh-",
+            [DashboardIconSourceType.MaterialDesignIcons] = "mdi-",
+        };
 
     private string ConfigFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ConfigFileName);
 
@@ -53,7 +66,13 @@ public class DashyDashboardManager : IDashboardManager
 
     public async Task WriteServices(List<Service> services)
     {
-        var dashySections = CreateDashySections(services);
+        var resolvedIcons = new Dictionary<Service, (string? Icon, string? ImageUrl)>();
+        foreach (var s in services)
+        {
+            resolvedIcons[s] = await _iconResolver.Resolve(s, this);
+        }
+
+        var dashySections = CreateDashySections(services, resolvedIcons);
 
         // Round-trip sections through YAML as `object` so we can merge them into the
         // existing config dictionary while preserving all non-sections top-level keys
@@ -98,12 +117,15 @@ public class DashyDashboardManager : IDashboardManager
         return null;
     }
 
-    private List<DashySection> CreateDashySections(List<Service> services)
+    private List<DashySection> CreateDashySections(
+        List<Service> services,
+        IReadOnlyDictionary<Service, (string? Icon, string? ImageUrl)> resolvedIcons)
     {
         var sectionNameToItemsMapping = new Dictionary<string, List<DashyItem>>();
         foreach (var service in services)
         {
-            var dashyItem = DashyItem.Create(service, _config.EnableStatusMonitoring);
+            var (icon, imageUrl) = resolvedIcons[service];
+            var dashyItem = DashyItem.Create(service, icon, imageUrl, _config.EnableStatusMonitoring);
             sectionNameToItemsMapping.AddToLookup((service.Category ?? string.Empty).ToLowerInvariant(), dashyItem);
         }
 

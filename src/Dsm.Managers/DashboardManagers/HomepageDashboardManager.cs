@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers.Homepage;
+using Dsm.Managers.Services;
+using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,17 +24,28 @@ public class HomepageDashboardManager : IDashboardManager
 
     private readonly DashboardManagerConfig _config;
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
+    private readonly IconResolver _iconResolver;
     private readonly ILogger<HomepageDashboardManager> _logger;
 
     public HomepageDashboardManager(
         DashboardManagerConfig config,
         IOptions<ServiceDefaultOptions> defaultOptions,
+        IconResolver iconResolver,
         ILogger<HomepageDashboardManager> logger)
     {
         _config = config;
         _serviceDefaultOptions = defaultOptions.Value;
+        _iconResolver = iconResolver;
         _logger = logger;
     }
+
+    public IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePrefixes { get; }
+        = new Dictionary<DashboardIconSourceType, string>
+        {
+            [DashboardIconSourceType.HomarrLabs] = "",
+            [DashboardIconSourceType.SelfhSt] = "sh-",
+            [DashboardIconSourceType.MaterialDesignIcons] = "mdi-",
+        };
 
     private string ServicesFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ServicesFileName);
     private string SettingsFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, SettingsFileName);
@@ -73,12 +86,21 @@ public class HomepageDashboardManager : IDashboardManager
     public async Task WriteServices(List<Service> services)
     {
         var widgets = await LoadWidgetEntries();
+
+        var resolvedIcons = new Dictionary<Service, (string? Icon, string? ImageUrl)>();
+        foreach (var s in services)
+        {
+            resolvedIcons[s] = await _iconResolver.Resolve(s, this);
+        }
+
         var output = services
             .GroupBy(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
             .OrderBy(g => g.Key)
             .Select(g => new Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>
             {
-                [g.Key] = g.OrderBy(s => s.Name).Select(s => ToEntryMap(s, _config.EnableStatusMonitoring, widgets, _logger)).ToList()
+                [g.Key] = g.OrderBy(s => s.Name)
+                    .Select(s => ToEntryMap(s, resolvedIcons[s], _config.EnableStatusMonitoring, widgets, _logger))
+                    .ToList()
             })
             .ToList();
 
@@ -158,11 +180,12 @@ public class HomepageDashboardManager : IDashboardManager
 
     private static Dictionary<string, HomepageServiceEntry> ToEntryMap(
         Service service,
+        (string? Icon, string? ImageUrl) resolvedIcon,
         bool enableStatusMonitoring,
         IReadOnlyDictionary<string, List<HomepageServiceWidgetEntry>> widgets,
         ILogger logger)
     {
-        var icon = !string.IsNullOrEmpty(service.ImageUrl) ? service.ImageUrl : service.Icon;
+        var icon = !string.IsNullOrEmpty(resolvedIcon.ImageUrl) ? resolvedIcon.ImageUrl : resolvedIcon.Icon;
         var w = FindWidget(widgets, service);
         var hasWidget = w is not null && (w.Widgets is { Count: > 0 } || w.Widget is not null);
         var entry = new HomepageServiceEntry

@@ -167,7 +167,9 @@ Development:
 - **[docs/development/providers.md](docs/development/providers.md)** — `Dsm.Providers`
   internals, how to add a new provider
 - **[docs/development/service-defaults.md](docs/development/service-defaults.md)** — defaulting
-  factory, icon-source resolution
+  factory, per-service overrides
+- **[docs/development/icons.md](docs/development/icons.md)** — `IconResolver`, native
+  pass-through vs CDN probing, fallback chain, how to add a new icon source
 
 ## Development
 

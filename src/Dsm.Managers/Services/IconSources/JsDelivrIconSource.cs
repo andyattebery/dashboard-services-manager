@@ -6,7 +6,7 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
 {
     private static readonly TimeSpan NegativeCacheTtl = TimeSpan.FromDays(7);
 
-    private readonly ConcurrentDictionary<string, (string? Url, DateTime CachedAt)> _cache = new();
+    private readonly ConcurrentDictionary<string, (string? Url, string? MatchedName, DateTime CachedAt)> _cache = new();
     private readonly IHttpClientFactory _httpClientFactory;
 
     protected JsDelivrIconSource(IHttpClientFactory httpClientFactory)
@@ -20,12 +20,12 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
     protected abstract string Extension { get; }
     protected abstract string HttpClientName { get; }
 
-    public async Task<string?> GetIconUrl(string iconName)
+    public async Task<(string? Url, string? MatchedName)> GetIconUrl(string iconName)
     {
         if (_cache.TryGetValue(iconName, out var cached) &&
             (cached.Url is not null || DateTime.UtcNow - cached.CachedAt < NegativeCacheTtl))
         {
-            return cached.Url;
+            return (cached.Url, cached.MatchedName);
         }
 
         var lowerCaseName = iconName.ToLowerInvariant();
@@ -44,12 +44,12 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
             using var response = await httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                _cache[iconName] = (iconUrl, DateTime.UtcNow);
-                return iconUrl;
+                _cache[iconName] = (iconUrl, potentialIconName, DateTime.UtcNow);
+                return (iconUrl, potentialIconName);
             }
         }
 
-        _cache[iconName] = (null, DateTime.UtcNow);
-        return null;
+        _cache[iconName] = (null, null, DateTime.UtcNow);
+        return (null, null);
     }
 }
