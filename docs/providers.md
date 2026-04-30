@@ -125,8 +125,8 @@ The Docker and Swarm providers translate container labels into services. For a l
 | `dsm.name` | service name | Defaults to the container name (Swarm: with the stack namespace stripped) |
 | `dsm.url` | URL | If absent, recovered from a Traefik router rule via `dsm.traefik.router` below |
 | `dsm.category` | category | Free-form; used by the manager to group entries on the dashboard and look up a category icon |
-| `dsm.icon` | icon | Plain icon name, or a CDN-prefix lookup (`hl-jellyfin`, `sh-jellyfin`) |
-| `dsm.image_path` | image URL | Absolute URL or a path resolved against `dsm.url` |
+| `dsm.icon` | icon | Plain icon name or a CDN-prefix lookup (`hl-`, `sh-`, `mdi-`) — see [icons.md](icons.md). Most services don't need this set; DSM picks an icon automatically from the service name. |
+| `dsm.image_path` | image URL | Absolute URL or a path resolved against `dsm.url` — see [icons.md](icons.md#image-urls) |
 | `dsm.ignore` | ignore flag | `"true"` to drop this container before the manager sees it |
 | `dsm.service_defaults_name` | defaults alias | Picks up defaults for a different service name — `dsm.service_defaults_name=plex` on a container called "Plex Beta" gives it the shipped `plex` defaults |
 | `dsm.traefik.router` | (URL recovery) | Name of a Traefik router whose `Host(...)` rule should be used to build the URL when `dsm.url` is absent. Useful when Traefik already declares the hostname and you don't want to duplicate it |

@@ -218,6 +218,119 @@ public class IconResolverTests : BaseTest
         Assert.That(result.ImageUrl, Is.EqualTo(expectedImageUrl));
     }
 
+    // --- ResolveIcon (category-style) tests --------------------------------------------------
+
+    [Test]
+    public async Task ResolveIcon_NativePrefix_PassesThrough()
+    {
+        var resolver = CreateResolver();
+        var manager = StubManager((DashboardIconSourceType.MaterialDesignIcons, "mdi-"));
+
+        var result = await resolver.ResolveIcon("mdi-network", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("mdi-network"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ResolveIcon_NativePrefix_TranslatesToManagerPrefix()
+    {
+        var resolver = CreateResolver();
+        var manager = StubManager((DashboardIconSourceType.HomarrLabs, ""));
+
+        var result = await resolver.ResolveIcon("hl-jellyfin", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("jellyfin"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task ResolveIcon_NonNativePrefix_FallsBackToCdn()
+    {
+        var resolver = CreateResolver();
+        var manager = StubManager(); // no native sources
+
+        var result = await resolver.ResolveIcon("hl-jellyfin", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/jellyfin.png"));
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task ResolveIcon_NonNativePrefix_CdnMiss_PassesThroughVerbatim()
+    {
+        var resolver = CreateResolver();
+        var manager = StubManager(); // no native sources
+
+        var result = await resolver.ResolveIcon("hl-definitely-not-a-real-icon-xyz", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("hl-definitely-not-a-real-icon-xyz"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ResolveIcon_NoPrefix_PassesThroughVerbatim()
+    {
+        var resolver = CreateResolver();
+        var manager = StubManager();
+
+        var result = await resolver.ResolveIcon("fas fa-network-wired", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("fas fa-network-wired"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ResolveIcon_NullInput_ReturnsNullPair_NoFallbackChain()
+    {
+        // Even with a populated fallback chain, a category with no icon set returns null —
+        // unlike services, categories don't auto-pick from the fallback.
+        var resolver = CreateResolver(DashboardIconSourceType.HomarrLabs);
+        var manager = StubManager();
+
+        var result = await resolver.ResolveIcon(null, manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task ResolveIcon_EmptyInput_ReturnsNullPair()
+    {
+        var resolver = CreateResolver(DashboardIconSourceType.HomarrLabs);
+        var manager = StubManager();
+
+        var result = await resolver.ResolveIcon("", manager);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    // --- end ResolveIcon tests --------------------------------------------------------------
+
     [Test]
     public async Task ImageUrlAlreadySet_PassesThrough()
     {

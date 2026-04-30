@@ -33,28 +33,10 @@ public class IconResolver
     public async Task<(string? Icon, string? ImageUrl)> Resolve(Service service, IDashboardManager manager)
     {
         // 1. Icon with a registered prefix wins outright when it can be resolved.
-        if (!string.IsNullOrEmpty(service.Icon))
+        var prefixResult = await ResolvePrefix(service.Icon, manager);
+        if (prefixResult is { } hit)
         {
-            var match = _iconSources.Values.FirstOrDefault(
-                s => service.Icon.StartsWith(s.Prefix, StringComparison.OrdinalIgnoreCase));
-            if (match is not null)
-            {
-                var iconName = service.Icon[match.Prefix.Length..];
-
-                // Explicit prefix from the user — they vouch for the icon, so no probe needed
-                // when the manager natively handles the source.
-                if (manager.NativeIconSourcePrefixes.TryGetValue(match.Type, out var nativePrefix))
-                {
-                    return (nativePrefix + iconName, null);
-                }
-
-                var (url, _) = await match.GetIconUrl(iconName);
-                if (!string.IsNullOrEmpty(url))
-                {
-                    return (null, url);
-                }
-                // CDN miss — fall through so a defaults-supplied ImageUrl can take over.
-            }
+            return hit;
         }
 
         // 2. Pre-resolved image URL (e.g. ImagePath turned into a URL by the factory).
@@ -92,5 +74,51 @@ public class IconResolver
         }
 
         return (null, null);
+    }
+
+    /// <summary>
+    /// Resolves a standalone icon string (e.g. a Dashy section icon or a Homepage layout
+    /// icon) against a target dashboard manager. Same prefix-translation and CDN-probe
+    /// behaviour as service icons, minus the fallback chain — categories with no icon stay
+    /// silent.
+    /// </summary>
+    public async Task<(string? Icon, string? ImageUrl)> ResolveIcon(string? icon, IDashboardManager manager)
+    {
+        var prefixResult = await ResolvePrefix(icon, manager);
+        if (prefixResult is { } hit)
+        {
+            return hit;
+        }
+
+        return string.IsNullOrEmpty(icon) ? (null, null) : (icon, null);
+    }
+
+    /// <summary>
+    /// Returns a non-null tuple iff the icon matched a registered prefix AND the resolution
+    /// produced a definitive answer (native pass-through or CDN hit). Returns null on
+    /// no-prefix-match or prefix-with-CDN-miss, signalling the caller to fall through.
+    /// </summary>
+    private async Task<(string? Icon, string? ImageUrl)?> ResolvePrefix(string? icon, IDashboardManager manager)
+    {
+        if (string.IsNullOrEmpty(icon)) return null;
+
+        var match = _iconSources.Values.FirstOrDefault(
+            s => icon.StartsWith(s.Prefix, StringComparison.OrdinalIgnoreCase));
+        if (match is null) return null;
+
+        var iconName = icon[match.Prefix.Length..];
+
+        if (manager.NativeIconSourcePrefixes.TryGetValue(match.Type, out var nativePrefix))
+        {
+            return (nativePrefix + iconName, null);
+        }
+
+        var (url, _) = await match.GetIconUrl(iconName);
+        if (!string.IsNullOrEmpty(url))
+        {
+            return (null, url);
+        }
+
+        return null; // CDN miss — caller falls through.
     }
 }

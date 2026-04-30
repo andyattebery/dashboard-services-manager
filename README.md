@@ -6,9 +6,11 @@ infrastructure — without clobbering anything you typed by hand.
 DSM runs as two pieces. **Providers** walk your environment (Docker, Docker Swarm, Traefik, or a
 static YAML file) and POST the services they find to a **Manager API** that owns the dashboard's
 YAML config. The manager merges those auto-discovered entries into the existing file, applies
-per-service defaults (icons, categories, hostname-templated names, optional Homepage widgets), and
-preserves every hand-written entry. Re-runs are idempotent — the file is left alone when nothing
-changed, so dashboards don't reload spuriously.
+per-service defaults (categories, hostname-templated names, optional Homepage widgets), and
+**picks an icon automatically based on the service name** — a service called "Jellyfin" gets
+the Jellyfin icon for free, no config needed. Hand-written entries are preserved across
+re-runs, and writes are idempotent — the file is left alone when nothing changed, so
+dashboards don't reload spuriously.
 
 ## Why
 
@@ -158,6 +160,8 @@ User guide:
   monitoring, Homepage widgets, per-service defaults
 - **[docs/providers.md](docs/providers.md)** — configure Docker, Docker Swarm, Traefik, and
   YAML-file providers; container label vocabulary
+- **[docs/icons.md](docs/icons.md)** — automatic icon resolution by service name, CDN
+  prefixes (`hl-`, `sh-`, `mdi-`), image URLs, category icons
 
 Development:
 

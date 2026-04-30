@@ -143,18 +143,20 @@ match.
 
 ## Per-service defaults
 
-DSM ships with a default set of icon prefixes, category mappings, and name templates for popular
-services (Plex, AdGuard Home, Traefik, Proxmox, etc.). Override or extend them in
-`manager-config.yaml` under `ServiceDefaultOptions`:
+DSM ships with a default set of category mappings, name templates, and per-service overrides
+for popular self-hosted apps (Plex, AdGuard Home, Traefik, Proxmox, etc.). Most services also
+get an icon picked automatically based on their name — see [icons.md](icons.md) for the full
+icon story. Override or extend the shipped defaults in `manager-config.yaml` under
+`ServiceDefaultOptions`:
 
 ```yaml
 ServiceDefaultOptions:
   Categories:
-    media:    { Icon: fas fa-tv }
-    network:  { Icon: fas fa-network-wired }
+    media:    { Icon: mdi-multimedia }
+    network:  { Icon: mdi-network }
   Services:
     plex:
-      Icon: my-custom-plex-icon         # overrides shipped icon
+      Icon: my-custom-plex-icon         # overrides the auto-pick for plex
     my-internal-tool:
       Category: utilities
       ImagePath: /assets/logo.svg       # resolved against the service URL
@@ -163,29 +165,6 @@ ServiceDefaultOptions:
 Per-field rule: anything the provider sent wins; defaults fill in the gaps. Removing a default
 means setting the corresponding key blank — the merge is leaf-level, so unrelated keys inside
 the same service entry survive your override.
-
-Icons can also come from a CDN. Prefix the icon name to pick a source:
-
-- `hl-` — [Homarr Labs dashboard-icons](https://github.com/homarr-labs/dashboard-icons), e.g.
-  `Icon: hl-jellyfin`.
-- `sh-` — [selfh.st icons](https://github.com/selfhst/icons), e.g. `Icon: sh-sonarr`.
-- `mdi-` — [Material Design Icons](https://pictogrammers.com/library/mdi/) via the `@mdi/svg`
-  package, e.g. `Icon: mdi-account`.
-
-Both Dashy and Homepage support all three of these natively. When the target dashboard
-recognises the prefix, DSM passes the prefix-form name straight through (translating to the
-dashboard's expected prefix when needed — for example Homepage's default Homarr Labs lookup
-strips the `hl-` so `hl-jellyfin` is written as `icon: jellyfin`). The dashboard then renders
-the icon using its own built-in resolver and no extra HTTP request is made when DSM writes
-the YAML.
-
-If you wire up a custom dashboard backend that doesn't natively support a given source, DSM
-falls back to its old behaviour: it probes the source's CDN and writes the resulting URL into
-the dashboard entry's image field.
-
-If a service ends up without an icon and without an image URL, the manager probes the
-`FallbackIconSourceProviders` chain (default: Homarr Labs, then selfh.st) using the service's
-name. Set this list to `[]` to disable the fallback.
 
 ## Ignored services
 

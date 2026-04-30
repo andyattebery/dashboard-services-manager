@@ -183,7 +183,7 @@ For prefix `dsm`, the recognized labels are:
 | `dsm.name` | `Name` | Defaults to the container name (Swarm: with the stack namespace stripped) |
 | `dsm.url` | `Url` | If absent, recovered from a Traefik `Host(...)` router rule (see `dsm.traefik.router` below) |
 | `dsm.category` | `Category` | Free-form; matched case-insensitively against `ServiceDefaultOptions.Categories` for icons |
-| `dsm.icon` | `Icon` | Plain icon name, or a prefixed lookup (`hl-…`, `sh-…`) — see [service-defaults.md](service-defaults.md#icon-lookup) |
+| `dsm.icon` | `Icon` | Plain icon name, or a prefixed lookup (`hl-`, `sh-`, `mdi-`) — see [icons.md](icons.md) |
 | `dsm.image_path` | `ImageUrl` | Absolute URL or path relative to `Url`; resolved by the manager-side defaults factory |
 | `dsm.ignore` | `Ignore` | `"true"` to drop this container before the manager even sees it |
 | `dsm.service_defaults_name` | `ServiceDefaultsName` | Alias to a different defaults entry — e.g. `dsm.service_defaults_name=plex` on a service named "Plex Beta" |

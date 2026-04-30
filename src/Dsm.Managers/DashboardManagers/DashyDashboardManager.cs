@@ -72,7 +72,8 @@ public class DashyDashboardManager : IDashboardManager
             resolvedIcons[s] = await _iconResolver.Resolve(s, this);
         }
 
-        var dashySections = CreateDashySections(services, resolvedIcons);
+        var sectionIcons = await ResolveSectionIcons(services);
+        var dashySections = CreateDashySections(services, resolvedIcons, sectionIcons);
 
         // Round-trip sections through YAML as `object` so we can merge them into the
         // existing config dictionary while preserving all non-sections top-level keys
@@ -119,7 +120,8 @@ public class DashyDashboardManager : IDashboardManager
 
     private List<DashySection> CreateDashySections(
         List<Service> services,
-        IReadOnlyDictionary<Service, (string? Icon, string? ImageUrl)> resolvedIcons)
+        IReadOnlyDictionary<Service, (string? Icon, string? ImageUrl)> resolvedIcons,
+        IReadOnlyDictionary<string, string?> sectionIcons)
     {
         var sectionNameToItemsMapping = new Dictionary<string, List<DashyItem>>();
         foreach (var service in services)
@@ -130,30 +132,51 @@ public class DashyDashboardManager : IDashboardManager
         }
 
         var dashySections = sectionNameToItemsMapping
-            .Select(kvp => CreateDashySection(kvp.Key, kvp.Value))
+            .Select(kvp => CreateDashySection(kvp.Key, kvp.Value, sectionIcons))
             .OrderBy(s => s.Name)
             .ToList();
         return dashySections;
     }
 
-    private DashySection CreateDashySection(string name, List<DashyItem> dashyItems)
+    private static DashySection CreateDashySection(
+        string name,
+        List<DashyItem> dashyItems,
+        IReadOnlyDictionary<string, string?> sectionIcons)
     {
         dashyItems = dashyItems.OrderBy(i => i.Title).ToList();
-        string? sectionIcon = null;
 
         var dashySectionName = string.IsNullOrEmpty(name)
             ? "Uncategorized"
             : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
 
-        // Categories uses StringComparer.OrdinalIgnoreCase (see ServiceDefaultOptions),
-        // so we look up with the title-cased section name directly.
-        if (_serviceDefaultOptions.Categories.TryGetValue(dashySectionName, out var defaultCategoryConfig))
-        {
-            sectionIcon = defaultCategoryConfig.Icon;
-        }
+        sectionIcons.TryGetValue(dashySectionName, out var sectionIcon);
 
-        var dashySection = new DashySection(dashySectionName, sectionIcon, dashyItems);
-        return dashySection;
+        return new DashySection(dashySectionName, sectionIcon, dashyItems);
+    }
+
+    private async Task<Dictionary<string, string?>> ResolveSectionIcons(List<Service> services)
+    {
+        // Compute distinct section names (title-cased) the same way CreateDashySection does,
+        // then resolve each category's configured icon through IconResolver — prefix
+        // translation, native pass-through, CDN probe, all the same as service icons. No
+        // fallback chain: a category with no defaults icon stays unset.
+        var distinctSectionNames = services
+            .Select(s => string.IsNullOrEmpty(s.Category)
+                ? "Uncategorized"
+                : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(s.Category!.ToLowerInvariant()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var resolved = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var sectionName in distinctSectionNames)
+        {
+            var rawIcon = _serviceDefaultOptions.Categories.TryGetValue(sectionName, out var c)
+                ? c.Icon
+                : null;
+            var (icon, imageUrl) = await _iconResolver.ResolveIcon(rawIcon, this);
+            resolved[sectionName] = imageUrl ?? icon;
+        }
+        return resolved;
     }
 
     private async Task<T> LoadDashyConfig<T>()

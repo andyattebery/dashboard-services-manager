@@ -114,13 +114,22 @@ public class HomepageDashboardManager : IDashboardManager
 
     private async Task UpdateSettingsLayoutIcons(List<Service> services)
     {
-        var groupIcons = services
+        var distinctGroups = services
             .Select(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(name => (Name: name,
-                             Icon: _serviceDefaultOptions.Categories.TryGetValue(name, out var c) ? c.Icon : null))
-            .Where(p => !string.IsNullOrEmpty(p.Icon))
             .ToList();
+
+        var groupIcons = new List<(string Name, string Icon)>();
+        foreach (var name in distinctGroups)
+        {
+            var rawIcon = _serviceDefaultOptions.Categories.TryGetValue(name, out var c) ? c.Icon : null;
+            var (icon, imageUrl) = await _iconResolver.ResolveIcon(rawIcon, this);
+            var resolved = imageUrl ?? icon;
+            if (!string.IsNullOrEmpty(resolved))
+            {
+                groupIcons.Add((name, resolved));
+            }
+        }
         if (groupIcons.Count == 0) return;
 
         var settings = await LoadSettings();

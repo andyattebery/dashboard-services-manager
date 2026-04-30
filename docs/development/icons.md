@@ -139,6 +139,37 @@ string means the dashboard does a default lookup with no prefix.
 Sources you don't list here will fall through to CDN probing whenever a user types their
 prefix — that's the right behaviour for any source the dashboard can't render itself.
 
+## Category icons
+
+Dashy section icons and Homepage layout (settings.yaml) icons go through the resolver too,
+via a sibling method:
+
+```csharp
+public Task<(string? Icon, string? ImageUrl)> ResolveIcon(string? icon, IDashboardManager manager);
+```
+
+Behaviour matches `Resolve(Service, manager)` for the prefix-match step (native pass-through
+or CDN probe; on probe miss return verbatim) but **omits the fallback chain**. A category
+with no `Icon` set in `ServiceDefaultOptions.Categories.<name>.Icon` returns `(null, null)`
+and the manager simply doesn't write a section/layout icon for it — same as today.
+
+So:
+
+| `Categories.media.Icon` | Dashy `conf.yml` section icon | Homepage `settings.yaml` layout icon |
+|---|---|---|
+| `mdi-multimedia` | `mdi-multimedia` | `mdi-multimedia` |
+| `hl-jellyfin` | `hl-jellyfin` | `jellyfin` (translated to default lookup) |
+| `https://my.cdn/foo.png` | `https://my.cdn/foo.png` | `https://my.cdn/foo.png` |
+| `(unset)` | (no icon) | (no layout entry written) |
+
+Per-manager wiring:
+- [`DashyDashboardManager.ResolveSectionIcons`](../../src/Dsm.Managers/DashboardManagers/DashyDashboardManager.cs)
+  pre-resolves a `Dictionary<string, string?>` keyed by title-cased section name before
+  building the `DashySection` list.
+- [`HomepageDashboardManager.UpdateSettingsLayoutIcons`](../../src/Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs)
+  resolves each distinct group inline; categories whose resolution returns `(null, null)`
+  are filtered out.
+
 ## Tests
 
 [`IconResolverTests`](../../src/Dsm.Managers.Tests/UnitTests/IconResolverTests.cs) covers:
