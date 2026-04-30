@@ -15,7 +15,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -24,8 +24,10 @@ jobs:
           cache-dependency-path: src/**/*.csproj
       - name: Restore
         run: dotnet restore src/Dsm.sln
+      # Test job uses the default shallow checkout. /p:DisableGitVersionTask=true
+      # skips GitVersion.MsBuild's git read so we don't need fetch-depth: 0 here.
       - name: Build
-        run: dotnet build src/Dsm.sln --no-restore
+        run: dotnet build src/Dsm.sln --no-restore /p:DisableGitVersionTask=true
       - name: Test (non-network)
         run: dotnet test --solution src/Dsm.sln --no-build --filter "TestCategory!=Network"
 
@@ -34,6 +36,19 @@ jobs:
     needs: test
     if: github.event_name == 'push'
     steps:
+      # GitVersion needs full git history. The GitTools docs are explicit:
+      # "If the pipeline is set up to use a shallow git fetch mode the
+      # GitVersion Execute action will fail. It is required to use fetch-depth: 0."
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.7.x'
+      - name: Determine Version
+        id: version_step
+        uses: gittools/actions/gitversion/execute@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
@@ -50,7 +65,9 @@ jobs:
           file: docker/api.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: VERSION=${{ env.semVer }}
           tags: |
+            ghcr.io/andyattebery/dashboard-services-manager:api-${{ env.semVer }}
             ghcr.io/andyattebery/dashboard-services-manager:api-latest
       - name: Build and push Provider Docker images
         uses: docker/build-push-action@v7
@@ -58,5 +75,7 @@ jobs:
           file: docker/provider.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: VERSION=${{ env.semVer }}
           tags: |
+            ghcr.io/andyattebery/dashboard-services-manager:provider-${{ env.semVer }}
             ghcr.io/andyattebery/dashboard-services-manager:provider-latest

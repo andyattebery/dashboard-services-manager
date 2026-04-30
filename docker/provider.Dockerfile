@@ -1,6 +1,8 @@
 ARG DOTNET_VERSION=10.0
+ARG VERSION=0.0.0
 
 FROM mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION AS build
+ARG VERSION
 
 ENV PROVIDER_PROJECT_NAME=Dsm.Provider.App
 
@@ -10,8 +12,14 @@ COPY src/ .
 
 RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj
 
-# publish app and libraries
-RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj --configuration Release --output /app --no-restore
+# publish app and libraries — VERSION is computed by CI (GitVersion) and passed via --build-arg.
+# DisableGitVersionTask=true skips GitVersion.MsBuild's git read since .git isn't in this build context.
+RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj \
+    --configuration Release \
+    --output /app \
+    --no-restore \
+    /p:Version=$VERSION \
+    /p:DisableGitVersionTask=true
 
 # final stage/image
 FROM mcr.microsoft.com/dotnet/runtime:$DOTNET_VERSION
