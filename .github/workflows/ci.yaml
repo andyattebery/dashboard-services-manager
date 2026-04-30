@@ -14,6 +14,13 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Run shell steps from src/ so `dotnet` finds src/global.json (which sets the SDK
+    # version pin and the test.runner = Microsoft.Testing.Platform setting that the
+    # MTP-native `dotnet test --solution` syntax depends on). Only affects `run:` steps;
+    # `uses:` steps still run from the repo root, so action inputs use repo-root paths.
+    defaults:
+      run:
+        working-directory: src
     steps:
       - uses: actions/checkout@v6
       - name: Set up .NET
@@ -23,13 +30,13 @@ jobs:
           cache: true
           cache-dependency-path: src/**/*.csproj
       - name: Restore
-        run: dotnet restore src/Dsm.sln
+        run: dotnet restore Dsm.sln
       # Test job uses the default shallow checkout. /p:DisableGitVersionTask=true
       # skips GitVersion.MsBuild's git read so we don't need fetch-depth: 0 here.
       - name: Build
-        run: dotnet build src/Dsm.sln --no-restore /p:DisableGitVersionTask=true
+        run: dotnet build Dsm.sln --no-restore /p:DisableGitVersionTask=true
       - name: Test (non-network)
-        run: dotnet test --solution src/Dsm.sln --no-build --filter "TestCategory!=Network"
+        run: dotnet test --solution Dsm.sln --no-build --filter "TestCategory!=Network"
 
   docker:
     runs-on: ubuntu-latest
