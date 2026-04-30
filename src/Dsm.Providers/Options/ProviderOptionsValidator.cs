@@ -7,6 +7,16 @@ public sealed class ProviderOptionsValidator : IValidateOptions<ProviderOptions>
     public ValidateOptionsResult Validate(string? name, ProviderOptions options)
     {
         var failures = new List<string>();
+        if (options.ServicesProviders is null)
+        {
+            failures.Add("ServicesProviders is required (no entries were bound from configuration).");
+            return ValidateOptionsResult.Fail(failures);
+        }
+        if (options.ServicesProviders.Count == 0)
+        {
+            failures.Add("ServicesProviders must contain at least one entry.");
+            return ValidateOptionsResult.Fail(failures);
+        }
         foreach (var (config, i) in options.ServicesProviders.Select((c, i) => (c, i)))
         {
             switch (config.ServicesProviderType)

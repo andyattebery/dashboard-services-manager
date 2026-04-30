@@ -7,6 +7,16 @@ public sealed class ManagerOptionsValidator : IValidateOptions<ManagerOptions>
     public ValidateOptionsResult Validate(string? name, ManagerOptions options)
     {
         var failures = new List<string>();
+        if (options.DashboardManagers is null)
+        {
+            failures.Add("DashboardManagers is required (no entries were bound from configuration).");
+            return ValidateOptionsResult.Fail(failures);
+        }
+        if (options.DashboardManagers.Count == 0)
+        {
+            failures.Add("DashboardManagers must contain at least one entry.");
+            return ValidateOptionsResult.Fail(failures);
+        }
         var seen = new HashSet<string>();
         foreach (var (config, i) in options.DashboardManagers.Select((c, i) => (c, i)))
         {

@@ -65,6 +65,31 @@ public class ManagerOptionsValidatorTests
     }
 
     [Test]
+    public void FailsWhenDashboardManagersIsNull()
+    {
+        var options = new ManagerOptions { DashboardManagers = null! };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Failed, Is.True);
+        Assert.That(result.Failures, Has.Some.Contains("DashboardManagers is required"));
+    }
+
+    [Test]
+    public void FailsWhenDashboardManagersIsEmpty()
+    {
+        var options = new ManagerOptions
+        {
+            DashboardManagers = new List<DashboardManagerConfig>(),
+        };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Failed, Is.True);
+        Assert.That(result.Failures, Has.Some.Contains("must contain at least one entry"));
+    }
+
+    [Test]
     public void SucceedsWithWidgetsPathOnHomepageManager()
     {
         var options = new ManagerOptions
