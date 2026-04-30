@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "GitVersion.MsBuild": {
+        "type": "Direct",
+        "requested": "[6.7.0, )",
+        "resolved": "6.7.0",
+        "contentHash": "0W5NHnfnogX0pfidRcJfqzfb8Yc/avBfq1qVuaHiHIjbtsjKHt9IFtt18p/ttCCeJlJe9fQliQ3pSkZQcibXlw=="
+      },
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Direct",
+        "requested": "[10.0.7, )",
+        "resolved": "10.0.7",
+        "contentHash": "vKiAcGXG0BwNVw3bOjjWRLnp9tR18dR7MiwpvC94h0yFS+zfnzGHzS/JmmgwUdRixrGxrlIMRAWrVc+2DfAGlg==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw=="
+      },
+      "NetEscapades.Configuration.Yaml": {
+        "type": "Transitive",
+        "resolved": "3.1.0",
+        "contentHash": "D5Pxt4hXABna5OwYQmAQukspW7LEoYgvfAqyw85gUF/gnH9pWHsZCLMXy2ewWoQ0PELZ1lOGFLDbDVeoCvtBgA==",
+        "dependencies": {
+          "YamlDotNet": "13.0.1"
+        }
+      },
+      "YamlDotNet": {
+        "type": "Transitive",
+        "resolved": "17.1.0",
+        "contentHash": "AhsNXgeAs3Ugt653t8LC44xXDuldFfwBpWbWX9pN3e4Yg8U5Bk8jLn8eXtGv5HV2V2nHu7F46fqsPC+tpcTGAA=="
+      },
+      "dsm.managers": {
+        "type": "Project",
+        "dependencies": {
+          "Dsm.Shared": "[1.0.0, )",
+          "NetEscapades.Configuration.Yaml": "[3.1.0, )",
+          "YamlDotNet": "[17.1.0, )"
+        }
+      },
+      "dsm.shared": {
+        "type": "Project",
+        "dependencies": {
+          "NetEscapades.Configuration.Yaml": "[3.1.0, )"
+        }
+      }
+    }
+  }
+}

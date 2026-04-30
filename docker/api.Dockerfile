@@ -10,7 +10,7 @@ WORKDIR /source
 
 COPY src/ .
 
-RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj
+RUN dotnet restore $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj --locked-mode
 
 # publish app and libraries — VERSION is computed by CI (GitVersion) and passed via --build-arg.
 # DisableGitVersionTask=true skips GitVersion.MsBuild's git read since .git isn't in this build context.

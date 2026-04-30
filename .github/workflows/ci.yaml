@@ -27,10 +27,10 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           global-json-file: src/global.json
+          # cache: true uses the default cache-dependency-path of **/packages.lock.json
           cache: true
-          cache-dependency-path: src/**/*.csproj
       - name: Restore
-        run: dotnet restore Dsm.sln
+        run: dotnet restore Dsm.sln --locked-mode
       # Test job uses the default shallow checkout. /p:DisableGitVersionTask=true
       # skips GitVersion.MsBuild's git read so we don't need fetch-depth: 0 here.
       - name: Build
