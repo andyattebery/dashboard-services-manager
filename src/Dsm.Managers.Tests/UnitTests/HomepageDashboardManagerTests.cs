@@ -12,7 +12,7 @@ namespace Dsm.Managers.Tests.UnitTests;
 public class HomepageDashboardManagerTests : BaseTest
 {
     private HomepageDashboardManager _homepageDashboardManager = null!;
-    private string _homepageServicesDir = null!;
+    private TestTempDir _tempDir = null!;
     private string _homepageServicesPath = null!;
 
     [OneTimeSetUp]
@@ -24,9 +24,8 @@ public class HomepageDashboardManagerTests : BaseTest
     [SetUp]
     public void Setup()
     {
-        _homepageServicesDir = Path.Combine(Path.GetTempPath(), $"dsm_homepage_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_homepageServicesDir);
-        _homepageServicesPath = Path.Combine(_homepageServicesDir, HomepageDashboardManager.ServicesFileName);
+        _tempDir = TestTempDir.Create("dsm_homepage");
+        _homepageServicesPath = _tempDir.RootedPath(HomepageDashboardManager.ServicesFileName);
         File.Copy(TestDataUtilities.GetTestDataPath("homepage_services.yml"), _homepageServicesPath, overwrite: true);
 
         ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
@@ -37,13 +36,7 @@ public class HomepageDashboardManagerTests : BaseTest
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        if (Directory.Exists(_homepageServicesDir))
-        {
-            Directory.Delete(_homepageServicesDir, recursive: true);
-        }
-    }
+    public void TearDown() => _tempDir.Dispose();
 
     [Test]
     public async Task ListServicesReturnsFixtureContents()
@@ -227,7 +220,7 @@ public class HomepageDashboardManagerTests : BaseTest
         return (HomepageDashboardManager)factory.Create(new DashboardManagerConfig
         {
             DashboardManagerType = DashboardManagerType.Homepage,
-            DashboardConfigDirectoryPath = _homepageServicesDir,
+            DashboardConfigDirectoryPath = _tempDir.Path,
             EnableStatusMonitoring = enabled
         });
     }
@@ -311,7 +304,7 @@ public class HomepageDashboardManagerTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Homepage,
-                    DashboardConfigDirectoryPath = _homepageServicesDir,
+                    DashboardConfigDirectoryPath = _tempDir.Path,
                 },
             };
         });

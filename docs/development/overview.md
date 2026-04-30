@@ -190,3 +190,5 @@ dotnet test --solution src/Dsm.sln --filter "TestCategory!=Network"
   category icons, how to add a new icon source.
 - [providers.md](providers.md) — how providers discover services, the container label
   vocabulary, and how to add a new one.
+- [testing.md](testing.md) — test project layout, when to extend `BaseTest`, mocking
+  conventions per project, network-tagged tests, hung-test protection.

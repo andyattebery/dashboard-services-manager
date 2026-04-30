@@ -4,7 +4,6 @@ using Dsm.Providers.Options;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class ContainerLabelServiceFactoryTests
 {

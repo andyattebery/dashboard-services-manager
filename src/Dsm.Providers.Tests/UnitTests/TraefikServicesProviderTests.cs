@@ -10,7 +10,6 @@ using Dsm.Shared.Tests;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class TraefikServicesProviderTests : BaseTest
 {
@@ -58,7 +57,7 @@ public class TraefikServicesProviderTests : BaseTest
     {
         base.AddServices(configuration, services);
 
-        var jsonPath = TestDataUtilities.GetUnitTestTestDataPath("traefik_routers.json");
+        var jsonPath = TestDataUtilities.GetTestDataPath("traefik_routers.json");
         var routers = JsonSerializer.Deserialize<List<TraefikRouter>>(
             File.ReadAllText(jsonPath),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;

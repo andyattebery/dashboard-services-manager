@@ -4,27 +4,29 @@ using Microsoft.Extensions.Configuration;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class NormalizedYamlConfigurationTests
 {
-    private string _tempPath = null!;
+    private TestTempDir _tempDir = null!;
+
+    [SetUp]
+    public void Setup()
+    {
+        _tempDir = TestTempDir.Create("dsm_normalized_yaml");
+    }
 
     [TearDown]
     public void TearDown()
     {
-        if (_tempPath is not null && File.Exists(_tempPath))
-        {
-            File.Delete(_tempPath);
-        }
+        _tempDir.Dispose();
     }
 
     private IConfiguration LoadYaml(string yaml)
     {
-        _tempPath = Path.Combine(Path.GetTempPath(), $"normalized-yaml-{Guid.NewGuid():N}.yaml");
-        File.WriteAllText(_tempPath, yaml);
+        var path = _tempDir.RootedPath("config.yaml");
+        File.WriteAllText(path, yaml);
         return new ConfigurationBuilder()
-            .AddNormalizedYamlFile(_tempPath, optional: false)
+            .AddNormalizedYamlFile(path, optional: false)
             .Build();
     }
 

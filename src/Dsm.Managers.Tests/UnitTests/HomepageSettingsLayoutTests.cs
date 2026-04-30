@@ -10,28 +10,23 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class HomepageSettingsLayoutTests
 {
-    private string _dir = null!;
+    private TestTempDir _tempDir = null!;
     private string _servicesPath = null!;
     private string _settingsPath = null!;
 
     [SetUp]
     public void Setup()
     {
-        _dir = Path.Combine(Path.GetTempPath(), $"dsm_hp_settings_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_dir);
-        _servicesPath = Path.Combine(_dir, HomepageDashboardManager.ServicesFileName);
-        _settingsPath = Path.Combine(_dir, HomepageDashboardManager.SettingsFileName);
+        _tempDir = TestTempDir.Create("dsm_hp_settings");
+        _servicesPath = _tempDir.RootedPath(HomepageDashboardManager.ServicesFileName);
+        _settingsPath = _tempDir.RootedPath(HomepageDashboardManager.SettingsFileName);
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
-    }
+    public void TearDown() => _tempDir.Dispose();
 
     private HomepageDashboardManager CreateManager(
         Dictionary<string, CategoryConfig>? categories = null,
@@ -47,7 +42,7 @@ public class HomepageSettingsLayoutTests
             new DashboardManagerConfig
             {
                 DashboardManagerType = DashboardManagerType.Homepage,
-                DashboardConfigDirectoryPath = _dir
+                DashboardConfigDirectoryPath = _tempDir.Path
             },
             options,
             iconResolver,

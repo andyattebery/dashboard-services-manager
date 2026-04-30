@@ -8,7 +8,6 @@ using Dsm.Shared.Tests;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class YamlFileServicesProviderTests : BaseTest
 {
@@ -21,7 +20,7 @@ public class YamlFileServicesProviderTests : BaseTest
         var config = new ServicesProviderConfig
         {
             ServicesProviderType = ServicesProviderType.YamlFile,
-            ServicesYamlFilePath = TestDataUtilities.GetUnitTestTestDataPath("services.yaml")
+            ServicesYamlFilePath = TestDataUtilities.GetTestDataPath("services.yaml")
         };
         _yamlFileServicesProvider = factory.Create(config);
     }

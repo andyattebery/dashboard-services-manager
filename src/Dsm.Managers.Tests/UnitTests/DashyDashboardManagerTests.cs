@@ -12,7 +12,7 @@ namespace Dsm.Managers.Tests.UnitTests;
 public class DashyDashboardManagerTests : BaseTest
 {
     private DashyDashboardManager _dashyDashboardManager = null!;
-    private string _dashboardConfigDir = null!;
+    private TestTempDir _tempDir = null!;
     private string _dashboardConfigPath = null!;
 
     [OneTimeSetUp]
@@ -24,9 +24,8 @@ public class DashyDashboardManagerTests : BaseTest
     [SetUp]
     public void Setup()
     {
-        _dashboardConfigDir = Path.Combine(Path.GetTempPath(), $"dsm_dashy_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_dashboardConfigDir);
-        _dashboardConfigPath = Path.Combine(_dashboardConfigDir, DashyDashboardManager.ConfigFileName);
+        _tempDir = TestTempDir.Create("dsm_dashy");
+        _dashboardConfigPath = _tempDir.RootedPath(DashyDashboardManager.ConfigFileName);
         File.Copy(TestDataUtilities.GetTestDataPath("dashy_conf.yml"), _dashboardConfigPath, overwrite: true);
 
         ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
@@ -37,13 +36,7 @@ public class DashyDashboardManagerTests : BaseTest
     }
 
     [TearDown]
-    public void TearDown()
-    {
-        if (Directory.Exists(_dashboardConfigDir))
-        {
-            Directory.Delete(_dashboardConfigDir, recursive: true);
-        }
-    }
+    public void TearDown() => _tempDir.Dispose();
 
     [Test]
     public async Task WriteServices_DoesNotTouchFile_WhenContentUnchanged()
@@ -160,7 +153,7 @@ public class DashyDashboardManagerTests : BaseTest
         return (DashyDashboardManager)factory.Create(new DashboardManagerConfig
         {
             DashboardManagerType = DashboardManagerType.Dashy,
-            DashboardConfigDirectoryPath = _dashboardConfigDir,
+            DashboardConfigDirectoryPath = _tempDir.Path,
             EnableStatusMonitoring = enabled
         });
     }
@@ -210,7 +203,7 @@ public class DashyDashboardManagerTests : BaseTest
                 new DashboardManagerConfig
                 {
                     DashboardManagerType = DashboardManagerType.Dashy,
-                    DashboardConfigDirectoryPath = _dashboardConfigDir,
+                    DashboardConfigDirectoryPath = _tempDir.Path,
                 },
             };
         });

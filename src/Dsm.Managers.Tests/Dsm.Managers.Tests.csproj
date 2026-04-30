@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" LinkBase="UnitTests" />
+    <None Include="TestData\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,6 @@ using Microsoft.Extensions.Options;
 
 namespace Dsm.Providers.Tests.UnitTests;
 
-[TestFixture]
 [CancelAfter(TestTimeouts.HungThresholdMs)]
 public class DockerServicesProviderTests : BaseTest
 {
@@ -56,7 +55,7 @@ public class DockerServicesProviderTests : BaseTest
     {
         base.AddServices(configuration, services);
 
-        string dockerContainersJsonPath = TestDataUtilities.GetUnitTestTestDataPath("docker_containers.json");
+        string dockerContainersJsonPath = TestDataUtilities.GetTestDataPath("docker_containers.json");
         string jsonString = File.ReadAllText(dockerContainersJsonPath);
         var containerListResponses = JsonSerializer.Deserialize<List<ContainerListResponse>>(jsonString)!;
 
