@@ -158,5 +158,5 @@ the per-field precedence, name formatting, and `ImagePath` resolution. Icon-reso
 [icons.md](icons.md#tests). CDN tests are tagged `[Category("Network")]`:
 
 ```sh
-dotnet test src/Dsm.Managers.Tests --filter "TestCategory!=Network"
+dotnet test --project src/Dsm.Managers.Tests --filter "TestCategory!=Network"
 ```

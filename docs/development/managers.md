@@ -261,7 +261,7 @@ to whitespace or comments that DSM doesn't reproduce will still be clobbered (sa
 
 ## Config from `manager-config.yaml`
 
-Bound by [HostBuilderConfiguration](../../src/Dsm.Managers/Hosting/HostBuilderConfiguration.cs) into
+Bound by [HostBuilderExtensions](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs) into
 [`ManagerOptions`](../../src/Dsm.Managers/Configuration/ManagerOptions.cs) and
 [`ServiceDefaultOptions`](../../src/Dsm.Managers/Configuration/ServiceDefaultOptions.cs).
 
@@ -322,8 +322,8 @@ Dsm.Managers/
 │   ├── ServicesCombiner.cs
 │   ├── IconResolver.cs             Per-manager prefix translation + CDN fallback
 │   └── IconSources/                IDashboardIconSource implementations (HomarrLabs, SelfhSt, MaterialDesignIcons)
-├── Hosting/
-│   └── HostBuilderConfiguration.cs DI + manager-config.yaml wiring
+├── HostBuilder/
+│   └── HostBuilderExtensions.cs    DI + manager-config.yaml wiring
 ├── DashboardCommandProcessor.cs    Public entry (writes)
 └── DashboardQueryService.cs        Public entry (reads)
 ```
@@ -360,14 +360,14 @@ Two pieces of contract to honour beyond the interface:
 ## Testing
 
 ```sh
-dotnet test src/Dsm.Managers.Tests
+dotnet test --project src/Dsm.Managers.Tests
 ```
 
 Icon-source tests hit the public jsDelivr CDN and are tagged `[Category("Network")]`. Skip them
 offline:
 
 ```sh
-dotnet test src/Dsm.Managers.Tests --filter "TestCategory!=Network"
+dotnet test --project src/Dsm.Managers.Tests --filter "TestCategory!=Network"
 ```
 
 The combiner and command-processor tests

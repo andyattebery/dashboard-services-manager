@@ -197,7 +197,7 @@ For the .NET dev loop without containers:
 ```sh
 dotnet build src/Dsm.sln
 dotnet run --project src/Dsm.Manager.Api
-dotnet test src/Dsm.sln --filter "TestCategory!=Network"
+dotnet test --solution src/Dsm.sln --filter "TestCategory!=Network"
 ```
 
 The `TestCategory!=Network` filter skips tests that hit the public jsDelivr CDN for icon

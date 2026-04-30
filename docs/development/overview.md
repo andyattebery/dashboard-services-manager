@@ -177,7 +177,7 @@ DSM_ProviderOptions__ServicesProviders__0__AreServiceHostsHttps=true \
 dotnet run --project src/Dsm.Provider.App
 
 # tests (skip jsDelivr-icon tests that hit the public CDN)
-dotnet test src/Dsm.sln --filter "TestCategory!=Network"
+dotnet test --solution src/Dsm.sln --filter "TestCategory!=Network"
 ```
 
 ## Further reading

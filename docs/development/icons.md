@@ -108,7 +108,7 @@ icon requested twice (regardless of casing or spacing) won't re-probe.
    and override `Type`, `Prefix`, `BaseUrl` (the URL prefix up to and including the trailing
    `/`), `Extension` (without the dot), and `HttpClientName`. Otherwise implement
    `IDashboardIconSource` directly.
-3. Register in [`HostBuilderConfiguration`](../../src/Dsm.Managers/Hosting/HostBuilderConfiguration.cs):
+3. Register in [`HostBuilderExtensions`](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs):
    ```csharp
    services.AddSingleton<IDashboardIconSource, YourSource>();
    services.AddHttpClient(YourSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
@@ -186,4 +186,4 @@ Per-manager wiring:
   to catch upstream renames or removals.
 
 CDN tests are tagged `[Category("Network")]`. Skip with
-`dotnet test src/Dsm.Managers.Tests --filter "TestCategory!=Network"` for offline runs.
+`dotnet test --project src/Dsm.Managers.Tests --filter "TestCategory!=Network"` for offline runs.

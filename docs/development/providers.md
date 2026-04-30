@@ -52,11 +52,11 @@ The shared translation from container labels to a `Service` lives in
 
 Provider selection is done by the
 [`ServicesProviderFactory`](../../src/Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs), which
-takes a [`ServicesProviderConfig`](../../src/Dsm.Shared/Options/ProviderOptions.cs) entry from
+takes a [`ServicesProviderConfig`](../../src/Dsm.Providers/Options/ServicesProviderConfig.cs) entry from
 `ProviderOptions.ServicesProviders` and builds the matching provider via
 `ActivatorUtilities.CreateInstance`, threading the config into the provider's constructor.
 The enum lives in
-[`ServicesProviderType`](../../src/Dsm.Shared/Options/ServicesProviderType.cs)
+[`ServicesProviderType`](../../src/Dsm.Providers/Options/ServicesProviderType.cs)
 (`YamlFile`, `Docker`, `Swarm`, `Traefik`).
 
 ## Provider.App runtime
@@ -69,25 +69,25 @@ appsettings.json, the YAML config files (see [Configuration](#configuration) bel
 `ProviderService.ExecuteAsync` runs a continuous loop driven by a `PeriodicTimer` ticking every
 `ProviderOptions.RefreshInterval` (default 60 s). On each tick:
 
-1. Read [`ProviderOptions.ServicesProviders`](../../src/Dsm.Shared/Options/ProviderOptions.cs) — a
+1. Read [`ProviderOptions.ServicesProviders`](../../src/Dsm.Providers/Options/ProviderOptions.cs) — a
    list of typed configs, each carrying the provider's own settings.
 2. For each entry, resolve an `IServicesProvider` from the factory and call `ListServices()`.
    Per-provider exceptions are caught and logged; one failing provider doesn't take the others
    down or stop the loop.
 3. If the aggregated service list is non-empty, POST it to the Manager API via the Refit
-   [`IDcmClient`](../../src/Dsm.Shared/ApiClients/IDcmClient.cs). The response is a
+   [`IDcmClient`](../../src/Dsm.Providers/ApiClients/IDcmClient.cs). The response is a
    `Dictionary<string, List<Service>>` keyed by manager type name (see
    [managers.md](managers.md#request-flow-write-path)); `ProviderService` logs the per-manager
    counts and entries. An empty aggregated list is a no-op — useful when the worker starts before
    any containers exist.
 
 The Refit client's `HttpClient` is built by
-[`ClientFactory`](../../src/Dsm.Shared/ApiClients/ClientFactory.cs) using `ProviderOptions.ApiUrl` as
+[`ClientFactory`](../../src/Dsm.Providers/ApiClients/ClientFactory.cs) using `ProviderOptions.ApiUrl` as
 the base address.
 
 ## Configuration
 
-[`ProviderOptions`](../../src/Dsm.Shared/Options/ProviderOptions.cs) is bound, in this order of
+[`ProviderOptions`](../../src/Dsm.Providers/Options/ProviderOptions.cs) is bound, in this order of
 precedence (later wins), from:
 
 1. `appsettings.json` (loaded by `Host.CreateDefaultBuilder`).
@@ -120,7 +120,7 @@ It has two layers: process-global fields, and a typed list of per-provider
 
 ### Validation
 
-[`ProviderOptionsValidator`](../../src/Dsm.Shared/Options/ProviderOptions.cs) runs at startup and
+[`ProviderOptionsValidator`](../../src/Dsm.Providers/Options/ProviderOptionsValidator.cs) runs at startup and
 fails the host with a list of errors if any per-provider required field is missing. Specifically:
 
 - `Traefik` — `TraefikApiUrl` and `Hostname` must be set.
@@ -224,8 +224,8 @@ Dsm.Providers/
 │   └── ServicesProviderUtilities.cs      Shared formatting helpers
 ├── Services/
 │   └── ContainerLabelServiceFactory.cs   Container label dict → Service
-└── Hosting/
-    └── HostBuilderConfiguration.cs       DI + provider-config.yaml wiring
+└── HostBuilder/
+    └── HostBuilderExtensions.cs          DI + provider-config.yaml wiring
 
 Dsm.Provider.App/
 ├── Program.cs                            Host builder, DSM_ env var prefix
@@ -240,9 +240,9 @@ Dsm.Provider.App/
    [`ContainerLabelServiceFactory`](../../src/Dsm.Providers/Services/ContainerLabelServiceFactory.cs)
    if your source exposes labels; otherwise build `Service` objects directly.
 2. Add a variant to
-   [`ServicesProviderType`](../../src/Dsm.Shared/Options/ServicesProviderType.cs).
+   [`ServicesProviderType`](../../src/Dsm.Providers/Options/ServicesProviderType.cs).
 3. Add any new type-specific fields (nullable) to
-   [`ServicesProviderConfig`](../../src/Dsm.Shared/Options/ProviderOptions.cs).
+   [`ServicesProviderConfig`](../../src/Dsm.Providers/Options/ServicesProviderConfig.cs).
 4. Extend the switch in
    [`ServicesProviderFactory.Create`](../../src/Dsm.Providers/ServicesProviders/ServicesProviderFactory.cs)
    with an `ActivatorUtilities.CreateInstance<T>(sp, config)` line for your new provider.
@@ -250,12 +250,12 @@ Dsm.Provider.App/
 ## Testing
 
 ```sh
-dotnet test src/Dsm.Providers.Tests
+dotnet test --project src/Dsm.Providers.Tests
 ```
 
 The `DockerServicesProvider` tests run against whatever Docker daemon your environment exposes to
 `Docker.DotNet`'s default client configuration. If you don't have Docker locally, scope the run:
 
 ```sh
-dotnet test src/Dsm.Providers.Tests --filter "FullyQualifiedName!~DockerServicesProvider"
+dotnet test --project src/Dsm.Providers.Tests --filter "FullyQualifiedName!~DockerServicesProvider"
 ```
