@@ -3,7 +3,8 @@ namespace Dsm.Managers.Services.IconSources;
 public enum DashboardIconSourceType
 {
     HomarrLabs,
-    SelfhSt
+    SelfhSt,
+    MaterialDesignIcons
 }
 
 public interface IDashboardIconSource

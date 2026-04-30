@@ -19,6 +19,18 @@ hand-curated entries that aren't auto-discoverable (external links, notes, links
 DSM splits the file into "stuff that came from infra" (auto-managed) and "stuff a human typed"
 (left alone), then keeps just the first half in sync.
 
+## Use of AI
+
+The architecture and initial manager and provider implementations (Dashy, Docker, Docker Swarm YAML file) were completely human-written.
+
+AI has been used to:
+
+- Add new manager and provider implementations
+- Add new features
+- Add documentation
+
+_All AI generated code/documentation has been human-reviewed and when needed, iterated on and modified._
+
 ## At a glance
 
 - **Manager API** — receives services from providers and updates one or more dashboard YAML

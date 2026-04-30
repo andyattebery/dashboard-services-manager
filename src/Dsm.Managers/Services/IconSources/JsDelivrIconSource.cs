@@ -16,7 +16,8 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
 
     public abstract DashboardIconSourceType Type { get; }
     public abstract string Prefix { get; }
-    protected abstract string GitHubSlug { get; }
+    protected abstract string BaseUrl { get; }
+    protected abstract string Extension { get; }
     protected abstract string HttpClientName { get; }
 
     public async Task<string?> GetIconUrl(string iconName)
@@ -27,7 +28,6 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
             return cached.Url;
         }
 
-        var baseUrl = $"https://cdn.jsdelivr.net/gh/{GitHubSlug}/png/";
         var lowerCaseName = iconName.ToLowerInvariant();
         var potentialIconNames = new[]
         {
@@ -39,7 +39,7 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
         foreach (var potentialIconName in potentialIconNames)
         {
-            var iconUrl = $"{baseUrl}{potentialIconName}.png";
+            var iconUrl = $"{BaseUrl}{potentialIconName}.{Extension}";
             using var request = new HttpRequestMessage(HttpMethod.Head, iconUrl);
             using var response = await httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)

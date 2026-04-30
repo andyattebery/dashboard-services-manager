@@ -164,9 +164,19 @@ Per-field rule: anything the provider sent wins; defaults fill in the gaps. Remo
 means setting the corresponding key blank — the merge is leaf-level, so unrelated keys inside
 the same service entry survive your override.
 
-Icons can also come from a CDN. Prefix the icon with `hl-` to look up
-[Homarr Labs dashboard-icons](https://github.com/homarr-labs/dashboard-icons) or `sh-` to look
-up [selfh.st icons](https://github.com/selfhst/icons), e.g. `Icon: hl-jellyfin`.
+Icons can also come from a CDN. Prefix the icon name to pick a source:
+
+- `hl-` — [Homarr Labs dashboard-icons](https://github.com/homarr-labs/dashboard-icons), e.g.
+  `Icon: hl-jellyfin`.
+- `sh-` — [selfh.st icons](https://github.com/selfhst/icons), e.g. `Icon: sh-sonarr`.
+- `mdi-` — [Material Design Icons](https://pictogrammers.com/library/mdi/) via the `@mdi/svg`
+  package, e.g. `Icon: mdi-account`.
+
+The manager probes the CDN and writes a URL into the dashboard entry's image field, clearing
+the literal icon name. If you want the literal `mdi-X` written through to your dashboard YAML
+(so Dashy or Homepage renders MDI natively, instead of fetching the SVG from the CDN), don't
+use the `mdi-` prefix — set the icon a different way, e.g. via a category icon under
+`Categories.<n>.Icon` (those bypass the prefix resolver).
 
 If a service ends up without an icon and without an image URL, the manager probes the
 `FallbackIconSourceProviders` chain (default: Homarr Labs, then selfh.st) using the service's

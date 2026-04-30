@@ -156,6 +156,51 @@ public class ServiceFactoryTests : BaseTest
     }
 
     [Test]
+    [Category("Network")]
+    public async Task MdiPrefixedIcon_ResolvesToImageUrlAndClearsIcon()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "mdi-account", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/npm/@mdi/svg@latest/svg/account.svg"));
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task MdiPrefixedIcon_IsCaseInsensitive()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "MDI-account", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.Null);
+            Assert.That(result.ImageUrl, Is.EqualTo("https://cdn.jsdelivr.net/npm/@mdi/svg@latest/svg/account.svg"));
+        });
+    }
+
+    [Test]
+    [Category("Network")]
+    public async Task MdiPrefixedIcon_NoMatchAtCdn_KeepsOriginalIcon()
+    {
+        var service = new Service("Something Else", "https://example.com", null, "mdi-definitely-not-a-real-icon-xyz", null, null, false);
+
+        var result = await _serviceWithDefaultsFactory.CreateWithDefaultsAsync(service);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Icon, Is.EqualTo("mdi-definitely-not-a-real-icon-xyz"));
+            Assert.That(result.ImageUrl, Is.Null);
+        });
+    }
+
+    [Test]
     public async Task NameWithHostnameFormatString_IsApplied()
     {
         var service = new Service("Traefik", "https://example.com", null, null, null, "host1", false);

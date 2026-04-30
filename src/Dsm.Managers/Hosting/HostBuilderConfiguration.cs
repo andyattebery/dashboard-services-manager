@@ -31,8 +31,10 @@ public static class HostBuilderConfiguration
             .AddTransient<ServicesCombiner, ServicesCombiner>();
         services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, SelfhStDashboardIconSource>();
+        services.AddSingleton<IDashboardIconSource, MaterialDesignIconsDashboardIconSource>();
         services.AddHttpClient(HomarrLabsDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
         services.AddHttpClient(SelfhStDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+        services.AddHttpClient(MaterialDesignIconsDashboardIconSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
     }
     
     public static void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)

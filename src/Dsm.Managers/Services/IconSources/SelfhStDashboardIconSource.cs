@@ -8,6 +8,7 @@ public class SelfhStDashboardIconSource : JsDelivrIconSource
 
     public override DashboardIconSourceType Type => DashboardIconSourceType.SelfhSt;
     public override string Prefix => "sh-";
-    protected override string GitHubSlug => "selfhst/icons";
+    protected override string BaseUrl => "https://cdn.jsdelivr.net/gh/selfhst/icons/png/";
+    protected override string Extension => "png";
     protected override string HttpClientName => ClientName;
 }

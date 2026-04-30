@@ -8,6 +8,7 @@ public class HomarrLabsDashboardIconSource : JsDelivrIconSource
 
     public override DashboardIconSourceType Type => DashboardIconSourceType.HomarrLabs;
     public override string Prefix => "hl-";
-    protected override string GitHubSlug => "homarr-labs/dashboard-icons";
+    protected override string BaseUrl => "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/";
+    protected override string Extension => "png";
     protected override string HttpClientName => ClientName;
 }

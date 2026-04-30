@@ -146,6 +146,7 @@ value is kept and `ImageUrl` stays empty.
 |---|---|---|
 | `hl-` | `HomarrLabsDashboardIconSource` | `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/` |
 | `sh-` | `SelfhStDashboardIconSource` | `https://cdn.jsdelivr.net/gh/selfhst/icons/png/` |
+| `mdi-` | `MaterialDesignIconsDashboardIconSource` | `https://cdn.jsdelivr.net/npm/@mdi/svg@latest/svg/` (`.svg` extension) |
 
 ```yaml
 # Dashy config
