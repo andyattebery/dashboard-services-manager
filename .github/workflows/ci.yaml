@@ -30,8 +30,10 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           global-json-file: src/global.json
-          # cache: true uses the default cache-dependency-path of **/packages.lock.json
           cache: true
+          # The action's default cache-dependency-path only checks the repo root,
+          # not recursively, so it has to be pointed at src/ where our lock files live.
+          cache-dependency-path: src/**/packages.lock.json
       - name: Restore
         run: dotnet restore Dsm.sln --locked-mode
       # Test job uses the default shallow checkout. /p:DisableGitVersionTask=true
