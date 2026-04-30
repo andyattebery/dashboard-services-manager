@@ -23,7 +23,7 @@ public static class HostBuilderExtensions
         services.AddSingleton<ServicesProviderFactory, ServicesProviderFactory>();
         services.AddTransient<ContainerLabelServiceFactory, ContainerLabelServiceFactory>();
         services.AddDcmClient();
-        services.AddHttpClient(TraefikApiClientFactory.NamedClient, c => c.Timeout = TimeSpan.FromSeconds(30));
+        services.AddHttpClient(TraefikApiClientFactory.ClientName, c => c.Timeout = TimeSpan.FromSeconds(30));
         services.AddSingleton<ITraefikApiClientFactory, TraefikApiClientFactory>();
 
         return services;

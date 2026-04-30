@@ -4,7 +4,7 @@ namespace Dsm.Providers.ServicesProviders.Traefik;
 
 public sealed class TraefikApiClientFactory : ITraefikApiClientFactory
 {
-    private const string HttpClientName = "traefik";
+    public const string ClientName = "traefik";
 
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -23,10 +23,8 @@ public sealed class TraefikApiClientFactory : ITraefikApiClientFactory
         // CreateClient returns a fresh HttpClient instance each call (the pooled piece
         // is the HttpMessageHandler), so setting BaseAddress here mutates only this
         // instance — safe for per-provider Traefik URLs.
-        var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+        var httpClient = _httpClientFactory.CreateClient(ClientName);
         httpClient.BaseAddress = new Uri(traefikApiUrl);
         return RestService.For<ITraefikApiClient>(httpClient);
     }
-
-    public static string NamedClient => HttpClientName;
 }
