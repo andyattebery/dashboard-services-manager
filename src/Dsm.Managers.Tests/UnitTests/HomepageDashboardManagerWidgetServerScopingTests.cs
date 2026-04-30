@@ -38,6 +38,7 @@ public class HomepageDashboardManagerWidgetServerScopingTests : PerTestHostedTes
             services =>
             {
                 services.AddDsmManagerServices();
+                services.ConfigureOfflineIconHttpClients();
                 services.Configure<ManagerOptions>(opts =>
                 {
                     opts.DashboardManagers = new List<DashboardManagerConfig> { config };

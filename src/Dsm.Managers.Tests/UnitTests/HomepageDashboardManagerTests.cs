@@ -292,6 +292,7 @@ public class HomepageDashboardManagerTests : PerTestHostedTestBase
             services =>
             {
                 services.AddDsmManagerServices();
+                services.ConfigureOfflineIconHttpClients();
                 services.Configure<ManagerOptions>(opts =>
                 {
                     opts.DashboardManagers = new List<DashboardManagerConfig> { config };

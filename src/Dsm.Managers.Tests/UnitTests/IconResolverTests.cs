@@ -1,8 +1,10 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
+using Dsm.Managers.HostBuilder;
 using Dsm.Managers.Services;
 using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -17,6 +19,20 @@ public class IconResolverTests : ManagerTestFixtureHostedTestBase
     {
         base.OneTimeSetUp();
         _iconSources = ServiceProvider.GetRequiredService<IEnumerable<IDashboardIconSource>>();
+    }
+
+    // Opt out of the offline icon-CDN stubs installed by ManagerTestFixtureHostedTestBase:
+    // [Category("Network")] tests in this fixture exercise real CDN behaviour (smoke probes,
+    // matched-name resolution). Non-network tests in this fixture build their own IconResolver
+    // with an empty fallback list and never probe — so opting out is safe for them too.
+    protected override void AddServices(IServiceCollection services)
+    {
+        services.AddDsmManagerServices();
+    }
+
+    protected override void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.AddDsmManagerConfiguration();
     }
 
     private IconResolver CreateResolver(params DashboardIconSourceType[] fallback)

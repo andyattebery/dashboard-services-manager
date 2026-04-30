@@ -160,6 +160,7 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
         var host = CreateHost(configureServices: services =>
         {
             services.AddDsmManagerServices();
+            services.ConfigureOfflineIconHttpClients();
             services.AddTransient<IOptions<ManagerOptions>>(_ =>
                 Options.Create(new ManagerOptions { DashboardManagers = managerConfigs }));
             services.AddTransient<IOptions<ServiceDefaultOptions>>(_ =>

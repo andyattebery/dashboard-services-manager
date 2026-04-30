@@ -9,6 +9,7 @@ public abstract class ManagerTestFixtureHostedTestBase : TestFixtureHostedTestBa
     protected override void AddServices(IServiceCollection services)
     {
         services.AddDsmManagerServices();
+        services.ConfigureOfflineIconHttpClients();
     }
 
     protected override void ConfigureConfiguration(IConfigurationBuilder configurationBuilder)
