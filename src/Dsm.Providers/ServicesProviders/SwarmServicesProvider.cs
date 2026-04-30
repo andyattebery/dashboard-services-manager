@@ -1,7 +1,7 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Dsm.Shared.Models;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using Dsm.Providers.Services;
 
 namespace Dsm.Providers.ServicesProviders;

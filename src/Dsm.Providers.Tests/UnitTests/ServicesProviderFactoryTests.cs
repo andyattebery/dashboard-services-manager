@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Dsm.Providers.ServicesProviders;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using Microsoft.Extensions.Configuration;
 
 namespace Dsm.Providers.Tests.UnitTests;
@@ -42,6 +42,6 @@ public class ServicesProviderFactoryTests : BaseTest
             ApiUrl = "http://dsm.test",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
-        services.AddTransient<IOptions<ProviderOptions>>(_ => Options.Create(providerOptions));
+        services.AddTransient<IOptions<ProviderOptions>>(_ => Microsoft.Extensions.Options.Options.Create(providerOptions));
     }
 }

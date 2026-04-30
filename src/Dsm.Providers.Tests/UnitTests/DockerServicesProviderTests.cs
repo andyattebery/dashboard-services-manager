@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Dsm.Providers.ServicesProviders;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using Dsm.Shared.Tests;
 using Microsoft.Extensions.Options;
 
@@ -74,6 +74,6 @@ public class DockerServicesProviderTests : BaseTest
             ApiUrl = "http://dsm.test",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
-        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));
+        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Microsoft.Extensions.Options.Options.Create(providerOptions));
     }
 }

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Options;
 
-namespace Dsm.Shared.Options;
+namespace Dsm.Providers.Options;
 
 public sealed class ProviderOptions
 {

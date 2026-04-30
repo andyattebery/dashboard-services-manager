@@ -1,5 +1,5 @@
 using Dsm.Shared.Configuration;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using Microsoft.Extensions.Configuration;
 
 namespace Dsm.Providers.Tests.UnitTests;

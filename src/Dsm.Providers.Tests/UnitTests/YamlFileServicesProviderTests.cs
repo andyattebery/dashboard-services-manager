@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Dsm.Providers.ServicesProviders;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using Microsoft.Extensions.Options;
 using Dsm.Shared.Models;
 using Dsm.Shared.Tests;
@@ -34,7 +34,7 @@ public class YamlFileServicesProviderTests : BaseTest
             ApiUrl = "http://dsm.test",
             ServicesProviders = new List<ServicesProviderConfig>()
         };
-        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Options.Create(providerOptions));
+        services.AddTransient<IOptions<ProviderOptions>>((serviceProvider) => Microsoft.Extensions.Options.Options.Create(providerOptions));
     }
 
     [Test]

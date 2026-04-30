@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.Models;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 
 namespace Dsm.Providers.ServicesProviders;
 

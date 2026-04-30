@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Refit;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 
-namespace Dsm.Shared.ApiClients;
+namespace Dsm.Providers.ApiClients;
 
 public static class ClientFactory
 {

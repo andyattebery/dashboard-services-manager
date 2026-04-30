@@ -3,10 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Refit;
 using Dsm.Providers.ServicesProviders;
-using Dsm.Shared.ApiClients;
+using Dsm.Providers.ApiClients;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Options;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 
 namespace Dsm.Provider.App;
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Dsm.Providers.Services;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 
 namespace Dsm.Providers.Tests.UnitTests;
 

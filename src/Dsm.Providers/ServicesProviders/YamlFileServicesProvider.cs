@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Dsm.Shared.Models;
 using YamlDotNet.Serialization;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Dsm.Providers.ServicesProviders;

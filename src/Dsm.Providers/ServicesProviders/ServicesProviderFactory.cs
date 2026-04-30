@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Dsm.Shared.Options;
+using Dsm.Providers.Options;
 
 namespace Dsm.Providers.ServicesProviders;
 public class ServicesProviderFactory

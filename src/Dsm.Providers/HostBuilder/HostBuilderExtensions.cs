@@ -5,9 +5,9 @@ using Microsoft.Extensions.Options;
 using Dsm.Providers.Services;
 using Dsm.Providers.ServicesProviders;
 using Dsm.Providers.ServicesProviders.Traefik;
-using Dsm.Shared.ApiClients;
+using Dsm.Providers.ApiClients;
+using Dsm.Providers.Options;
 using Dsm.Shared.Configuration;
-using Dsm.Shared.Options;
 
 namespace Dsm.Providers.HostBuilder;
 public static class HostBuilderExtensions

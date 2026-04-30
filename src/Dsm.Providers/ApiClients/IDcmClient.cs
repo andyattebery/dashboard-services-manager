@@ -1,7 +1,7 @@
 using Refit;
 using Dsm.Shared.Models;
 
-namespace Dsm.Shared.ApiClients;
+namespace Dsm.Providers.ApiClients;
 public interface IDcmClient
 {
     [Post("/dashboard-services")]

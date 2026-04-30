@@ -1,4 +1,4 @@
-namespace Dsm.Shared.Options;
+namespace Dsm.Providers.Options;
 
 public enum ServicesProviderType
 {
