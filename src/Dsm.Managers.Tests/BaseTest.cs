@@ -5,7 +5,7 @@ using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Tests;
 
 namespace Dsm.Managers.Tests;
-public class BaseTest
+public abstract class BaseTest
 {
     protected IServiceProvider ServiceProvider;
 
