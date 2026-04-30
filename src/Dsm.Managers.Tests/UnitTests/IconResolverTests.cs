@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Dsm.Managers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class IconResolverTests : BaseTest
+public class IconResolverTests : ManagerTestFixtureHostedTestBase
 {
     private IEnumerable<IDashboardIconSource> _iconSources = null!;
 

@@ -11,7 +11,7 @@ using Dsm.Shared.Tests;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class TraefikServicesProviderTests : BaseTest
+public class TraefikServicesProviderTests : ProviderTestFixtureHostedTestBase
 {
     private IServicesProvider _traefikServicesProvider = null!;
 
@@ -53,9 +53,9 @@ public class TraefikServicesProviderTests : BaseTest
         });
     }
 
-    protected override void AddServices(IConfiguration configuration, IServiceCollection services)
+    protected override void AddServices(IServiceCollection services)
     {
-        base.AddServices(configuration, services);
+        base.AddServices(services);
 
         var jsonPath = TestDataUtilities.GetTestDataPath("traefik_routers.json");
         var routers = JsonSerializer.Deserialize<List<TraefikRouter>>(

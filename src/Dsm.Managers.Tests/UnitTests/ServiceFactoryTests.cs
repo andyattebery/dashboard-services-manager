@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Dsm.Managers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class ServiceFactoryTests : BaseTest
+public class ServiceFactoryTests : ManagerTestFixtureHostedTestBase
 {
     private ServiceWithDefaultsFactory _serviceWithDefaultsFactory;
 

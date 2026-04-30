@@ -1,23 +1,17 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
+using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Models;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class HomepageDashboardManagerWidgetMatchingTests : BaseTest
+public class HomepageDashboardManagerWidgetMatchingTests : PerTestHostedTestBase
 {
     private TestTempDir _tempDir = null!;
     private string _homepageServicesPath = null!;
     private string? _widgetsPath;
-
-    [OneTimeSetUp]
-    public override void OneTimeSetUp()
-    {
-    }
 
     [SetUp]
     public void Setup()
@@ -32,10 +26,23 @@ public class HomepageDashboardManagerWidgetMatchingTests : BaseTest
 
     private HomepageDashboardManager CreateManager()
     {
-        ServiceProvider = ServiceProviderFactory.Create(ConfigureConfiguration, AddServices);
-        var factory = ServiceProvider.GetRequiredService<DashboardManagerFactory>();
-        var config = ServiceProvider.GetRequiredService<IOptions<ManagerOptions>>()
-            .Value.DashboardManagers.Single();
+        var config = new DashboardManagerConfig
+        {
+            DashboardManagerType = DashboardManagerType.Homepage,
+            DashboardConfigDirectoryPath = _tempDir.Path,
+            SourceHomepageServiceWidgetsFilePath = _widgetsPath,
+        };
+        var host = CreateHost(
+            cfg => cfg.AddDsmManagerConfiguration(),
+            services =>
+            {
+                services.AddDsmManagerServices();
+                services.Configure<ManagerOptions>(opts =>
+                {
+                    opts.DashboardManagers = new List<DashboardManagerConfig> { config };
+                });
+            });
+        var factory = host.Services.GetRequiredService<DashboardManagerFactory>();
         return (HomepageDashboardManager)factory.Create(config);
     }
 
@@ -215,21 +222,4 @@ public class HomepageDashboardManagerWidgetMatchingTests : BaseTest
         });
     }
 
-    protected override void AddServices(IConfiguration configuration, IServiceCollection services)
-    {
-        base.AddServices(configuration, services);
-
-        services.Configure<ManagerOptions>(opts =>
-        {
-            opts.DashboardManagers = new List<DashboardManagerConfig>
-            {
-                new DashboardManagerConfig
-                {
-                    DashboardManagerType = DashboardManagerType.Homepage,
-                    DashboardConfigDirectoryPath = _tempDir.Path,
-                    SourceHomepageServiceWidgetsFilePath = _widgetsPath,
-                },
-            };
-        });
-    }
 }

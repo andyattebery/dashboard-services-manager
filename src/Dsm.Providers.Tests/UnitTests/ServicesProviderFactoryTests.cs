@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class ServicesProviderFactoryTests : BaseTest
+public class ServicesProviderFactoryTests : ProviderTestFixtureHostedTestBase
 {
     private ServicesProviderFactory _servicesProviderFactory = null!;
 
@@ -33,9 +33,9 @@ public class ServicesProviderFactoryTests : BaseTest
         Assert.That(servicesProvider, Is.InstanceOf(type));
     }
 
-    protected override void AddServices(IConfiguration configuration, IServiceCollection services)
+    protected override void AddServices(IServiceCollection services)
     {
-        base.AddServices(configuration, services);
+        base.AddServices(services);
 
         var providerOptions = new ProviderOptions
         {

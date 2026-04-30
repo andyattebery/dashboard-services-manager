@@ -9,7 +9,7 @@ using Dsm.Shared.Tests;
 namespace Dsm.Providers.Tests.UnitTests;
 
 [CancelAfter(TestTimeouts.HungThresholdMs)]
-public class YamlFileServicesProviderTests : BaseTest
+public class YamlFileServicesProviderTests : ProviderTestFixtureHostedTestBase
 {
     private IServicesProvider _yamlFileServicesProvider = null!;
 
@@ -25,9 +25,9 @@ public class YamlFileServicesProviderTests : BaseTest
         _yamlFileServicesProvider = factory.Create(config);
     }
 
-    protected override void AddServices(IConfiguration configuration, IServiceCollection services)
+    protected override void AddServices(IServiceCollection services)
     {
-        base.AddServices(configuration, services);
+        base.AddServices(services);
 
         var providerOptions = new ProviderOptions
         {
