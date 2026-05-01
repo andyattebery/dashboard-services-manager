@@ -14,9 +14,7 @@ inventory and vault. **Treat the linked files as a shape reference, not a drop-i
 the YAML structure, env-var names, and field choices are what's reusable; the templated
 values are specific to that homelab.
 
-## Combined dashboard stack — `docker-compose-dashboards.yml`
-
-[`ansible/files/docker-01/docker-compose-dashboards.yml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/docker-compose-dashboards.yml)
+## Combined dashboard stack — [`docker-compose-dashboards.yml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/docker-compose-dashboards.yml)
 
 Runs the manager API, the provider, **and** both dashboards (Dashy + Homepage) in one
 compose stack on the dashboard host. Key shapes worth copying:
@@ -26,8 +24,11 @@ compose stack on the dashboard host. Key shapes worth copying:
   `${DOCKER_DATA_DIRECTORY}/homepage/config:/homepage_config`. That's how it writes
   `conf.yml` / `services.yaml` straight into the live dashboard config — no copying.
 - The manager and provider share a `${DOCKER_DATA_DIRECTORY}/dashboard-services-manager`
-  directory, mounted at `/config` in both. The manager reads `manager-config.yaml`; the
-  provider reads `provider-config.yaml` (rendered from a Jinja template — see below).
+  directory, mounted at `/config` in both. The manager reads
+  [`manager-config.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/manager-config.yaml);
+  the provider reads
+  [`provider-config.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/provider-config.yaml.j2)
+  (rendered from a Jinja template — see below).
 - Both DSM containers, plus Dashy and Homepage, get `traefik.enable=true` for the homelab's
   Traefik reverse proxy.
 
@@ -40,9 +41,7 @@ dashboard-services-manager:
     - ${DOCKER_DATA_DIRECTORY}/dashboard-services-manager:/config
 ```
 
-## Provider-only stack — `docker-compose-dsm-provider.yaml`
-
-[`ansible/roles/docker_compose_dashboard_services_manager_provider/files/docker-compose-dsm-provider.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/roles/docker_compose_dashboard_services_manager_provider/files/docker-compose-dsm-provider.yaml)
+## Provider-only stack — [`docker-compose-dsm-provider.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/roles/docker_compose_dashboard_services_manager_provider/files/docker-compose-dsm-provider.yaml)
 
 This is the compose file an Ansible role drops onto **every other Docker host** in the
 homelab. Each host runs its own provider container, enumerates its own local Docker
@@ -65,14 +64,12 @@ That maps onto the [env-var override table in the README](../README.md#overridin
 — useful when you want the role-deployed compose file to be identical on every host and
 the variation comes entirely from the host's environment.
 
-## DSM config files — `dashboard-services-manager/`
-
-[`ansible/files/docker-01/dashboard-services-manager/`](https://github.com/andyattebery/homelab-infrastructure/tree/main/ansible/files/docker-01/dashboard-services-manager)
+## DSM config files — [`dashboard-services-manager/`](https://github.com/andyattebery/homelab-infrastructure/tree/main/ansible/files/docker-01/dashboard-services-manager)
 
 The four files Ansible drops into the dashboard host's
 `${DOCKER_DATA_DIRECTORY}/dashboard-services-manager` directory.
 
-### `manager-config.yaml` (static, not templated)
+### [`manager-config.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/manager-config.yaml) (static, not templated)
 
 Two dashboard targets, status monitoring on Homepage, and a widgets file:
 
@@ -98,7 +95,7 @@ The `IgnoredServiceNames` list shows a typical use: drop infra services (Minio, 
 Netbootxyz) that show up via Docker labels but shouldn't surface on the dashboard. Full
 option reference in [managers.md](managers.md).
 
-### `provider-config.yaml.j2` (Jinja template)
+### [`provider-config.yaml.j2`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/provider-config.yaml.j2) (Jinja template)
 
 A single provider host running **four sources at once** — one `YamlFile` for non-Docker
 services, plus three `Traefik` sources, each pointed at a different host's Traefik:
@@ -128,7 +125,7 @@ Each `Hostname:` is the value stamped onto every service that source posts (see 
 [Traefik provider section](providers.md#traefik) of the providers guide). This is the
 canonical "fan-in from multiple Traefiks into one provider container" shape.
 
-### `provider-services.yaml.j2` (Jinja template)
+### [`provider-services.yaml.j2`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/provider-services.yaml.j2) (Jinja template)
 
 The input file for the `YamlFile` provider above — entries for everything that isn't a
 container DSM can scrape: IPMI, Proxmox hosts, Proxmox Backup Server, PiKVM, UniFi, the online Plex app, Home Assistant in VM. Worth highlighting:
@@ -138,9 +135,10 @@ container DSM can scrape: IPMI, Proxmox hosts, Proxmox Backup Server, PiKVM, Uni
   the bundled icon / category for the canonical app. Full YAML-file provider reference in
   [providers.md](providers.md#yaml-file).
 
-### `homepage-service-widgets.yaml.j2` (Jinja template)
+### [`homepage-service-widgets.yaml.j2`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/homepage-service-widgets.yaml.j2) (Jinja template)
 
-The widgets file referenced from `manager-config.yaml`. The interesting shape here is
+The widgets file referenced from
+[`manager-config.yaml`](https://github.com/andyattebery/homelab-infrastructure/blob/main/ansible/files/docker-01/dashboard-services-manager/manager-config.yaml). The interesting shape here is
 **multiple instances of the same widget keyed off `server:`** — three AdGuard Home
 instances, three Proxmox hosts — matching the [match precedence rules](managers.md#homepage-service-widgets)
 the manager uses to pick a widget per service entry:
