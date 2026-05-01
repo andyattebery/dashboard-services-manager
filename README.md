@@ -162,6 +162,9 @@ User guide:
   YAML-file providers; container label vocabulary
 - **[docs/icons.md](docs/icons.md)** — automatic icon resolution by service name, CDN
   prefixes (`hl-`, `sh-`, `mdi-`), image URLs, category icons
+- **[docs/usage-examples.md](docs/usage-examples.md)** — real-world Ansible-deployed
+  homelab configs (combined dashboard stack, provider-only stack, multi-Traefik provider
+  config, Homepage widgets with templated secrets) as a worked reference
 
 Development:
 
