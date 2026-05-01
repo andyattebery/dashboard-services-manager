@@ -131,12 +131,8 @@ canonical "fan-in from multiple Traefiks into one provider container" shape.
 ### `provider-services.yaml.j2` (Jinja template)
 
 The input file for the `YamlFile` provider above — entries for everything that isn't a
-container DSM can scrape: IPMI, Proxmox hosts, Proxmox Backup Server, PiKVM, UniFi, a
-bare-metal Plex install, an offsite Home Assistant. Two patterns worth highlighting:
+container DSM can scrape: IPMI, Proxmox hosts, Proxmox Backup Server, PiKVM, UniFi, the online Plex app, Home Assistant in VM. Worth highlighting:
 
-- **Dual-URL via Tailscale**: offsite services have a primary URL plus a Tailscale-tailnet
-  URL using `{{ tailscale_tailnet }}`, so the same dashboard works whether the user is on
-  the home network or roaming.
 - **`service_defaults_name`**: lets a service entry pick up the shipped defaults for a
   *different* name. Useful when a service runs under a customized name but you still want
   the bundled icon / category for the canonical app. Full YAML-file provider reference in
