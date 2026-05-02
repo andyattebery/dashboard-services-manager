@@ -19,7 +19,7 @@ public class ContainerLabelServiceFactory
     public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels)
     {
         var dockerLabelPrefix = config.DockerLabelPrefix;
-        var fromProviderServiceBuilder = new FromProviderServiceBuilder(name, hostname, config.AreServiceHostsHttps);
+        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps);
 
         foreach (var label in labels)
         {
@@ -28,25 +28,25 @@ public class ContainerLabelServiceFactory
                 !string.IsNullOrEmpty(traefikRouterRuleRegexMatch.Groups[1].Value))
             {
                 var traefikRouter = traefikRouterRuleRegexMatch.Groups[1].Value;
-                fromProviderServiceBuilder.TraefikRouterNameToRule.Add(traefikRouter, label.Value);
+                state.TraefikRouterNameToRule.Add(traefikRouter, label.Value);
             }
             else if (label.Key == $"{dockerLabelPrefix}.category")
             {
-                fromProviderServiceBuilder.LabelCategory = label.Value;
+                state.LabelCategory = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.icon")
             {
-                fromProviderServiceBuilder.LabelIcon = label.Value;
+                state.LabelIcon = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.image_path")
             {
-                fromProviderServiceBuilder.LabelImagePath = label.Value;
+                state.LabelImagePath = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.ignore")
             {
                 if (bool.TryParse(label.Value, out var ignore))
                 {
-                    fromProviderServiceBuilder.LabelIgnore = ignore;
+                    state.LabelIgnore = ignore;
                 }
                 else
                 {
@@ -55,27 +55,27 @@ public class ContainerLabelServiceFactory
             }
             else if (label.Key == $"{dockerLabelPrefix}.name")
             {
-                fromProviderServiceBuilder.LabelName = label.Value;
+                state.LabelName = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.service_defaults_name")
             {
-                fromProviderServiceBuilder.LabelServiceDefaultsName = label.Value;
+                state.LabelServiceDefaultsName = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.traefik.router")
             {
-                fromProviderServiceBuilder.LabelTraefikRouter = label.Value;
+                state.LabelTraefikRouter = label.Value;
             }
             else if (label.Key == $"{dockerLabelPrefix}.url")
             {
-                fromProviderServiceBuilder.LabelUrl = label.Value;
+                state.LabelUrl = label.Value;
             }
         }
-        var service = fromProviderServiceBuilder.Build();
+        var service = state.Build();
         _logger.LogDebug("{Service}", service);
         return service;
     }
 
-    private class FromProviderServiceBuilder
+    private class LabelParserState
     {
         public string DockerName { get; set; }
         public string? Hostname { get; set; }
@@ -92,7 +92,7 @@ public class ContainerLabelServiceFactory
 
         private bool _areTraefikRulesHttps;
 
-        public FromProviderServiceBuilder(string dockerName, string? hostname, bool areTraefikRulesHttps)
+        public LabelParserState(string dockerName, string? hostname, bool areTraefikRulesHttps)
         {
             DockerName = dockerName;
             Hostname = hostname;
