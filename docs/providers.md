@@ -174,5 +174,8 @@ silently producing an empty service list and confusing you for an hour.
 
 - [managers.md](managers.md) — configure the manager API that receives these POSTs and writes
   the dashboard YAML.
+- [configuration.md](configuration.md) — `provider-config.yaml` also accepts any standard .NET
+  setting (log levels, sinks, etc.) alongside the provider-specific options above.
+- [loki.md](loki.md) — forward logs to a Grafana Loki stack.
 - [development/providers.md](development/providers.md) — implementation details: how the
   factory wires up new provider types, how to add one.

@@ -82,6 +82,12 @@ The entrypoint adds the `dsm` user to a group with that GID so it can read the s
 DSM reads two YAML files: manager-config.yaml for the manager API and provider-config.yaml for the rovider. The docker images look for them in `/config/`. Either file can be partially or fully replaced by `DSM_`-prefixed
 environment variables; this is useful for doing all of the config in a docker compose file.
 
+These YAML files aren't a bespoke schema — they feed the standard .NET configuration tree, so
+anything you'd put in an `appsettings.json` file (log levels, Serilog sinks, allowed hosts,
+etc.) works in them too, just written in YAML. The sections below cover the app-specific
+options; see [docs/configuration.md](docs/configuration.md) for the broader story and
+[docs/loki.md](docs/loki.md) for a worked Grafana Loki sink example.
+
 ### YAML key casing
 
 DSM strips underscores from YAML keys at load time, so `snake_case`, `camelCase`, and `PascalCase`
@@ -165,6 +171,9 @@ User guide:
 - **[docs/usage-examples.md](docs/usage-examples.md)** — real-world Ansible-deployed
   homelab configs (combined dashboard stack, provider-only stack, multi-Traefik provider
   config, Homepage widgets with templated secrets) as a worked reference
+- **[docs/configuration.md](docs/configuration.md)** — putting standard .NET settings (log
+  levels, sinks, etc.) into the same YAML files alongside the app-specific options
+- **[docs/loki.md](docs/loki.md)** — forward logs to a Grafana Loki stack via Serilog
 
 Development:
 

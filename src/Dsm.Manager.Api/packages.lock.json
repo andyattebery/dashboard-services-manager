@@ -32,6 +32,15 @@
           "Serilog.Sinks.File": "7.0.0"
         }
       },
+      "Serilog.Sinks.Grafana.Loki": {
+        "type": "Direct",
+        "requested": "[8.3.2, )",
+        "resolved": "8.3.2",
+        "contentHash": "znb7fSb/4NfM++cSp99bUO3MCuP1Xx1k2329BUZCp7Tp+YwzAlDHHzBcVUZCll/EPGLuVPUdx894peHaAjYlvA==",
+        "dependencies": {
+          "Serilog": "2.12.0"
+        }
+      },
       "Microsoft.Extensions.DependencyModel": {
         "type": "Transitive",
         "resolved": "10.0.0",

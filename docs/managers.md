@@ -203,6 +203,9 @@ startup if it sees a duplicate.
 ## More
 
 - [providers.md](providers.md) — configure the provider that POSTs services to this manager.
+- [configuration.md](configuration.md) — `manager-config.yaml` also accepts any standard .NET
+  setting (log levels, sinks, etc.) alongside the manager-specific options above.
+- [loki.md](loki.md) — forward logs to a Grafana Loki stack.
 - [development/managers.md](development/managers.md) — implementation details: the combiner
   rule, internal field mapping, how to add a new dashboard backend.
 - [development/service-defaults.md](development/service-defaults.md) — full reference for the
