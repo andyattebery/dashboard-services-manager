@@ -4,16 +4,42 @@ using Microsoft.Extensions.Hosting;
 using Dsm.Provider.App;
 using Dsm.Providers.HostBuilder;
 using Dsm.Shared.Configuration;
+using Serilog;
 
-var builder = Host.CreateApplicationBuilder(args);
+const string OutputTemplate =
+    "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
 
-builder.Services
-    .AddHostedService<ProviderService>()
-    .AddDsmProviderServices();
+// Bootstrap logger captures startup logs before host config is built; replaced by AddSerilog below.
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(outputTemplate: OutputTemplate)
+    .CreateBootstrapLogger();
 
-builder.Configuration
-    .AddDsmProviderConfiguration()
-    .AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
+try
+{
+    var builder = Host.CreateApplicationBuilder(args);
 
-var host = builder.Build();
-host.Run();
+    builder.Services.AddSerilog((services, lc) => lc
+        .ReadFrom.Configuration(builder.Configuration)
+        .ReadFrom.Services(services)
+        .WriteTo.Console(outputTemplate: OutputTemplate));
+
+    builder.Services
+        .AddHostedService<ProviderService>()
+        .AddDsmProviderServices();
+
+    builder.Configuration
+        .AddDsmProviderConfiguration()
+        .AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
+
+    var host = builder.Build();
+    host.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
