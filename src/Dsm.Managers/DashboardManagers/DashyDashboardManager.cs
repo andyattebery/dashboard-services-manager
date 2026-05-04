@@ -41,7 +41,8 @@ public class DashyDashboardManager : IDashboardManager
             [DashboardIconSourceType.MaterialDesignIcons] = "mdi-",
         };
 
-    private string ConfigFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ConfigFileName);
+    public DashboardManagerType Type => DashboardManagerType.Dashy;
+    public string ConfigFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ConfigFileName);
 
     public async Task<List<Service>> ListServices()
     {
@@ -64,7 +65,7 @@ public class DashyDashboardManager : IDashboardManager
         return services;
     }
 
-    public async Task WriteServices(List<Service> services)
+    public async Task<bool> WriteServices(List<Service> services)
     {
         var resolvedIcons = new Dictionary<Service, (string? Icon, string? ImageUrl)>();
         foreach (var s in services)
@@ -95,7 +96,7 @@ public class DashyDashboardManager : IDashboardManager
 
         var sw = new StringWriter();
         serializer.Serialize(sw, dashyConfigObject);
-        await YamlFileWriter.WriteIfChanged(ConfigFilePath, sw.ToString());
+        return await YamlFileWriter.WriteIfChanged(ConfigFilePath, sw.ToString());
     }
 
     private static (string? icon, string? imageUrl) GetIconOrImageUrl(string? icon)

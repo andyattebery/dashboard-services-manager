@@ -37,7 +37,7 @@ public class HomepageSettingsLayoutTests
             Categories = new Dictionary<string, CategoryConfig>(
                 categories ?? new Dictionary<string, CategoryConfig>(), StringComparer.OrdinalIgnoreCase)
         });
-        var iconResolver = new IconResolver(options, iconSources ?? Array.Empty<IDashboardIconSource>());
+        var iconResolver = new IconResolver(options, iconSources ?? Array.Empty<IDashboardIconSource>(), NullLogger<IconResolver>.Instance);
         return new HomepageDashboardManager(
             new DashboardManagerConfig
             {

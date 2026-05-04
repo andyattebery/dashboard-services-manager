@@ -4,8 +4,11 @@ using Dsm.Shared.Models;
 namespace Dsm.Managers.DashboardManagers;
 public interface IDashboardManager
 {
+    DashboardManagerType Type { get; }
+    string ConfigFilePath { get; }
+
     Task<List<Service>> ListServices();
-    Task WriteServices(List<Service> services);
+    Task<bool> WriteServices(List<Service> services);
 
     /// <summary>
     /// Sources this dashboard renders natively, mapped to the prefix the dashboard expects in

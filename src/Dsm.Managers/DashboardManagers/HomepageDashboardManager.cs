@@ -47,6 +47,9 @@ public class HomepageDashboardManager : IDashboardManager
             [DashboardIconSourceType.MaterialDesignIcons] = "mdi-",
         };
 
+    public DashboardManagerType Type => DashboardManagerType.Homepage;
+    public string ConfigFilePath => ServicesFilePath;
+
     private string ServicesFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, ServicesFileName);
     private string SettingsFilePath => Path.Combine(_config.DashboardConfigDirectoryPath, SettingsFileName);
 
@@ -83,7 +86,7 @@ public class HomepageDashboardManager : IDashboardManager
         return services;
     }
 
-    public async Task WriteServices(List<Service> services)
+    public async Task<bool> WriteServices(List<Service> services)
     {
         var widgets = await LoadWidgetEntries();
 
@@ -107,12 +110,13 @@ public class HomepageDashboardManager : IDashboardManager
         var serializer = CreateSerializer();
         var sw = new StringWriter();
         serializer.Serialize(sw, output);
-        await YamlFileWriter.WriteIfChanged(ServicesFilePath, sw.ToString());
+        var servicesChanged = await YamlFileWriter.WriteIfChanged(ServicesFilePath, sw.ToString());
 
-        await UpdateSettingsLayoutIcons(services);
+        var settingsChanged = await UpdateSettingsLayoutIcons(services);
+        return servicesChanged || settingsChanged;
     }
 
-    private async Task UpdateSettingsLayoutIcons(List<Service> services)
+    private async Task<bool> UpdateSettingsLayoutIcons(List<Service> services)
     {
         var distinctGroups = services
             .Select(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
@@ -130,7 +134,7 @@ public class HomepageDashboardManager : IDashboardManager
                 groupIcons.Add((name, resolved));
             }
         }
-        if (groupIcons.Count == 0) return;
+        if (groupIcons.Count == 0) return false;
 
         var settings = await LoadSettings();
         var layout = GetOrCreateLayoutMap(settings);
@@ -150,7 +154,7 @@ public class HomepageDashboardManager : IDashboardManager
         var serializer = CreateSerializer();
         var sw = new StringWriter();
         serializer.Serialize(sw, settings);
-        await YamlFileWriter.WriteIfChanged(SettingsFilePath, sw.ToString());
+        return await YamlFileWriter.WriteIfChanged(SettingsFilePath, sw.ToString());
     }
 
     private async Task<Dictionary<object, object>> LoadSettings()

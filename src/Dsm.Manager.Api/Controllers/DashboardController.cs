@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Dsm.Managers;
 using Dsm.Shared.Models;
+using Serilog;
 
 namespace Dsm.Manager.Api.Controllers;
 
@@ -8,13 +9,16 @@ namespace Dsm.Manager.Api.Controllers;
 [Route("dashboard-services")]
 public class DashboardController : ControllerBase
 {
-    private readonly ILogger<DashboardController> _logger;
+    private readonly IDiagnosticContext _diagnosticContext;
     private readonly DashboardCommandProcessor _dashboardCommandProcessor;
     private readonly DashboardQueryService _dashboardQueryService;
 
-    public DashboardController(ILogger<DashboardController> logger, DashboardCommandProcessor dashboardCommandProcessor, DashboardQueryService dashboardQueryService)
+    public DashboardController(
+        IDiagnosticContext diagnosticContext,
+        DashboardCommandProcessor dashboardCommandProcessor,
+        DashboardQueryService dashboardQueryService)
     {
-        _logger = logger;
+        _diagnosticContext = diagnosticContext;
         _dashboardCommandProcessor = dashboardCommandProcessor;
         _dashboardQueryService = dashboardQueryService;
     }
@@ -22,6 +26,7 @@ public class DashboardController : ControllerBase
     [HttpPost]
     public async Task<Dictionary<string, List<Service>>> UpdateWithServices(List<Service> services)
     {
+        _diagnosticContext.Set("ServiceCount", services.Count);
         return await _dashboardCommandProcessor.UpdateWithServicesFromProvider(services);
     }
 

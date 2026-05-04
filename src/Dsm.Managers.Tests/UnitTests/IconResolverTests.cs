@@ -6,6 +6,7 @@ using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
@@ -41,7 +42,7 @@ public class IconResolverTests : ManagerTestFixtureHostedTestBase
         {
             FallbackIconSourceProviders = fallback.ToList()
         });
-        return new IconResolver(options, _iconSources);
+        return new IconResolver(options, _iconSources, NullLogger<IconResolver>.Instance);
     }
 
     private static IDashboardManager StubManager(params (DashboardIconSourceType Type, string Prefix)[] native)
@@ -53,9 +54,11 @@ public class IconResolverTests : ManagerTestFixtureHostedTestBase
     {
         public StubDashboardManager(IReadOnlyDictionary<DashboardIconSourceType, string> native)
             => NativeIconSourcePrefixes = native;
+        public DashboardManagerType Type => DashboardManagerType.Dashy;
+        public string ConfigFilePath => string.Empty;
         public IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePrefixes { get; }
         public Task<List<Service>> ListServices() => throw new NotSupportedException();
-        public Task WriteServices(List<Service> services) => throw new NotSupportedException();
+        public Task<bool> WriteServices(List<Service> services) => throw new NotSupportedException();
     }
 
     [Test]

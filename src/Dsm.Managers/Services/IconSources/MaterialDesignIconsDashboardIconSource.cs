@@ -1,10 +1,13 @@
+using Microsoft.Extensions.Logging;
+
 namespace Dsm.Managers.Services.IconSources;
 
 public class MaterialDesignIconsDashboardIconSource : JsDelivrIconSource
 {
     public const string ClientName = "materialdesignicons";
 
-    public MaterialDesignIconsDashboardIconSource(IHttpClientFactory httpClientFactory) : base(httpClientFactory) { }
+    public MaterialDesignIconsDashboardIconSource(IHttpClientFactory httpClientFactory, ILogger<MaterialDesignIconsDashboardIconSource> logger)
+        : base(httpClientFactory, logger) { }
 
     public override DashboardIconSourceType Type => DashboardIconSourceType.MaterialDesignIcons;
     public override string Prefix => "mdi-";

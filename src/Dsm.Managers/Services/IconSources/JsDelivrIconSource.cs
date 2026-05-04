@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace Dsm.Managers.Services.IconSources;
 
@@ -8,10 +9,12 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
 
     private readonly ConcurrentDictionary<string, (string? Url, string? MatchedName, DateTime CachedAt)> _cache = new();
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger _logger;
 
-    protected JsDelivrIconSource(IHttpClientFactory httpClientFactory)
+    protected JsDelivrIconSource(IHttpClientFactory httpClientFactory, ILogger logger)
     {
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public abstract DashboardIconSourceType Type { get; }
@@ -25,6 +28,8 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
         if (_cache.TryGetValue(iconName, out var cached) &&
             (cached.Url is not null || DateTime.UtcNow - cached.CachedAt < NegativeCacheTtl))
         {
+            _logger.LogDebug("Icon cache hit for '{IconName}' on '{SourceType}': '{Url}'",
+                iconName, Type, cached.Url ?? "<negative>");
             return (cached.Url, cached.MatchedName);
         }
 
@@ -37,11 +42,14 @@ public abstract class JsDelivrIconSource : IDashboardIconSource
         };
 
         var httpClient = _httpClientFactory.CreateClient(HttpClientName);
-        foreach (var potentialIconName in potentialIconNames)
+        for (var i = 0; i < potentialIconNames.Length; i++)
         {
+            var potentialIconName = potentialIconNames[i];
             var iconUrl = $"{BaseUrl}{potentialIconName}.{Extension}";
             using var request = new HttpRequestMessage(HttpMethod.Head, iconUrl);
             using var response = await httpClient.SendAsync(request);
+            _logger.LogDebug("CDN HEAD '{Url}' for icon '{IconName}' (variant {Variant}/3): {StatusCode}",
+                iconUrl, iconName, i + 1, (int)response.StatusCode);
             if (response.IsSuccessStatusCode)
             {
                 _cache[iconName] = (iconUrl, potentialIconName, DateTime.UtcNow);

@@ -2,6 +2,7 @@ using Dsm.Managers.Configuration;
 using Dsm.Managers.DashboardManagers;
 using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Services;
@@ -10,13 +11,16 @@ public class IconResolver
 {
     private readonly ServiceDefaultOptions _serviceDefaultOptions;
     private readonly Dictionary<DashboardIconSourceType, IDashboardIconSource> _iconSources;
+    private readonly ILogger<IconResolver> _logger;
 
     public IconResolver(
         IOptions<ServiceDefaultOptions> defaultOptions,
-        IEnumerable<IDashboardIconSource> iconSources)
+        IEnumerable<IDashboardIconSource> iconSources,
+        ILogger<IconResolver> logger)
     {
         _serviceDefaultOptions = defaultOptions.Value;
         _iconSources = iconSources.ToDictionary(s => s.Type);
+        _logger = logger;
     }
 
     /// <summary>
@@ -36,18 +40,24 @@ public class IconResolver
         var prefixResult = await ResolvePrefix(service.Icon, manager);
         if (prefixResult is { } hit)
         {
+            _logger.LogDebug("Icon for '{ServiceName}' on '{DashboardManager}': resolved via prefix match to icon='{Icon}', imageUrl='{ImageUrl}'",
+                service.Name, manager.Type, hit.Icon, hit.ImageUrl);
             return hit;
         }
 
         // 2. Pre-resolved image URL (e.g. ImagePath turned into a URL by the factory).
         if (!string.IsNullOrEmpty(service.ImageUrl))
         {
+            _logger.LogDebug("Icon for '{ServiceName}' on '{DashboardManager}': using pre-resolved image URL '{ImageUrl}'",
+                service.Name, manager.Type, service.ImageUrl);
             return (null, service.ImageUrl);
         }
 
         // 3. Icon string verbatim — no prefix, or prefix that missed the CDN.
         if (!string.IsNullOrEmpty(service.Icon))
         {
+            _logger.LogDebug("Icon for '{ServiceName}' on '{DashboardManager}': using verbatim icon '{Icon}' (no prefix or prefix CDN miss)",
+                service.Name, manager.Type, service.Icon);
             return (service.Icon, null);
         }
 
@@ -67,12 +77,18 @@ public class IconResolver
 
             if (manager.NativeIconSourcePrefixes.TryGetValue(type, out var nativePrefix))
             {
+                _logger.LogDebug("Icon for '{ServiceName}' on '{DashboardManager}': resolved via fallback '{SourceType}' to native '{Icon}'",
+                    service.Name, manager.Type, type, nativePrefix + matchedName);
                 return (nativePrefix + matchedName, null);
             }
 
+            _logger.LogDebug("Icon for '{ServiceName}' on '{DashboardManager}': resolved via fallback '{SourceType}' to URL '{Url}'",
+                service.Name, manager.Type, type, url);
             return (null, url);
         }
 
+        _logger.LogWarning("Icon for '{ServiceName}' on '{DashboardManager}': no match across all sources; rendering plaintext name",
+            service.Name, manager.Type);
         return (null, null);
     }
 

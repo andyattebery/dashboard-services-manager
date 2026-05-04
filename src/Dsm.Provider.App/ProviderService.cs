@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Refit;
@@ -33,6 +32,12 @@ public class ProviderService : BackgroundService
             return;
         }
 
+        _logger.LogInformation(
+            "Provider starting with {Count} sources [{Providers}], refresh interval {Interval}",
+            _providerOptions.ServicesProviders.Count,
+            string.Join(", ", _providerOptions.ServicesProviders.Select(p => p.ServicesProviderType)),
+            _providerOptions.RefreshInterval);
+
         using var timer = new PeriodicTimer(_providerOptions.RefreshInterval);
         do
         {
@@ -42,7 +47,10 @@ public class ProviderService : BackgroundService
                 try
                 {
                     var provider = _servicesProviderFactory.Create(config);
-                    aggregated.AddRange(await provider.ListServices());
+                    var services = await provider.ListServices();
+                    _logger.LogDebug("Provider '{ProviderType}' returned {Count} services: {@Services}",
+                        config.ServicesProviderType, services.Count, services);
+                    aggregated.AddRange(services);
                 }
                 catch (Exception e)
                 {
@@ -62,20 +70,26 @@ public class ProviderService : BackgroundService
     {
         try
         {
-            _logger.LogDebug("POST /dashboard-services payload: {Payload}", JsonSerializer.Serialize(services));
+            _logger.LogDebug("POST /dashboard-services payload: {@Services}", services);
             var response = await _dcmClient.UpdateDashboard(services);
             foreach (var (managerName, entries) in response)
             {
-                _logger.LogDebug("{Manager}: {Count} services", managerName, entries.Count);
-                foreach (var service in entries)
-                {
-                    _logger.LogDebug("  {Service}", service);
-                }
+                _logger.LogDebug("Dashboard '{DashboardManager}' response: {Count} services {@Services}",
+                    managerName, entries.Count, entries);
             }
         }
         catch (ApiException e)
         {
-            _logger.LogError(e, "{Exception}: Content={Content}", nameof(ApiException), e.Content);
+            _logger.LogError(e, "POST /dashboard-services failed with HTTP {StatusCode}: {Content}",
+                (int)e.StatusCode, e.Content);
+        }
+        catch (HttpRequestException e)
+        {
+            _logger.LogError(e, "POST /dashboard-services failed (transport)");
+        }
+        catch (TaskCanceledException e)
+        {
+            _logger.LogError(e, "POST /dashboard-services timed out");
         }
     }
 }

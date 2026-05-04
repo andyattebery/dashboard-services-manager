@@ -71,7 +71,7 @@ public class ContainerLabelServiceFactory
             }
         }
         var service = state.Build();
-        _logger.LogDebug("{Service}", service);
+        _logger.LogDebug("Created service from container labels: {@Service}", service);
         return service;
     }
 

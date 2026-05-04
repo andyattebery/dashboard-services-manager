@@ -1,10 +1,13 @@
+using Microsoft.Extensions.Logging;
+
 namespace Dsm.Managers.Services.IconSources;
 
 public class HomarrLabsDashboardIconSource : JsDelivrIconSource
 {
     public const string ClientName = "homarrlabs";
 
-    public HomarrLabsDashboardIconSource(IHttpClientFactory httpClientFactory) : base(httpClientFactory) { }
+    public HomarrLabsDashboardIconSource(IHttpClientFactory httpClientFactory, ILogger<HomarrLabsDashboardIconSource> logger)
+        : base(httpClientFactory, logger) { }
 
     public override DashboardIconSourceType Type => DashboardIconSourceType.HomarrLabs;
     public override string Prefix => "hl-";
