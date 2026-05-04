@@ -4,25 +4,17 @@ using Microsoft.Extensions.Hosting;
 using Dsm.Provider.App;
 using Dsm.Providers.HostBuilder;
 using Dsm.Shared.Configuration;
+using Dsm.Shared.Logging;
 using Serilog;
 
-const string OutputTemplate =
-    "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
-
-// Bootstrap logger captures startup logs before host config is built; replaced by AddSerilog below.
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console(outputTemplate: OutputTemplate)
-    .CreateBootstrapLogger();
+DsmSerilog.InitializeBootstrapLogger();
 
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
 
     builder.Services.AddSerilog((services, lc) => lc
-        .ReadFrom.Configuration(builder.Configuration)
-        .ReadFrom.Services(services)
-        .WriteTo.Console(outputTemplate: OutputTemplate));
+        .ConfigureDsmDefaults(builder.Configuration, services));
 
     builder.Services
         .AddHostedService<ProviderService>()

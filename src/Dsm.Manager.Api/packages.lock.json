@@ -32,6 +32,15 @@
           "Serilog.Sinks.File": "7.0.0"
         }
       },
+      "Serilog.Enrichers.ClientInfo": {
+        "type": "Direct",
+        "requested": "[2.9.0, )",
+        "resolved": "2.9.0",
+        "contentHash": "JsmW94VJJTG+Md/sKtw+Tbt7OSWx5TNs5NmnymD01mVU8FfPNMD8JBAZr2D1zKmnjSyfsQ8/RWn751XYBy+4Fw==",
+        "dependencies": {
+          "Serilog": "4.3.0"
+        }
+      },
       "Serilog.Sinks.Grafana.Loki": {
         "type": "Direct",
         "requested": "[8.3.2, )",
@@ -138,7 +147,11 @@
       "dsm.shared": {
         "type": "Project",
         "dependencies": {
-          "NetEscapades.Configuration.Yaml": "[3.1.0, )"
+          "NetEscapades.Configuration.Yaml": "[3.1.0, )",
+          "Serilog": "[4.3.0, )",
+          "Serilog.Extensions.Hosting": "[10.0.0, )",
+          "Serilog.Settings.Configuration": "[10.0.0, )",
+          "Serilog.Sinks.Console": "[6.1.1, )"
         }
       }
     }

@@ -1,28 +1,24 @@
 using Dsm.Managers.Configuration;
 using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Configuration;
-using Microsoft.Extensions.Hosting;
+using Dsm.Shared.Logging;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
-const string OutputTemplate =
-    "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
-
-// Bootstrap logger captures startup logs before host config is built; replaced by AddSerilog below.
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console(outputTemplate: OutputTemplate)
-    .CreateBootstrapLogger();
+DsmSerilog.InitializeBootstrapLogger();
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Services.AddSerilog((services, lc) => lc
-        .ReadFrom.Configuration(builder.Configuration)
-        .ReadFrom.Services(services)
-        .WriteTo.Console(outputTemplate: OutputTemplate));
+        .ConfigureDsmDefaults(builder.Configuration, services)
+        .Enrich.WithClientIp()
+        .Enrich.WithRequestHeader("User-Agent"));
+
+    builder.Services.AddHttpContextAccessor();
 
     builder.Services.AddControllers();
     builder.Services
@@ -35,27 +31,21 @@ try
 
     var app = builder.Build();
 
-    app.UseSerilogRequestLogging(opts =>
+    // Match the previous code's permissive trust: any upstream proxy's X-Forwarded-For is
+    // honored. Tightening this (KnownNetworks for a known proxy subnet) is a separate
+    // security concern.
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
     {
-        opts.MessageTemplate =
-            "HTTP {RequestMethod} {RequestPath} from {ClientIp} '{UserAgent}' responded {StatusCode} in {Elapsed:0.0} ms ({ServiceCount} services)";
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor
+    };
+    forwardedHeadersOptions.KnownIPNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwardedHeadersOptions);
 
-        opts.EnrichDiagnosticContext = (diag, ctx) =>
-        {
-            var forwardedFor = ctx.Request.Headers["X-Forwarded-For"].ToString();
-            var clientIp = string.IsNullOrEmpty(forwardedFor)
-                ? ctx.Connection.RemoteIpAddress?.ToString()
-                : forwardedFor;
-
-            diag.Set("ClientIp", clientIp);
-            diag.Set("UserAgent", ctx.Request.Headers.UserAgent.ToString());
-        };
-
-        // /dashboard-services hits every RefreshInterval per provider host; even one Info per
-        // tick stacks up. The operator-facing "manager did real work" signal is the Info from
-        // DashboardCommandProcessor (only on actual change).
-        opts.GetLevel = (_, _, _) => LogEventLevel.Debug;
-    });
+    // /dashboard-services hits every RefreshInterval per provider host; even one Info per
+    // tick stacks up. The operator-facing "manager did real work" signal is the Info from
+    // DashboardCommandProcessor (only on actual change).
+    app.UseSerilogRequestLogging(opts => opts.GetLevel = (_, _, _) => LogEventLevel.Debug);
 
     if (app.Environment.IsDevelopment())
     {
