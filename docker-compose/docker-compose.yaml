@@ -17,6 +17,12 @@ services:
       # e.g. `- /path/to/dashy/config:/dashy_config`. The named volume just keeps the pipeline
       # functional in this stock compose file by giving WriteServices a directory to write into.
       - dashy_config:/dashy_config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
   dashboard-services-manager-provider:
     container_name: dashboard-services-manager-provider
     image: ghcr.io/andyattebery/dashboard-services-manager:provider-latest
@@ -32,6 +38,16 @@ services:
       # mutates Docker state. For stricter isolation (e.g. exposing only specific endpoints),
       # use tecnativa/docker-socket-proxy instead of binding the raw socket.
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    # The provider touches /tmp/dsm-heartbeat at the end of every loop iteration. The check
+    # below considers it healthy if that file was modified within the last 2 minutes, which
+    # is ~2× the default RefreshInterval (60s) so a single missed cycle doesn't flap.
+    # start_period gives the first iteration time to write the file before checks begin.
+    healthcheck:
+      test: ["CMD-SHELL", "find /tmp/dsm-heartbeat -mmin -2 | grep -q . || exit 1"]
+      interval: 60s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
 
 volumes:
   dashy_config:

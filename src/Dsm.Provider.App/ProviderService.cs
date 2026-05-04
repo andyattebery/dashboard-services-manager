@@ -11,6 +11,11 @@ namespace Dsm.Provider.App;
 
 public class ProviderService : BackgroundService
 {
+    // Touched at the end of every loop iteration so the container HEALTHCHECK can prove the
+    // loop is iterating, not just that the process is up. Path is hardcoded because it must
+    // match the HEALTHCHECK directive in provider.Dockerfile.
+    private const string HeartbeatPath = "/tmp/dsm-heartbeat";
+
     private readonly ILogger<ProviderService> _logger;
     private readonly ProviderOptions _providerOptions;
     private readonly ServicesProviderFactory _servicesProviderFactory;
@@ -62,8 +67,24 @@ public class ProviderService : BackgroundService
             {
                 await PostServices(aggregated);
             }
+
+            WriteHeartbeat();
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    private void WriteHeartbeat()
+    {
+        try
+        {
+            File.WriteAllText(HeartbeatPath, string.Empty);
+        }
+        catch (Exception e)
+        {
+            // Don't crash the loop on a heartbeat write failure — the HEALTHCHECK will
+            // notice the stale file and surface it, which is the right outcome.
+            _logger.LogWarning(e, "Failed to write heartbeat file at {Path}", HeartbeatPath);
+        }
     }
 
     private async Task PostServices(List<Service> services)

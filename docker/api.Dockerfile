@@ -25,7 +25,7 @@ RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION AS app
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends gosu \
+ && apt-get install -y --no-install-recommends gosu curl \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -o -g 1000 dsm \
  && useradd -o -u 1000 -g dsm -d /home/dsm -m -s /bin/sh dsm
@@ -38,5 +38,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 VOLUME [ "/config" ]
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh", "dotnet", "Dsm.Manager.Api.dll"]

@@ -21,6 +21,7 @@ try
     builder.Services.AddHttpContextAccessor();
 
     builder.Services.AddControllers();
+    builder.Services.AddHealthChecks();
     builder.Services
         .AddOpenApi()
         .AddDsmManagerServices();
@@ -54,6 +55,7 @@ try
 
     app.UseAuthorization();
     app.MapControllers();
+    app.MapHealthChecks("/health");
 
     var managerOptions = app.Services.GetRequiredService<IOptions<ManagerOptions>>().Value;
     app.Logger.LogInformation("Manager starting with {Count} dashboards [{Dashboards}]",
