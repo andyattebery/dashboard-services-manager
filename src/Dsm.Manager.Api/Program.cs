@@ -24,6 +24,7 @@ try
     builder.Services.AddHealthChecks();
     builder.Services
         .AddOpenApi()
+        .AddProblemDetails()
         .AddDsmManagerServices();
 
     builder.Configuration
@@ -31,6 +32,12 @@ try
         .AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
 
     var app = builder.Build();
+
+    // First in the pipeline so it catches exceptions thrown by any later middleware.
+    // Combined with AddProblemDetails(), unhandled exceptions are logged at Error and the
+    // client gets an RFC 7807 ProblemDetails response (with stack trace details only in
+    // Development).
+    app.UseExceptionHandler();
 
     // Match the previous code's permissive trust: any upstream proxy's X-Forwarded-For is
     // honored. Tightening this (KnownNetworks for a known proxy subnet) is a separate
