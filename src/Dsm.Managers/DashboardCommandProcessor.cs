@@ -13,6 +13,7 @@ public class DashboardCommandProcessor
     private readonly DashboardManagerFactory _dashboardManagerFactory;
     private readonly ServiceWithDefaultsFactory _serviceWithDefaultsFactory;
     private readonly ServicesCombiner _servicesCombiner;
+    private readonly DashboardWriteCoordinator _writeCoordinator;
     private readonly ILogger<DashboardCommandProcessor> _logger;
 
     public DashboardCommandProcessor(
@@ -20,16 +21,31 @@ public class DashboardCommandProcessor
         DashboardManagerFactory dashboardManagerFactory,
         ServiceWithDefaultsFactory serviceWithDefaultsFactory,
         ServicesCombiner servicesCombiner,
+        DashboardWriteCoordinator writeCoordinator,
         ILogger<DashboardCommandProcessor> logger)
     {
         _managerOptions = managerOptions.Value;
         _dashboardManagerFactory = dashboardManagerFactory;
         _serviceWithDefaultsFactory = serviceWithDefaultsFactory;
         _servicesCombiner = servicesCombiner;
+        _writeCoordinator = writeCoordinator;
         _logger = logger;
     }
 
     public async Task<Dictionary<string, List<Service>>> UpdateWithServicesFromProvider(IEnumerable<Service> providerServices)
+    {
+        await _writeCoordinator.WaitAsync();
+        try
+        {
+            return await UpdateWithServicesFromProviderCore(providerServices);
+        }
+        finally
+        {
+            _writeCoordinator.Release();
+        }
+    }
+
+    private async Task<Dictionary<string, List<Service>>> UpdateWithServicesFromProviderCore(IEnumerable<Service> providerServices)
     {
         var providerList = providerServices as List<Service> ?? providerServices.ToList();
         var ignoredNames = _managerOptions.IgnoredServiceNames ?? new List<string>();

@@ -29,6 +29,7 @@ public static class HostBuilderExtensions
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>()
+            .AddSingleton<DashboardWriteCoordinator>()
             .AddSingleton<IconResolver, IconResolver>();
         services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, SelfhStDashboardIconSource>();
