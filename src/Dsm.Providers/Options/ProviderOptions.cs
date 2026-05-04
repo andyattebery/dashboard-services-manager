@@ -11,4 +11,8 @@ public sealed class ProviderOptions
 
     [MinLength(1)]
     public required List<ServicesProviderConfig> ServicesProviders { get; set; }
+
+    // When set, outbound calls to the manager include an X-Api-Key header. Must match the
+    // manager's ManagerOptions.ApiKey. When null/empty, no header is sent.
+    public string? ApiKey { get; set; }
 }

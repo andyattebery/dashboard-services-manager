@@ -142,6 +142,31 @@ ProviderOptions:
 Required fields are validated at startup — a misconfigured provider fails fast with a clear
 message instead of silently producing an empty service list.
 
+### Optional API key
+
+By default the manager API is unauthenticated, which is fine on a trusted homelab LAN. If you
+expose it more broadly (Tailscale, Cloudflare Tunnel, port-forward), set a shared secret on
+both sides — they have to match:
+
+```yaml
+# manager-config.yaml
+ManagerOptions:
+  ApiKey: choose-a-long-random-string
+  # ...rest of config
+```
+
+```yaml
+# provider-config.yaml
+ProviderOptions:
+  ApiKey: choose-a-long-random-string   # must match ManagerOptions.ApiKey
+  # ...rest of config
+```
+
+With `ManagerOptions.ApiKey` set, the manager rejects requests to `/dashboard-services`
+unless they carry a matching `X-Api-Key` header; the provider sends that header automatically
+when its own `ProviderOptions.ApiKey` is set. `/health` stays open either way so container
+healthchecks keep working. Leave both unset to keep the trusted-LAN default.
+
 ### Overriding via environment variables
 
 Every YAML key maps to an env var: prefix `DSM_`, join nested keys with `__` (double underscore),
@@ -157,6 +182,8 @@ index lists with `__0`, `__1`, etc. Whatever you set this way wins over the YAML
 | `ManagerOptions.DashboardManagers[0].DashboardManagerType` | `DSM_ManagerOptions__DashboardManagers__0__DashboardManagerType` |
 | `ManagerOptions.DashboardManagers[0].DashboardConfigDirectoryPath` | `DSM_ManagerOptions__DashboardManagers__0__DashboardConfigDirectoryPath` |
 | `ManagerOptions.IgnoredServiceNames[0]` | `DSM_ManagerOptions__IgnoredServiceNames__0` |
+| `ManagerOptions.ApiKey` | `DSM_ManagerOptions__ApiKey` |
+| `ProviderOptions.ApiKey` | `DSM_ProviderOptions__ApiKey` |
 
 ## Documentation
 

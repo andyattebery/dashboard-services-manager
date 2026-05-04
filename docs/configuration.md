@@ -40,6 +40,14 @@ Serilog__MinimumLevel__Override__Microsoft.Hosting.Lifetime=Information
 See the [Overriding via environment variables](../README.md#overriding-via-environment-variables)
 section in the README for the same pattern applied to app-specific options.
 
+## Optional API key
+
+The manager API is unauthenticated by default. To require a shared secret on
+`/dashboard-services`, set `ManagerOptions.ApiKey` in `manager-config.yaml` (or via
+`DSM_ManagerOptions__ApiKey`) and the matching `ProviderOptions.ApiKey` on every provider.
+When unset, the trusted-LAN behavior is preserved. `/health` is never gated. See the
+[Optional API key](../README.md#optional-api-key) section in the README for the full example.
+
 ## More
 
 - [loki.md](loki.md) — a worked example: enable a Grafana Loki sink purely through YAML.

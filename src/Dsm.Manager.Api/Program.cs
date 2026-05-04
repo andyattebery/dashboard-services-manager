@@ -1,3 +1,5 @@
+using AspNetCore.Authentication.ApiKey;
+using Dsm.Manager.Api.Authentication;
 using Dsm.Managers.Configuration;
 using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Configuration;
@@ -20,6 +22,10 @@ try
 
     builder.Services.AddHttpContextAccessor();
 
+    builder.Configuration
+        .AddDsmManagerConfiguration()
+        .AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
+
     builder.Services.AddControllers();
     builder.Services.AddHealthChecks();
     builder.Services
@@ -27,9 +33,20 @@ try
         .AddProblemDetails()
         .AddDsmManagerServices();
 
-    builder.Configuration
-        .AddDsmManagerConfiguration()
-        .AddEnvironmentVariables(Constants.EnvironmentVariablePrefix);
+    // Opt-in API key auth. Scheme + authorization are registered only when ApiKey is set,
+    // so the trusted-LAN default deployment doesn't carry the auth pipeline at all.
+    var apiKeyConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["ManagerOptions:ApiKey"]);
+    if (apiKeyConfigured)
+    {
+        builder.Services
+            .AddAuthentication(ApiKeyDefaults.AuthenticationScheme)
+            .AddApiKeyInHeader<ConfigApiKeyProvider>(opts =>
+            {
+                opts.Realm = "DSM";
+                opts.KeyName = Constants.ApiKeyHeaderName;
+            });
+        builder.Services.AddAuthorization();
+    }
 
     var app = builder.Build();
 
@@ -60,14 +77,24 @@ try
         app.MapOpenApi();
     }
 
-    app.UseAuthorization();
-    app.MapControllers();
+    if (apiKeyConfigured)
+    {
+        app.UseAuthentication();
+        app.UseAuthorization();
+    }
+
+    var controllerEndpoints = app.MapControllers();
+    if (apiKeyConfigured)
+    {
+        controllerEndpoints.RequireAuthorization();
+    }
     app.MapHealthChecks("/health");
 
     var managerOptions = app.Services.GetRequiredService<IOptions<ManagerOptions>>().Value;
-    app.Logger.LogInformation("Manager starting with {Count} dashboards [{Dashboards}]",
+    app.Logger.LogInformation("Manager starting with {Count} dashboards [{Dashboards}], API key {ApiKeyState}",
         managerOptions.DashboardManagers.Count,
-        string.Join(", ", managerOptions.DashboardManagers.Select(m => m.DashboardManagerType)));
+        string.Join(", ", managerOptions.DashboardManagers.Select(m => m.DashboardManagerType)),
+        apiKeyConfigured ? "enabled" : "disabled");
 
     app.Run();
 }
