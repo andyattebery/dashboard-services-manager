@@ -4,6 +4,7 @@ services:
   dashboard-services-manager-api:
     container_name: dashboard-services-manager-api
     image: ghcr.io/andyattebery/dashboard-services-manager:api-latest
+    restart: unless-stopped
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -19,6 +20,7 @@ services:
   dashboard-services-manager-provider:
     container_name: dashboard-services-manager-provider
     image: ghcr.io/andyattebery/dashboard-services-manager:provider-latest
+    restart: unless-stopped
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -26,7 +28,10 @@ services:
       - HOSTNAME=${HOSTNAME}
     volumes:
       - ./provider-config.yaml:/config/provider-config.yaml:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Read-only is sufficient — the provider only enumerates containers/services, never
+      # mutates Docker state. For stricter isolation (e.g. exposing only specific endpoints),
+      # use tecnativa/docker-socket-proxy instead of binding the raw socket.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
   dashy_config:
