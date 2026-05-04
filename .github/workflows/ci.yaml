@@ -73,25 +73,35 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push API Docker images
+      # Versioned tags push first; :latest is promoted in a final step (below) only if
+      # both versioned pushes succeeded. If either of these build steps fails, the
+      # job fails before the promote step runs, so :latest is never half-moved.
+      - name: Build and push API image (versioned)
         uses: docker/build-push-action@v7
         with:
           file: docker/api.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: VERSION=${{ steps.version.outputs.version }}
-          # The conditional ":latest" line evaluates to '' for pre-release tags;
-          # docker/build-push-action filters empty entries out of the list.
-          tags: |
-            ghcr.io/andyattebery/dashboard-services-manager:api-${{ steps.version.outputs.version }}
-            ${{ steps.version.outputs.is_release == 'true' && 'ghcr.io/andyattebery/dashboard-services-manager:api-latest' || '' }}
-      - name: Build and push Provider Docker images
+          tags: ghcr.io/andyattebery/dashboard-services-manager:api-${{ steps.version.outputs.version }}
+      - name: Build and push Provider image (versioned)
         uses: docker/build-push-action@v7
         with:
           file: docker/provider.Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: VERSION=${{ steps.version.outputs.version }}
-          tags: |
-            ghcr.io/andyattebery/dashboard-services-manager:provider-${{ steps.version.outputs.version }}
-            ${{ steps.version.outputs.is_release == 'true' && 'ghcr.io/andyattebery/dashboard-services-manager:provider-latest' || '' }}
+          tags: ghcr.io/andyattebery/dashboard-services-manager:provider-${{ steps.version.outputs.version }}
+      - name: Promote :latest tags
+        # imagetools create rewrites the manifest at -t to point at the existing
+        # versioned manifest — no rebuild, no layer re-push, multi-arch preserved.
+        if: steps.version.outputs.is_release == 'true'
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/andyattebery/dashboard-services-manager:api-latest \
+            ghcr.io/andyattebery/dashboard-services-manager:api-${VERSION}
+          docker buildx imagetools create \
+            -t ghcr.io/andyattebery/dashboard-services-manager:provider-latest \
+            ghcr.io/andyattebery/dashboard-services-manager:provider-${VERSION}
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
