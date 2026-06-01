@@ -206,6 +206,7 @@ jobs:
     needs: build-binaries
     permissions:
       contents: write
+      actions: write
     steps:
       - name: Compute version
         id: version
@@ -232,6 +233,11 @@ jobs:
           --title "v${{ steps.version.outputs.version }}"
           --generate-notes
           ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger flake update
+        run: gh workflow run update-flake.yml -f tag="$TAG"
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

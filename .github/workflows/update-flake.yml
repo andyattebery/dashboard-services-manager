@@ -2,8 +2,11 @@
 name: update-flake
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. 1.1.0 or v1.1.0)'
+        required: true
 
 permissions:
   contents: write
@@ -18,12 +21,12 @@ jobs:
       - name: Compute version and hashes
         id: hashes
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-          X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/dsm-provider-${VERSION}-linux-x64.tar.gz"
-          ARM64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/dsm-provider-${VERSION}-linux-arm64.tar.gz"
+          X64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-x64.tar.gz"
+          ARM64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-arm64.tar.gz"
 
           X64_HASH="sha256-$(curl -sfL "$X64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
           ARM64_HASH="sha256-$(curl -sfL "$ARM64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
