@@ -5,6 +5,11 @@
   let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
   in {
+    nixosModules.dsm-provider = { pkgs, lib, ... }: {
+      imports = [ ./nix/module.nix ];
+      services.dsm-provider.package = lib.mkDefault self.packages.${pkgs.system}.dsm-provider;
+    };
+
     packages = forAllSystems (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
