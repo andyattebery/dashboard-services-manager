@@ -9,6 +9,11 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and release (e.g. 1.1.0 or v1.1.0)'
+        required: true
 
 concurrency:
   group: ci-${{ github.head_ref || github.run_id }}
@@ -46,9 +51,11 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     needs: test
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - name: Compute version
         id: version
         # Strip leading "v" so 1.0.0 and v1.0.0 both produce identical image tags.
@@ -62,7 +69,7 @@ jobs:
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           fi
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
@@ -105,3 +112,126 @@ jobs:
             ghcr.io/andyattebery/dashboard-services-manager:provider-${VERSION}
         env:
           VERSION: ${{ steps.version.outputs.version }}
+
+  build-binaries:
+    runs-on: ubuntu-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: src
+    strategy:
+      matrix:
+        rid:
+          - linux-x64
+          - linux-arm64
+          - osx-x64
+          - osx-arm64
+          - win-x64
+          - win-arm64
+        app:
+          - name: Dsm.Manager.Api
+            asset_name: dsm-api
+          - name: Dsm.Provider.App
+            asset_name: dsm-provider
+        include:
+          - rid: linux-x64
+            asset_rid: linux-x64
+            archive_ext: tar.gz
+          - rid: linux-arm64
+            asset_rid: linux-arm64
+            archive_ext: tar.gz
+          - rid: osx-x64
+            asset_rid: macos-x64
+            archive_ext: tar.gz
+          - rid: osx-arm64
+            asset_rid: macos-arm64
+            archive_ext: tar.gz
+          - rid: win-x64
+            asset_rid: win-x64
+            archive_ext: zip
+          - rid: win-arm64
+            asset_rid: win-arm64
+            archive_ext: zip
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: src/global.json
+          cache: true
+          cache-dependency-path: src/**/packages.lock.json
+      - name: Compute version
+        id: version
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+      - name: Publish
+        run: >-
+          dotnet publish ${{ matrix.app.name }}/${{ matrix.app.name }}.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained
+          --output publish/${{ matrix.app.asset_name }}
+          /p:PublishSingleFile=true
+          /p:EnableCompressionInSingleFile=true
+          /p:Version=${{ steps.version.outputs.version }}
+          /p:DisableGitVersionTask=true
+      - name: Create archive (tar.gz)
+        if: matrix.archive_ext == 'tar.gz'
+        run: >-
+          tar -czf
+          ${{ matrix.app.asset_name }}-${{ steps.version.outputs.version }}-${{ matrix.asset_rid }}.${{ matrix.archive_ext }}
+          -C publish/${{ matrix.app.asset_name }}
+          .
+      - name: Create archive (zip)
+        if: matrix.archive_ext == 'zip'
+        run: >-
+          cd publish/${{ matrix.app.asset_name }} &&
+          zip -r
+          ../../${{ matrix.app.asset_name }}-${{ steps.version.outputs.version }}-${{ matrix.asset_rid }}.${{ matrix.archive_ext }}
+          .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.app.asset_name }}-${{ matrix.asset_rid }}
+          path: src/${{ matrix.app.asset_name }}-${{ steps.version.outputs.version }}-${{ matrix.asset_rid }}.${{ matrix.archive_ext }}
+          if-no-files-found: error
+          retention-days: 1
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: build-binaries
+    permissions:
+      contents: write
+    steps:
+      - name: Compute version
+        id: version
+        run: |
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create GitHub release
+        run: >-
+          gh release create "$TAG"
+          artifacts/*
+          --repo "${{ github.repository }}"
+          --title "v${{ steps.version.outputs.version }}"
+          --generate-notes
+          ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
