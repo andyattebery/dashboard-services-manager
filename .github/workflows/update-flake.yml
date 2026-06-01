@@ -1,0 +1,45 @@
+---
+name: update-flake
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-flake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Compute version and hashes
+        id: hashes
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          X64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/dsm-provider-${VERSION}-linux-x64.tar.gz"
+          ARM64_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/dsm-provider-${VERSION}-linux-arm64.tar.gz"
+
+          X64_HASH="sha256-$(curl -sfL "$X64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
+          ARM64_HASH="sha256-$(curl -sfL "$ARM64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
+
+          echo "x64_hash=$X64_HASH" >> "$GITHUB_OUTPUT"
+          echo "arm64_hash=$ARM64_HASH" >> "$GITHUB_OUTPUT"
+      - name: Update flake.nix
+        run: |
+          sed -i 's/version = ".*"/version = "${{ steps.hashes.outputs.version }}"/' flake.nix
+          sed -i 's|x64 = "sha256-.*"|x64 = "${{ steps.hashes.outputs.x64_hash }}"|' flake.nix
+          sed -i 's|arm64 = "sha256-.*"|arm64 = "${{ steps.hashes.outputs.arm64_hash }}"|' flake.nix
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --quiet flake.nix && exit 0
+          git add flake.nix
+          git commit -m "update flake to ${{ steps.hashes.outputs.version }}" -m "[skip ci]"
+          git push
