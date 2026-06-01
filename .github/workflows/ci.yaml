@@ -237,7 +237,7 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Trigger flake update
-        run: gh workflow run update-flake.yml -f tag="$TAG"
+        run: gh workflow run update-flake.yml --repo "${{ github.repository }}" -f tag="$TAG"
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
