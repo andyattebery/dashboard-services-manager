@@ -47,14 +47,16 @@ public class ServicesCombiner
         var merged = new List<Service>(newServices);
         merged.AddRange(survivors);
 
-        var seen = new HashSet<(string, string?)>();
+        var seenNames = new HashSet<(string, string?)>();
+        var seenUrls = new HashSet<(string, string?)>();
         var result = new List<Service>();
         foreach (var s in merged)
         {
-            if (seen.Add((s.Name, s.Hostname)))
-            {
-                result.Add(s);
-            }
+            if (!seenNames.Add((s.Name, s.Hostname)))
+                continue;
+            if (!string.IsNullOrEmpty(s.Url) && !seenUrls.Add((s.Url, s.Hostname)))
+                continue;
+            result.Add(s);
         }
 
         return result
