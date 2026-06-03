@@ -349,16 +349,16 @@
       },
       "Refit": {
         "type": "Transitive",
-        "resolved": "10.1.6",
-        "contentHash": "j82mHFcXJpiJiaLqQgiikmLAu+oYKcIM8ZafipX2s2b2soOS0OGN+Oc+BXkhsG8x6j2M1J23Eac3068yOKLPFA=="
+        "resolved": "10.0.1",
+        "contentHash": "AprsDMXFRU2k+sXZYfiFLYueP7ovEvoGzC2ylAV9i6xh6rcGJOgLiZdugxnEpIrH6WNbiR8OnOrAr06/pZMQaQ=="
       },
       "Refit.HttpClientFactory": {
         "type": "Transitive",
-        "resolved": "10.1.6",
-        "contentHash": "brVgMXHX2pp6pMji7tJijygbMwxccIy2vSsPurPmOZ7jSChBjYpiT9bBbJkBDc0hhnNyzvLkkbx0uiHhJuTTEQ==",
+        "resolved": "10.0.1",
+        "contentHash": "l8+mhfcBm0lSuNF9g1VTEwEHYQKtdqouOybpQkuxSWafSswRmit9COjmw6vd2Odj5k/qWjzzo8EbjYbyoV2dmQ==",
         "dependencies": {
           "Microsoft.Extensions.Http": "9.0.3",
-          "Refit": "10.1.6"
+          "Refit": "10.0.1"
         }
       },
       "Serilog": {
@@ -425,8 +425,8 @@
           "Microsoft.Extensions.Options.ConfigurationExtensions": "[10.0.7, )",
           "Microsoft.Extensions.Options.DataAnnotations": "[10.0.7, )",
           "NetEscapades.Configuration.Yaml": "[3.1.0, )",
-          "Refit": "[10.1.6, )",
-          "Refit.HttpClientFactory": "[10.1.6, )",
+          "Refit": "[10.0.1, )",
+          "Refit.HttpClientFactory": "[10.0.1, )",
           "YamlDotNet": "[17.1.0, )"
         }
       },

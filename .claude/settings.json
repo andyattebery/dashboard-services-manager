@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /tmp/refit-check)",
+      "Bash(dotnet nuget *)",
+      "Bash(curl -sL \"https://api.nuget.org/*)",
+      "Bash(curl -sI \"https://api.nuget.org/*)",
+      "Bash(curl -s \"https://api.nuget.org/*)",
+      "Bash(python3 -c \"import json,sys; versions=json.load\\(sys.stdin\\)['versions']; [print\\(v\\) for v in versions if v.startswith\\('10.'\\) or v.startswith\\('9.'\\)]\")"
+    ]
+  }
+}
