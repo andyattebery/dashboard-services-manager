@@ -81,7 +81,8 @@ public class TraefikServicesProvider : IServicesProvider
             icon: null,
             imageUrl: null,
             hostname: _config.Hostname,
-            ignore: false);
+            ignore: false,
+            providerId: _config.ProviderId);
     }
 
     private static string CleanServiceName(string? raw)

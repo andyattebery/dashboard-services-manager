@@ -15,4 +15,6 @@ public sealed class ProviderOptions
     // When set, outbound calls to the manager include an X-Api-Key header. Must match the
     // manager's ManagerOptions.ApiKey. When null/empty, no header is sent.
     public string? ApiKey { get; set; }
+
+    public string? Hostname { get; set; }
 }

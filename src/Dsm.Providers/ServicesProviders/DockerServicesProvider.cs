@@ -39,7 +39,7 @@ public class DockerServicesProvider : IServicesProvider
     {
         var serviceName = GetServiceName(containerListResponse);
 
-        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, serviceName, containerListResponse.Labels);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, serviceName, containerListResponse.Labels, _config.ProviderId);
     }
 
     private static string GetServiceName(ContainerListResponse containerListResponse)

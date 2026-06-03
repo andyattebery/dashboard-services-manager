@@ -14,4 +14,6 @@ public sealed class ServicesProviderConfig
     public string? TraefikApiUrl { get; set; }
     public string? ServicesYamlFilePath { get; set; }
     public string? DockerLabelPrefix { get; set; }
+
+    public string? ProviderId { get; set; }
 }

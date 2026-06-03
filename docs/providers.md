@@ -12,6 +12,7 @@ Configuration lives in [`provider-config.yaml`](../docker-compose/provider-confi
 ```yaml
 ProviderOptions:
   ApiUrl: http://dashboard-services-manager-api:8080   # where to POST results
+  Hostname: docker-01                                  # optional, override for provider identity
   RefreshInterval: 00:01:00                            # optional, default 60s
   ServicesProviders:
     - ServicesProviderType: Docker
@@ -25,6 +26,25 @@ ProviderOptions:
 calls every entry, aggregates the results, and POSTs them as a single batch. If one source
 fails on a tick (e.g. Traefik unreachable), the others still post; the failing one logs a
 warning and is retried on the next tick.
+
+## Provider identity
+
+Each provider source is assigned a `ProviderId` that scopes how services are replaced. When a
+provider POSTs, only services from that same provider are replaced — services contributed by
+other providers for the same hostname are preserved.
+
+The ProviderId is derived automatically as `{hostname}-{type}`, with an index suffix when
+multiple sources share the same type. The hostname is resolved in order:
+
+1. `ProviderOptions.Hostname` (explicit override)
+2. `HOSTNAME` environment variable (set in docker-compose)
+3. Machine hostname (`Environment.MachineName`)
+
+For example, a deployment on docker-01 with three Traefik sources and one Docker source:
+`docker-01-traefik-0`, `docker-01-traefik-1`, `docker-01-traefik-2`, `docker-01-docker`.
+
+You can also override the ProviderId per source by setting `ProviderId` directly on a
+`ServicesProviders` entry.
 
 ## Provider types
 

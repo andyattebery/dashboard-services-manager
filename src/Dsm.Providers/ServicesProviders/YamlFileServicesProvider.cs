@@ -36,6 +36,7 @@ public class YamlFileServicesProvider : IServicesProvider
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .Build();
-        return deserializer.Deserialize<List<Service>>(text) ?? new List<Service>();
+        var services = deserializer.Deserialize<List<Service>>(text) ?? new List<Service>();
+        return services.Select(s => s with { ProviderId = _config.ProviderId }).ToList();
     }
 }

@@ -37,10 +37,12 @@ public class ProviderService : BackgroundService
             return;
         }
 
+        AssignProviderIds();
+
         _logger.LogInformation(
             "Provider starting with {Count} sources [{Providers}], refresh interval {Interval}",
             _providerOptions.ServicesProviders.Count,
-            string.Join(", ", _providerOptions.ServicesProviders.Select(p => p.ServicesProviderType)),
+            string.Join(", ", _providerOptions.ServicesProviders.Select(p => $"{p.ServicesProviderType}({p.ProviderId})")),
             _providerOptions.RefreshInterval);
 
         using var timer = new PeriodicTimer(_providerOptions.RefreshInterval);
@@ -84,6 +86,29 @@ public class ProviderService : BackgroundService
             // Don't crash the loop on a heartbeat write failure — the HEALTHCHECK will
             // notice the stale file and surface it, which is the right outcome.
             _logger.LogWarning(e, "Failed to write heartbeat file at {Path}", HeartbeatPath);
+        }
+    }
+
+    private void AssignProviderIds()
+    {
+        var hostname = (_providerOptions.Hostname
+            ?? Environment.GetEnvironmentVariable("HOSTNAME")
+            ?? Environment.MachineName).ToLowerInvariant();
+
+        var groups = _providerOptions.ServicesProviders
+            .Where(c => string.IsNullOrEmpty(c.ProviderId))
+            .GroupBy(c => c.ServicesProviderType.ToString().ToLowerInvariant());
+
+        foreach (var group in groups)
+        {
+            var entries = group.ToList();
+            var needsIndex = entries.Count > 1;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                entries[i].ProviderId = needsIndex
+                    ? $"{hostname}-{group.Key}-{i}"
+                    : $"{hostname}-{group.Key}";
+            }
         }
     }
 

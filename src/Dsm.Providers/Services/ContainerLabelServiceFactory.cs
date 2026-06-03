@@ -16,10 +16,10 @@ public class ContainerLabelServiceFactory
         _logger = logger;
     }
 
-    public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels)
+    public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels, string? providerId = null)
     {
         var dockerLabelPrefix = config.DockerLabelPrefix;
-        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps);
+        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps, providerId);
 
         foreach (var label in labels)
         {
@@ -91,12 +91,14 @@ public class ContainerLabelServiceFactory
             new Dictionary<string, string>();
 
         private bool _areTraefikRulesHttps;
+        private string? _providerId;
 
-        public LabelParserState(string dockerName, string? hostname, bool areTraefikRulesHttps)
+        public LabelParserState(string dockerName, string? hostname, bool areTraefikRulesHttps, string? providerId)
         {
             DockerName = dockerName;
             Hostname = hostname;
             _areTraefikRulesHttps = areTraefikRulesHttps;
+            _providerId = providerId;
         }
 
         public Service Build()
@@ -109,7 +111,8 @@ public class ContainerLabelServiceFactory
                 LabelImagePath,
                 Hostname,
                 LabelIgnore,
-                serviceDefaultsName: LabelServiceDefaultsName
+                serviceDefaultsName: LabelServiceDefaultsName,
+                providerId: _providerId
             );
         }
 

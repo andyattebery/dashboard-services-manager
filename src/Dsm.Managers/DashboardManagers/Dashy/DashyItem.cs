@@ -21,6 +21,10 @@ public class DashyItem
         {
             tags.Add($"host={service.Hostname}");
         }
+        if (!string.IsNullOrEmpty(service.ProviderId))
+        {
+            tags.Add($"provider={service.ProviderId}");
+        }
 
         return new DashyItem(service.Name, service.Url, dashyIcon, tags)
         {

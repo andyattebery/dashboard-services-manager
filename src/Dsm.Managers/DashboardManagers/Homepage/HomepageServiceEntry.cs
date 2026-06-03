@@ -20,4 +20,9 @@ public class HomepageServiceEntry
 
     [YamlMember(Alias = ServiceDefaultsNameKey, ApplyNamingConventions = false)]
     public string? ServiceDefaultsName { get; set; }
+
+    public const string ProviderIdKey = "_providerId";
+
+    [YamlMember(Alias = ProviderIdKey, ApplyNamingConventions = false)]
+    public string? ProviderId { get; set; }
 }
