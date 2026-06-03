@@ -143,26 +143,30 @@ public class DashyDashboardManager : IDashboardManager
         }
 
         var dashySections = sectionNameToItemsMapping
-            .Select(kvp => CreateDashySection(kvp.Key, kvp.Value, sectionIcons))
+            .Select(kvp => CreateDashySection(ResolveCategoryDisplayName(kvp.Key), kvp.Value, sectionIcons))
             .OrderBy(s => s.Name)
             .ToList();
         return dashySections;
     }
 
     private static DashySection CreateDashySection(
-        string name,
+        string displayName,
         List<DashyItem> dashyItems,
         IReadOnlyDictionary<string, string?> sectionIcons)
     {
         dashyItems = dashyItems.OrderBy(i => i.Title).ToList();
+        sectionIcons.TryGetValue(displayName, out var sectionIcon);
+        return new DashySection(displayName, sectionIcon, dashyItems);
+    }
 
-        var dashySectionName = string.IsNullOrEmpty(name)
-            ? "Uncategorized"
-            : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
-
-        sectionIcons.TryGetValue(dashySectionName, out var sectionIcon);
-
-        return new DashySection(dashySectionName, sectionIcon, dashyItems);
+    private string ResolveCategoryDisplayName(string category)
+    {
+        if (string.IsNullOrEmpty(category))
+            return "Uncategorized";
+        if (_serviceDefaultOptions.Categories.TryGetValue(category, out var c)
+            && !string.IsNullOrEmpty(c.Name))
+            return c.Name;
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(category.ToLowerInvariant());
     }
 
     private async Task<Dictionary<string, string?>> ResolveSectionIcons(List<Service> services)
@@ -172,9 +176,7 @@ public class DashyDashboardManager : IDashboardManager
         // translation, native pass-through, CDN probe, all the same as service icons. No
         // fallback chain: a category with no defaults icon stays unset.
         var distinctSectionNames = services
-            .Select(s => string.IsNullOrEmpty(s.Category)
-                ? "Uncategorized"
-                : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(s.Category!.ToLowerInvariant()))
+            .Select(s => ResolveCategoryDisplayName(s.Category ?? string.Empty))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 

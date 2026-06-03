@@ -98,7 +98,7 @@ public class HomepageDashboardManager : IDashboardManager
         }
 
         var output = services
-            .GroupBy(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
+            .GroupBy(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : ResolveCategoryDisplayName(s.Category!))
             .OrderBy(g => g.Key)
             .Select(g => new Dictionary<string, List<Dictionary<string, HomepageServiceEntry>>>
             {
@@ -120,7 +120,7 @@ public class HomepageDashboardManager : IDashboardManager
     private async Task<bool> UpdateSettingsLayoutIcons(List<Service> services)
     {
         var distinctGroups = services
-            .Select(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : TitleCaseCategory(s.Category!))
+            .Select(s => string.IsNullOrEmpty(s.Category) ? UncategorizedGroup : ResolveCategoryDisplayName(s.Category!))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -184,6 +184,14 @@ public class HomepageDashboardManager : IDashboardManager
         var layout = new Dictionary<object, object>();
         settings[LayoutKey] = layout;
         return layout;
+    }
+
+    private string ResolveCategoryDisplayName(string category)
+    {
+        if (_serviceDefaultOptions.Categories.TryGetValue(category, out var c)
+            && !string.IsNullOrEmpty(c.Name))
+            return c.Name;
+        return TitleCaseCategory(category);
     }
 
     private static string TitleCaseCategory(string category)

@@ -5,8 +5,10 @@ ServiceDefaultOptions:
     - SelfhSt
   Categories:
     3d printing:
+      Name: 3D Printing
       Icon: mdi-printer-3d
     ai:
+      Name: AI
       Icon: mdi-assistant
     container management:
       Icon: mdi-docker
@@ -140,9 +142,6 @@ ServiceDefaultOptions:
       Category: 3D printing
     syncthing:
       Category: storage
-    tensorboard:
-      Category: ai
-      Icon: hl-tensorflow
     tdarr:
       Category: utilities
     uptime kuma:

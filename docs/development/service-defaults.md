@@ -79,6 +79,7 @@ ServiceDefaultOptions:
   Categories:
     media:   { Icon: mdi-multimedia }
     network: { Icon: mdi-network }
+    ai:      { Name: AI, Icon: mdi-assistant }
   Services:
     plex:
       Category: media
@@ -95,8 +96,10 @@ ServiceDefaultOptions:
   `NameWithHostnameFormatString`, `Category`, `Icon`, `ImagePath`.
 - `Categories` — used by both Dashy (section icons) and Homepage (`settings.yaml` layout
   icons). Keyed by category name; value is a
-  [`CategoryConfig`](../../src/Dsm.Managers/Configuration/CategoryConfig.cs). Each category's
-  `Icon` runs through `IconResolver.ResolveIcon` per manager — see
+  [`CategoryConfig`](../../src/Dsm.Managers/Configuration/CategoryConfig.cs) with optional `Name`
+  and `Icon`. When `Name` is set, it overrides the auto-title-cased dictionary key as the
+  display name (e.g., key `ai` with `Name: AI` displays as "AI" instead of "Ai"). Each
+  category's `Icon` runs through `IconResolver.ResolveIcon` per manager — see
   [icons.md](icons.md#category-icons).
 - `FallbackIconSourceProviders` — ordered list of icon sources the resolver probes for
   *services* (not categories) that end up with neither an `Icon` nor an `ImageUrl`. See

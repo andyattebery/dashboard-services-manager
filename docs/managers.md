@@ -154,6 +154,7 @@ ServiceDefaultOptions:
   Categories:
     media:    { Icon: mdi-multimedia }
     network:  { Icon: mdi-network }
+    ai:       { Name: AI, Icon: mdi-assistant }     # Name overrides the auto-title-cased key
   Services:
     plex:
       Icon: my-custom-plex-icon         # overrides the auto-pick for plex
