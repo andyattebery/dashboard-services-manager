@@ -6,6 +6,8 @@ ServiceDefaultOptions:
   Categories:
     3d printing:
       Icon: mdi-printer-3d
+    ai:
+      Icon: mdi-assistant
     container management:
       Icon: mdi-docker
     downloading:
@@ -32,6 +34,10 @@ ServiceDefaultOptions:
       Icon: mdi-tools
   Services:
     adguardhome:
+      NameWithHostnameFormatString: AdGuard Home (%s)
+      Category: network
+      Icon: hl-adguard-home
+    adguard home:
       NameWithHostnameFormatString: AdGuard Home (%s)
       Category: network
       Icon: hl-adguard-home
@@ -68,6 +74,9 @@ ServiceDefaultOptions:
       Category: media
     traefik:
       NameWithHostnameFormatString: Traefik (%s)
+      Category: network
+    tsdproxy:
+      NameWithHostnameFormatString: TSDProxy (%s)
       Category: network
     unifi:
       Category: network
@@ -131,6 +140,9 @@ ServiceDefaultOptions:
       Category: 3D printing
     syncthing:
       Category: storage
+    tensorboard:
+      Category: ai
+      Icon: hl-tensorflow
     tdarr:
       Category: utilities
     uptime kuma:
