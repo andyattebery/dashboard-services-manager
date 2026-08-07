@@ -19,7 +19,7 @@ public class ContainerLabelServiceFactory
     public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels, string? providerId = null)
     {
         var dockerLabelPrefix = config.DockerLabelPrefix;
-        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps, providerId);
+        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps, providerId, dockerLabelPrefix, _logger);
 
         foreach (var label in labels)
         {
@@ -92,13 +92,23 @@ public class ContainerLabelServiceFactory
 
         private bool _areTraefikRulesHttps;
         private string? _providerId;
+        private readonly string? _dockerLabelPrefix;
+        private readonly ILogger _logger;
 
-        public LabelParserState(string dockerName, string? hostname, bool areTraefikRulesHttps, string? providerId)
+        public LabelParserState(
+            string dockerName,
+            string? hostname,
+            bool areTraefikRulesHttps,
+            string? providerId,
+            string? dockerLabelPrefix,
+            ILogger logger)
         {
             DockerName = dockerName;
             Hostname = hostname;
             _areTraefikRulesHttps = areTraefikRulesHttps;
             _providerId = providerId;
+            _dockerLabelPrefix = dockerLabelPrefix;
+            _logger = logger;
         }
 
         public Service Build()
@@ -123,22 +133,68 @@ public class ContainerLabelServiceFactory
                 return LabelUrl;
             }
 
-            string? traefikRouterRule = null;
-
-            if (TraefikRouterNameToRule.Any())
-            {
-                if (!string.IsNullOrEmpty(LabelTraefikRouter) &&
-                    TraefikRouterNameToRule.TryGetValue(LabelTraefikRouter, out traefikRouterRule))
-                {
-                }
-                else
-                {
-                    (_, traefikRouterRule) = TraefikRouterNameToRule.FirstOrDefault();
-                }
-            }
+            var traefikRouterRule = SelectTraefikRouterRule();
 
             var host = TraefikRuleParser.ExtractFirstHost(traefikRouterRule);
             return host is null ? null : TraefikRuleParser.BuildUrl(host, _areTraefikRulesHttps);
+        }
+
+        // Picks which router's rule becomes the service URL when a container
+        // declares more than one.
+        //
+        // This used to be TraefikRouterNameToRule.FirstOrDefault(). Dictionary
+        // enumeration follows insertion order, and insertion order comes from the
+        // Docker API's label map, which is not stable between responses — so a
+        // two-router container advertised a different URL from one poll to the
+        // next, and anything reconciling against it (DNS rewrites, dashboards)
+        // flapped. Selection must depend only on the labels, never on their order.
+        private string? SelectTraefikRouterRule()
+        {
+            if (TraefikRouterNameToRule.Count == 0)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(LabelTraefikRouter))
+            {
+                if (TraefikRouterNameToRule.TryGetValue(LabelTraefikRouter, out var requested))
+                {
+                    return requested;
+                }
+
+                _logger.LogWarning(
+                    "Container '{Container}' requests traefik router '{Requested}' via '{Label}', but its routers are {Routers}; falling back to automatic selection",
+                    DockerName,
+                    LabelTraefikRouter,
+                    $"{_dockerLabelPrefix}.traefik.router",
+                    string.Join(", ", TraefikRouterNameToRule.Keys.OrderBy(k => k, StringComparer.Ordinal)));
+            }
+
+            // One router is unambiguous — nothing to choose or explain.
+            if (TraefikRouterNameToRule.Count == 1)
+            {
+                return TraefikRouterNameToRule.Values.First();
+            }
+
+            var routerNames = TraefikRouterNameToRule.Keys
+                .OrderBy(k => k, StringComparer.Ordinal)
+                .ToList();
+
+            // Prefer the router named after the container — the convention every
+            // multi-router container in practice follows — then a stable sort.
+            var selected = TraefikRouterNameToRule.ContainsKey(DockerName)
+                ? DockerName
+                : routerNames[0];
+
+            _logger.LogWarning(
+                "Container '{Container}' has {Count} traefik routers ({Routers}) and no '{Label}' label; selected '{Selected}'. Set that label to choose explicitly.",
+                DockerName,
+                routerNames.Count,
+                string.Join(", ", routerNames),
+                $"{_dockerLabelPrefix}.traefik.router",
+                selected);
+
+            return TraefikRouterNameToRule[selected];
         }
     }
 }
