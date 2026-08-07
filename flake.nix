@@ -18,12 +18,12 @@
     in {
       dsm-provider = pkgs.stdenv.mkDerivation rec {
         pname = "dsm-provider";
-        version = "1.2.4";
+        version = "1.2.5";
         src = pkgs.fetchurl {
           url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-${arch}.tar.gz";
           hash = {
-            x64 = "sha256-5BkXQBsvJS79nLBUuze5rcdO7t4MrLW8pXNo3l01o+Y=";
-            arm64 = "sha256-6SmoacqEFnNh42s7HYGgLWxiqxbF6+BX1MOHD0UHsUo=";
+            x64 = "sha256-F4xJpeuDohZd3WfDT5kLg2FdbFTfVCghCcghUIP0aBM=";
+            arm64 = "sha256-wqUZT7J9m/ErPAkNWB8PK8csYhMfw6unh6h73JL02lY=";
           }.${arch};
         };
         sourceRoot = ".";
