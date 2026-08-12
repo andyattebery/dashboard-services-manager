@@ -9,7 +9,7 @@
 }:
 
 let
-  version = "1.2.6";
+  version = "1.2.7";
 
   # One entry per published release asset. `meta.platforms` is derived from these keys, so
   # adding an architecture here is the only edit needed -- there is no second list to keep
@@ -26,11 +26,11 @@ let
   sources = {
     x86_64-linux = {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-x64.tar.gz";
-      hash = "sha256-S/KFdB34IulPx0s9zJ8Bju2NOun3nvk8HTVXwuUeZKk=";
+      hash = "sha256-IHClR4GrHdT90v7o0Baf9RpwQV8atm7hvm2tPzsLfpY=";
     };
     aarch64-linux = {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-arm64.tar.gz";
-      hash = "sha256-bgkh4PTbZf5rKQ8/3330Gs6HWQNdC8Tb7lsZgqtfT5o=";
+      hash = "sha256-aRccEoIxo2izXrVpaP2fnuMU5BW/6HJymWc6OlMhz4M=";
     };
   };
 
