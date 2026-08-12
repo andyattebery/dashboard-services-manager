@@ -48,6 +48,24 @@ jobs:
       - name: Test (non-network)
         run: dotnet test --solution Dsm.sln --no-build --filter "TestCategory!=Network"
 
+  # Independent of `test` on purpose: the flake and the .NET build fail for unrelated
+  # reasons, and there is no point serialising them. Runs from the repo root -- the
+  # working-directory default above is scoped to the `test` job.
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-experimental-features = nix-command flakes
+      # This builds checks.<system>.*, which is where the module regression test lives.
+      # `nix flake check` on its own does NOT evaluate nixosModules -- it only forces the
+      # attribute, which for a lambda yields the lambda unapplied -- so without a `checks`
+      # entry this step would pass on a module that cannot be imported at all.
+      - run: nix flake check
+      - run: nix build .#packages.x86_64-linux.dsm-provider
+
   docker:
     runs-on: ubuntu-latest
     needs: test
