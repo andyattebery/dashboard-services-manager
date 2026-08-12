@@ -56,33 +56,14 @@
           sys.config.services.dsm-provider.package.pname;
     });
 
+    # The derivation lives in nix/package.nix, not here: it is the file update-flake.yml
+    # rewrites on each release, and keeping it separate means those seds have a small,
+    # stable target instead of the whole flake.
     packages = forAllSystems (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
-      arch = if system == "aarch64-linux" then "arm64" else "x64";
-      runtimeLibs = with pkgs; [ icu openssl stdenv.cc.cc.lib ];
     in {
-      dsm-provider = pkgs.stdenv.mkDerivation rec {
-        pname = "dsm-provider";
-        version = "1.2.6";
-        src = pkgs.fetchurl {
-          url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-${arch}.tar.gz";
-          hash = {
-            x64 = "sha256-S/KFdB34IulPx0s9zJ8Bju2NOun3nvk8HTVXwuUeZKk=";
-            arm64 = "sha256-bgkh4PTbZf5rKQ8/3330Gs6HWQNdC8Tb7lsZgqtfT5o=";
-          }.${arch};
-        };
-        sourceRoot = ".";
-        nativeBuildInputs = with pkgs; [ patchelf makeWrapper ];
-        dontPatchELF = true;
-        dontStrip = true;
-        installPhase = ''
-          install -Dm755 Dsm.Provider.App $out/bin/.dsm-provider-unwrapped
-          patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/.dsm-provider-unwrapped
-          makeWrapper $out/bin/.dsm-provider-unwrapped $out/bin/dsm-provider \
-            --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath runtimeLibs}"
-        '';
-      };
+      dsm-provider = pkgs.callPackage ./nix/package.nix { };
     });
   };
 }

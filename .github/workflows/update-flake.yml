@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: main
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-experimental-features = nix-command flakes
       - name: Compute version and hashes
         id: hashes
         run: |
@@ -28,21 +32,61 @@ jobs:
           X64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-x64.tar.gz"
           ARM64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-arm64.tar.gz"
 
-          X64_HASH="sha256-$(curl -sfL "$X64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
-          ARM64_HASH="sha256-$(curl -sfL "$ARM64_URL" | sha256sum | cut -d' ' -f1 | xxd -r -p | base64 -w0)"
+          # `nix store prefetch-file` emits an SRI hash directly, and it is the flat file hash
+          # -- exactly what fetchurl expects in nix/package.nix. It is also architecture
+          # independent: a fixed-output hash depends only on the bytes fetched, so this x86_64
+          # runner can hash the arm64 tarball correctly. (Verified against both published 1.2.6
+          # assets from an aarch64 machine.)
+          #
+          # This replaces `curl | sha256sum | cut | xxd -r -p | base64 -w0`, which reimplemented
+          # base32->SRI conversion by hand in four steps.
+          X64_HASH="$(nix store prefetch-file --json "$X64_URL" | jq -r .hash)"
+          ARM64_HASH="$(nix store prefetch-file --json "$ARM64_URL" | jq -r .hash)"
 
           echo "x64_hash=$X64_HASH" >> "$GITHUB_OUTPUT"
           echo "arm64_hash=$ARM64_HASH" >> "$GITHUB_OUTPUT"
-      - name: Update flake.nix
+      - name: Update nix/package.nix
         run: |
-          sed -i 's/version = ".*"/version = "${{ steps.hashes.outputs.version }}"/' flake.nix
-          sed -i 's|x64 = "sha256-.*"|x64 = "${{ steps.hashes.outputs.x64_hash }}"|' flake.nix
-          sed -i 's|arm64 = "sha256-.*"|arm64 = "${{ steps.hashes.outputs.arm64_hash }}"|' flake.nix
+          set -euo pipefail
+
+          # These seds target nix/package.nix, NOT flake.nix -- the derivation moved there.
+          #
+          # A sed that matches nothing fails silently: the version and hashes would stay
+          # mutually consistent, the build would pass, and the stale release would ship. So
+          # every substitution is verified below rather than trusted, and the job fails loudly
+          # if any of them did not land.
+          #
+          # The two hash substitutions are address-ranged on the system key rather than keyed
+          # on the hash line itself, because `hash = "sha256-...";` is textually identical in
+          # both blocks. The range runs from the system key to the `};` that closes its block.
+          sed -i \
+            -e 's|^  version = "[^"]*";|  version = "${{ steps.hashes.outputs.version }}";|' \
+            -e '/x86_64-linux = {/,/};/ s|^      hash = "[^"]*";|      hash = "${{ steps.hashes.outputs.x64_hash }}";|' \
+            -e '/aarch64-linux = {/,/};/ s|^      hash = "[^"]*";|      hash = "${{ steps.hashes.outputs.arm64_hash }}";|' \
+            nix/package.nix
+
+          grep -q '^  version = "${{ steps.hashes.outputs.version }}";' nix/package.nix \
+            || { echo "::error::version substitution did not match nix/package.nix"; exit 1; }
+          grep -q '${{ steps.hashes.outputs.x64_hash }}' nix/package.nix \
+            || { echo "::error::x64 hash substitution did not match nix/package.nix"; exit 1; }
+          grep -q '${{ steps.hashes.outputs.arm64_hash }}' nix/package.nix \
+            || { echo "::error::arm64 hash substitution did not match nix/package.nix"; exit 1; }
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git diff --quiet flake.nix && exit 0
-          git add flake.nix
-          git commit -m "update flake to ${{ steps.hashes.outputs.version }}" -m "[skip ci]"
+          # Must name nix/package.nix, not flake.nix. Asking whether flake.nix changed would
+          # always answer "no" now, and this step would exit 0 -- a green run that commits
+          # nothing and leaves the release un-bumped.
+          git diff --quiet nix/package.nix && exit 0
+          git add nix/package.nix
+          # No [skip ci]. That flag is why nothing ever validated the hashes this job writes:
+          # verified against the Actions history, no "update flake to ..." commit has ever had
+          # a workflow run. The `nix` job in ci.yaml is ungated, so it now runs on this commit
+          # and builds the package -- whose installCheckPhase executes the binary, proving the
+          # hash points at something that actually starts.
+          #
+          # This cannot loop: docker/build-binaries are gated on refs/tags, github-release
+          # needs build-binaries, and only github-release dispatches this workflow.
+          git commit -m "update flake to ${{ steps.hashes.outputs.version }}"
           git push
