@@ -42,10 +42,12 @@ jobs:
           # dependence on formatting and no way for a substitution to silently match nothing.
           #
           # It must run from the repository root: update-source-version evaluates `import ./.`,
-          # which is why default.nix exists. That reads <nixpkgs> from NIX_PATH (set by
-          # install-nix-action) rather than the flake's pin -- harmless, because the only thing
-          # being computed is fixed-output fetch hashes, which depend on the fetched bytes and
-          # nothing else.
+          # which is why default.nix exists.
+          #
+          # default.nix resolves nixpkgs from flake.lock, NOT from <nixpkgs>. install-nix-action
+          # runs the installer with --no-channel-add and does not set NIX_PATH, so `import
+          # <nixpkgs>` fails outright here with "file 'nixpkgs' was not found in the Nix search
+          # path". That is what broke the 1.2.8 run.
           "$(nix-build --no-out-link -A dsm-provider.updateScript)" "$VERSION"
 
           git diff --stat nix/package.nix
@@ -90,14 +92,38 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: main
+      # Downloaded to a scratch directory and moved into place explicitly, rather than
+      # extracted over the checkout. Writing an artifact on top of a file that already exists
+      # depends on the action's overwrite behaviour; moving it does not, and a missing
+      # artifact fails here instead of silently leaving the committed file in place -- which
+      # would make this job verify the OLD package and pass.
       - uses: actions/download-artifact@v8
         with:
           name: package-nix
-          path: nix
+          path: artifact
+      - name: Apply the updated package.nix
+        run: |
+          set -euo pipefail
+          test -f artifact/package.nix
+          mv artifact/package.nix nix/package.nix
+          rmdir artifact
+          if git diff --quiet nix/package.nix; then
+            echo "::error::artifact is identical to the committed nix/package.nix -- nothing would be verified"
+            exit 1
+          fi
+          git --no-pager diff --stat nix/package.nix
       - uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
             extra-experimental-features = nix-command flakes
+      # `nix` reads the working tree for a git repo, so the uncommitted change above IS what
+      # gets evaluated -- verified locally by planting a wrong hash and watching the build
+      # fail on it.
+      #
+      # Both steps are needed and they check different things. `flake check` builds `checks`,
+      # which is the module regression test; it does NOT look at the package hashes -- a bad
+      # hash passes it. `nix build` is what fetches the tarball (proving the hash) and runs
+      # installCheckPhase (proving the binary starts on this architecture).
       - run: nix flake check
       - run: nix build .#packages.${{ matrix.system }}.dsm-provider
 
@@ -111,14 +137,26 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: package-nix
-          path: nix
+          path: artifact
       - name: Commit and push
         run: |
           set -euo pipefail
           TAG="${{ inputs.tag }}"
           VERSION="${TAG#v}"
+
+          # Same explicit move as in verify: never rely on an artifact being extracted over an
+          # existing file. This is the commit that ships, so a silent no-op here would push
+          # the unchanged package while the release moved on.
+          test -f artifact/package.nix
+          mv artifact/package.nix nix/package.nix
+          rmdir artifact
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet nix/package.nix; then
+            echo "::error::nix/package.nix matches HEAD -- refusing to create an empty commit"
+            exit 1
+          fi
           git add nix/package.nix
           # No [skip ci]: this push cannot trigger a workflow anyway (GITHUB_TOKEN rule, see the
           # comment at the top). The flag only ever advertised an intent that had no effect.
