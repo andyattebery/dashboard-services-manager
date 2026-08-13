@@ -11,7 +11,7 @@
 }:
 
 let
-  version = "1.2.7";
+  version = "1.2.8";
 
   # One fetcher per published release asset. Three things depend on this attrset and nothing
   # else, so adding an architecture here is the only edit needed anywhere:
@@ -33,15 +33,15 @@ let
   sources = {
     x86_64-linux = fetchurl {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-x64.tar.gz";
-      hash = "sha256-IHClR4GrHdT90v7o0Baf9RpwQV8atm7hvm2tPzsLfpY=";
+      hash = "sha256-y+7QpO6L30MsfS5VY5JN51A4khUahVsOTo1nRpfauC8=";
     };
     aarch64-linux = fetchurl {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-arm64.tar.gz";
-      hash = "sha256-aRccEoIxo2izXrVpaP2fnuMU5BW/6HJymWc6OlMhz4M=";
+      hash = "sha256-dJAUuDmoFQdKzEmqnveCDC7nDIPhLaJkcfUpv+VSx8M=";
     };
     aarch64-darwin = fetchurl {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-macos-arm64.tar.gz";
-      hash = "sha256-ZLUimNixd+oPbeo9ZZmce8FZ+0RzEzNkZDk6RI0nBwU=";
+      hash = "sha256-2Pz8qfQYQNNsU/oeVjtUMd+/FIct6QjCJ+VTlhfiquk=";
     };
   };
 
