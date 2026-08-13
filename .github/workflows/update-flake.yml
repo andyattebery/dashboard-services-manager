@@ -11,8 +11,16 @@ on:
 permissions:
   contents: write
 
+# Split into three jobs so the bumped package is proven to build on EVERY platform it claims
+# before the commit exists.
+#
+# It has to be done here rather than by letting ci.yaml react to the push: a commit pushed with
+# the repository's GITHUB_TOKEN does not trigger `on: push` workflows. GitHub blocks that to
+# prevent recursion, independently of [skip ci]. Measured -- commit 1cd8dad carried no skip flag
+# and still produced zero workflow runs. So a bad hash caught "later by CI" would never be
+# caught at all.
 jobs:
-  update-flake:
+  prepare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -22,71 +30,98 @@ jobs:
         with:
           extra_nix_config: |
             extra-experimental-features = nix-command flakes
-      - name: Compute version and hashes
-        id: hashes
-        run: |
-          TAG="${{ inputs.tag }}"
-          VERSION="${TAG#v}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          X64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-x64.tar.gz"
-          ARM64_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/dsm-provider-${VERSION}-linux-arm64.tar.gz"
-
-          # `nix store prefetch-file` emits an SRI hash directly, and it is the flat file hash
-          # -- exactly what fetchurl expects in nix/package.nix. It is also architecture
-          # independent: a fixed-output hash depends only on the bytes fetched, so this x86_64
-          # runner can hash the arm64 tarball correctly. (Verified against both published 1.2.6
-          # assets from an aarch64 machine.)
-          #
-          # This replaces `curl | sha256sum | cut | xxd -r -p | base64 -w0`, which reimplemented
-          # base32->SRI conversion by hand in four steps.
-          X64_HASH="$(nix store prefetch-file --json "$X64_URL" | jq -r .hash)"
-          ARM64_HASH="$(nix store prefetch-file --json "$ARM64_URL" | jq -r .hash)"
-
-          echo "x64_hash=$X64_HASH" >> "$GITHUB_OUTPUT"
-          echo "arm64_hash=$ARM64_HASH" >> "$GITHUB_OUTPUT"
-      - name: Update nix/package.nix
+      - name: Rewrite nix/package.nix for the new release
         run: |
           set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
 
-          # These seds target nix/package.nix, NOT flake.nix -- the derivation moved there.
+          # passthru.updateScript wraps nixpkgs' update-source-version, which rewrites the
+          # version and one hash per platform, iterating meta.platforms. It replaces hashes by
+          # VALUE and refuses to act if the old hash is not unique in the file, so there is no
+          # dependence on formatting and no way for a substitution to silently match nothing.
           #
-          # A sed that matches nothing fails silently: the version and hashes would stay
-          # mutually consistent, the build would pass, and the stale release would ship. So
-          # every substitution is verified below rather than trusted, and the job fails loudly
-          # if any of them did not land.
-          #
-          # The two hash substitutions are address-ranged on the system key rather than keyed
-          # on the hash line itself, because `hash = "sha256-...";` is textually identical in
-          # both blocks. The range runs from the system key to the `};` that closes its block.
-          sed -i \
-            -e 's|^  version = "[^"]*";|  version = "${{ steps.hashes.outputs.version }}";|' \
-            -e '/x86_64-linux = {/,/};/ s|^      hash = "[^"]*";|      hash = "${{ steps.hashes.outputs.x64_hash }}";|' \
-            -e '/aarch64-linux = {/,/};/ s|^      hash = "[^"]*";|      hash = "${{ steps.hashes.outputs.arm64_hash }}";|' \
-            nix/package.nix
+          # It must run from the repository root: update-source-version evaluates `import ./.`,
+          # which is why default.nix exists. That reads <nixpkgs> from NIX_PATH (set by
+          # install-nix-action) rather than the flake's pin -- harmless, because the only thing
+          # being computed is fixed-output fetch hashes, which depend on the fetched bytes and
+          # nothing else.
+          "$(nix-build --no-out-link -A dsm-provider.updateScript)" "$VERSION"
 
-          grep -q '^  version = "${{ steps.hashes.outputs.version }}";' nix/package.nix \
-            || { echo "::error::version substitution did not match nix/package.nix"; exit 1; }
-          grep -q '${{ steps.hashes.outputs.x64_hash }}' nix/package.nix \
-            || { echo "::error::x64 hash substitution did not match nix/package.nix"; exit 1; }
-          grep -q '${{ steps.hashes.outputs.arm64_hash }}' nix/package.nix \
-            || { echo "::error::arm64 hash substitution did not match nix/package.nix"; exit 1; }
+          git diff --stat nix/package.nix
+
+          # A no-op means the dispatch fired for a version already recorded, or that the
+          # updater matched nothing. Stop rather than run three verify jobs and an empty
+          # commit. (update-source-version dies on its own if a hash is not uniquely
+          # locatable, but it updates platforms one at a time, so a mid-loop failure can
+          # leave the file PARTIALLY updated -- measured. The verify matrix is what catches
+          # that: the un-updated platform's hash will not match its new URL.)
+          if git diff --quiet nix/package.nix; then
+            echo "::error::nix/package.nix unchanged -- already at ${{ inputs.tag }}?"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-nix
+          path: nix/package.nix
+          if-no-files-found: error
+
+  verify:
+    needs: prepare
+    # Every platform nix/package.nix claims. Native runners, no QEMU: ubuntu-24.04-arm and
+    # macos-latest are real hardware, and standard runners are free and unlimited on public
+    # repositories. They run concurrently, so this costs wall-clock only for the slowest leg.
+    #
+    # This is the only place the aarch64-darwin and aarch64-linux binaries are ever executed --
+    # the package's installCheckPhase runs the binary, and that cannot happen on a foreign
+    # architecture.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            system: x86_64-linux
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+          - runner: macos-latest
+            system: aarch64-darwin
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-nix
+          path: nix
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-experimental-features = nix-command flakes
+      - run: nix flake check
+      - run: nix build .#packages.${{ matrix.system }}.dsm-provider
+
+  commit:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-nix
+          path: nix
       - name: Commit and push
         run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Must name nix/package.nix, not flake.nix. Asking whether flake.nix changed would
-          # always answer "no" now, and this step would exit 0 -- a green run that commits
-          # nothing and leaves the release un-bumped.
-          git diff --quiet nix/package.nix && exit 0
           git add nix/package.nix
-          # No [skip ci]. That flag is why nothing ever validated the hashes this job writes:
-          # verified against the Actions history, no "update flake to ..." commit has ever had
-          # a workflow run. The `nix` job in ci.yaml is ungated, so it now runs on this commit
-          # and builds the package -- whose installCheckPhase executes the binary, proving the
-          # hash points at something that actually starts.
-          #
-          # This cannot loop: docker/build-binaries are gated on refs/tags, github-release
-          # needs build-binaries, and only github-release dispatches this workflow.
-          git commit -m "update flake to ${{ steps.hashes.outputs.version }}"
+          # No [skip ci]: this push cannot trigger a workflow anyway (GITHUB_TOKEN rule, see the
+          # comment at the top). The flag only ever advertised an intent that had no effect.
+          # What validates this commit is the verify matrix above, which has already passed.
+          git commit -m "update flake to $VERSION"
           git push

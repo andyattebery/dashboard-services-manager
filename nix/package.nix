@@ -6,56 +6,69 @@
   makeWrapper,
   icu,
   openssl,
+  writeShellScript,
+  common-updater-scripts,
 }:
 
 let
   version = "1.2.7";
 
-  # One entry per published release asset. `meta.platforms` is derived from these keys, so
-  # adding an architecture here is the only edit needed -- there is no second list to keep
-  # in sync, and an unlisted system gets an explicit error rather than silently being handed
-  # the x64 tarball (which is what the old `arch = if ... then "arm64" else "x64"` did, and
-  # would have fetched a Linux binary on darwin).
+  # One fetcher per published release asset. Three things depend on this attrset and nothing
+  # else, so adding an architecture here is the only edit needed anywhere:
   #
-  # THE FORMATTING HERE IS LOAD-BEARING. .github/workflows/update-flake.yml rewrites these
-  # values with sed, keyed on the system tuple. Keep each `hash = ` on its own line directly
-  # under its system key, and keep the arch suffix in the URL. Reflowing this attrset --
-  # merging the lines, or running a formatter over it -- makes those seds match nothing, and
-  # a sed that matches nothing fails SILENTLY: version and hashes stay mutually consistent,
-  # the build passes, and the stale release ships. See that workflow's comments.
+  #   * `src` selects this system's entry, and an unlisted system gets an explicit throw
+  #     rather than silently being handed the x64 tarball.
+  #   * `meta.platforms` is `builtins.attrNames sources`.
+  #   * `passthru.updateScript` iterates those platforms, so the updater extends itself.
+  #
+  # These must be `fetchurl` DERIVATIONS, not inert { url; hash; } records. Each is built from
+  # the local `pkgs`, so every platform's fetcher is buildable on any machine -- which is what
+  # lets `update-source-version --source-key=sources.<platform>` refresh the darwin hash from
+  # an x86_64 runner. A fixed-output hash depends only on the bytes fetched, never on who
+  # fetched them. Store plain data here instead and that property is lost.
+  #
+  # Formatting is NOT load-bearing: update-source-version matches on the old hash's value and
+  # refuses to act if it is not unique in the file. An earlier revision rewrote these with
+  # line-shaped seds, which a formatter could silently break.
   sources = {
-    x86_64-linux = {
+    x86_64-linux = fetchurl {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-x64.tar.gz";
       hash = "sha256-IHClR4GrHdT90v7o0Baf9RpwQV8atm7hvm2tPzsLfpY=";
     };
-    aarch64-linux = {
+    aarch64-linux = fetchurl {
       url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-linux-arm64.tar.gz";
       hash = "sha256-aRccEoIxo2izXrVpaP2fnuMU5BW/6HJymWc6OlMhz4M=";
     };
+    aarch64-darwin = fetchurl {
+      url = "https://github.com/andyattebery/dashboard-services-manager/releases/download/${version}/dsm-provider-${version}-macos-arm64.tar.gz";
+      hash = "sha256-ZLUimNixd+oPbeo9ZZmce8FZ+0RzEzNkZDk6RI0nBwU=";
+    };
   };
 
-  source =
-    sources.${stdenv.hostPlatform.system}
-      or (throw "dsm-provider: no published binary for ${stdenv.hostPlatform.system}");
-
+  # Linux only. The macOS binary links nothing outside /System and /usr/lib -- Foundation,
+  # Security, CryptoKit, libSystem, the Swift runtime -- so there is no darwin equivalent of
+  # this list and no wrapper on that platform. (If one is ever needed, the variable on darwin
+  # is DYLD_FALLBACK_LIBRARY_PATH, not LD_LIBRARY_PATH.)
   runtimeLibs = [
     icu
     openssl
     stdenv.cc.cc.lib
   ];
 in
-# `version` is bound above rather than read from `finalAttrs`, because `sources` needs it and
-# `sources` is evaluated outside this lambda, where `finalAttrs` does not exist. libfrida-core
-# -- the closest analogue in nixpkgs, also a per-arch prebuilt tarball -- does exactly this.
+# `version` is bound above rather than read from `finalAttrs` because `sources` needs it, and
+# `sources` is evaluated outside this lambda where `finalAttrs` does not exist.
 stdenv.mkDerivation (finalAttrs: {
   pname = "dsm-provider";
   inherit version;
 
-  src = fetchurl { inherit (source) url hash; };
+  src =
+    sources.${stdenv.hostPlatform.system}
+      or (throw "dsm-provider: no published binary for ${stdenv.hostPlatform.system}");
 
+  # Both tarballs extract their files directly, with no wrapping directory.
   sourceRoot = ".";
 
-  nativeBuildInputs = [
+  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
     patchelf
     makeWrapper
   ];
@@ -72,22 +85,35 @@ stdenv.mkDerivation (finalAttrs: {
   # So `dontPatchELF` stops nixpkgs' automatic patching, the bare --set-interpreter below is
   # the smallest edit that lets it run on NixOS, and the runtime libraries are supplied via
   # LD_LIBRARY_PATH in a wrapper -- never an RPATH -- so the file is not rewritten again.
+  #
+  # None of that applies to macOS: Mach-O has no ELF interpreter to set, the binary is already
+  # ad-hoc signed, and modifying it would invalidate that signature. So darwin just installs
+  # it. That is why the phases below branch rather than sharing a common install.
   dontPatchELF = true;
   dontStrip = true;
 
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 Dsm.Provider.App $out/bin/.dsm-provider-unwrapped
-    patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/.dsm-provider-unwrapped
-    makeWrapper $out/bin/.dsm-provider-unwrapped $out/bin/dsm-provider \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeLibs}"
-    runHook postInstall
-  '';
+  installPhase =
+    ''
+      runHook preInstall
+    ''
+    + lib.optionalString stdenv.hostPlatform.isLinux ''
+      install -Dm755 Dsm.Provider.App $out/bin/.dsm-provider-unwrapped
+      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/.dsm-provider-unwrapped
+      makeWrapper $out/bin/.dsm-provider-unwrapped $out/bin/dsm-provider \
+        --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeLibs}"
+    ''
+    + lib.optionalString stdenv.hostPlatform.isDarwin ''
+      install -Dm755 Dsm.Provider.App $out/bin/dsm-provider
+    ''
+    + ''
+      runHook postInstall
+    '';
 
-  # Run the binary at build time. Most prebuilt packages in nixpkgs never execute what they
-  # ship; this one must, because the autoPatchelfHook experiment above produced a green build
-  # of a binary that could not start. A non-gating `passthru.tests` would have reported that
-  # after the fact and shipped it anyway.
+  # Run the binary at build time. This is a minority choice -- most prebuilt packages in
+  # nixpkgs never execute what they ship, and the closest analogue (powershell) uses a
+  # non-gating `passthru.tests` instead. It is deliberate here: the autoPatchelfHook
+  # experiment above produced a green build of a binary that could not start, and a
+  # non-gating test would have reported that after the fact and shipped it anyway.
   #
   # Assert on OUTPUT, not exit status. dsm-provider exits 0 even when hosting fails, and a
   # corrupted bundle aborts on SIGABRT having written nothing -- so the exit code is useless
@@ -106,11 +132,43 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstallCheck
   '';
 
+  passthru = {
+    # Exposed so `update-source-version --source-key="sources.<platform>"` can reach each
+    # fetcher as an attribute of the derivation. A let-binding alone is invisible to it, so
+    # this is required rather than informational.
+    inherit sources;
+
+    # Takes the version as an argument instead of discovering it. nixpkgs' updaters poll
+    # upstreams they do not control; this repo publishes its own releases, and the tag is
+    # handed to .github/workflows/update-flake.yml as a workflow_dispatch input. Do not
+    # "fix" this into a GitHub API poller.
+    updateScript = writeShellScript "update-dsm-provider" ''
+      set -o errexit
+      export PATH="${lib.makeBinPath [ common-updater-scripts ]}:$PATH"
+
+      NEW_VERSION="''${1:?usage: update-dsm-provider <version>}"
+
+      # One call per platform. Each evaluates that platform's fetcher to find the hash it is
+      # replacing, so no cross-architecture builder is involved. --ignore-same-version is
+      # required because only the first call changes `version`; the rest would otherwise
+      # refuse to run against an already-updated file.
+      for platform in ${lib.escapeShellArgs (builtins.attrNames sources)}; do
+        update-source-version dsm-provider "$NEW_VERSION" \
+          --ignore-same-version \
+          --source-key="sources.$platform"
+      done
+    '';
+  };
+
   meta = {
     description = "Provider that discovers running services and posts them to a Dashboard Services Manager API";
     homepage = "https://github.com/andyattebery/dashboard-services-manager";
     license = lib.licenses.mit;
-    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
+    # A .NET single-file bundle is IL plus a native host, so both apply.
+    sourceProvenance = with lib.sourceTypes; [
+      binaryBytecode
+      binaryNativeCode
+    ];
     mainProgram = "dsm-provider";
     platforms = builtins.attrNames sources;
   };

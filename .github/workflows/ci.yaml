@@ -51,8 +51,29 @@ jobs:
   # Independent of `test` on purpose: the flake and the .NET build fail for unrelated
   # reasons, and there is no point serialising them. Runs from the repo root -- the
   # working-directory default above is scoped to the `test` job.
+  #
+  # One leg per platform nix/package.nix claims in meta.platforms. Native runners, no QEMU:
+  # ubuntu-24.04-arm and macos-latest are real hardware, and standard runners are free and
+  # unlimited on public repositories. The legs run concurrently, so this adds wall-clock only
+  # for the slowest one -- nothing is compiled here, the binaries are prebuilt by
+  # build-binaries and this job only repackages them.
+  #
+  # Building x86_64 alone was a real gap, not a formality: `nix build` exercises the
+  # REPACKAGING -- patchelf --set-interpreter and the LD_LIBRARY_PATH wrapper on Linux -- and
+  # then installCheckPhase runs the result. That check is the only thing standing between a
+  # mis-patched binary and a release, and it can only run on matching hardware.
   nix:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            system: x86_64-linux
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+          - runner: macos-latest
+            system: aarch64-darwin
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
       - uses: cachix/install-nix-action@v31
@@ -63,8 +84,11 @@ jobs:
       # `nix flake check` on its own does NOT evaluate nixosModules -- it only forces the
       # attribute, which for a lambda yields the lambda unapplied -- so without a `checks`
       # entry this step would pass on a module that cannot be imported at all.
+      #
+      # On the darwin leg `checks` is deliberately empty: it builds a NixOS system, which is
+      # meaningless there. See the forLinuxSystems comment in flake.nix.
       - run: nix flake check
-      - run: nix build .#packages.x86_64-linux.dsm-provider
+      - run: nix build .#packages.${{ matrix.system }}.dsm-provider
 
   docker:
     runs-on: ubuntu-latest

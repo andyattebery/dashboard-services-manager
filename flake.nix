@@ -3,7 +3,14 @@
 
   outputs = { self, nixpkgs }:
   let
-    forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    # Every system nix/package.nix has a published binary for. Kept in step with the
+    # `sources` attrset there, which is also what meta.platforms derives from.
+    forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+
+    # NixOS-only. `checks` below builds a NixOS system, which is meaningless on darwin --
+    # nixosSystem evaluates far enough for a narrow option but dies as soon as anything
+    # pulls in a Linux-only package. So checks must NOT use forAllSystems.
+    forLinuxSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
   in {
     # `key` is what makes this module safe to import from more than one place. NixOS dedups
     # imports by key, and a path's key is its path -- but this is a lambda (it needs `pkgs`
@@ -34,7 +41,7 @@
     # evaluate nixosModules at all. nix's checkModule only calls forceValue on the attribute,
     # which for a lambda yields the lambda unapplied, so a broken module passes it. Only
     # `checks.<system>.<name>` is really built.
-    checks = forAllSystems (system: {
+    checks = forLinuxSystems (system: {
       module-imports-twice =
         let
           sys = nixpkgs.lib.nixosSystem {
