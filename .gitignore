@@ -88,6 +88,9 @@ bld/
 .claude/settings.local.json
 src/.idea
 *.UserPrefs.xml
-
+UserPrefs.xml
 # Nix
 /result
+
+plans/
+tasks/

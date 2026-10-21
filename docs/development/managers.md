@@ -1,399 +1,416 @@
 # Dsm.Managers
 
-Owns the dashboard file. Everything that reads or writes the dashboard config, applies per-service
-defaults, or decides what happens when the provider's view of the world disagrees with what a human
-has typed into the dashboard lives here.
+The manager side of DSM. It owns every read and write of dashboard files. It applies
+defaults to pushed services, merges them with what's already in each dashboard, resolves
+icons, and writes the result. [Dsm.Manager.Api](../../src/Dsm.Manager.Api/) hosts it behind
+one controller. [overview.md](overview.md) shows where it sits in the whole system.
 
-See [overview.md](overview.md) for how this fits into the larger system.
+## Entry points
 
-## Entry points (CQRS split)
+[`DashboardController`](../../src/Dsm.Manager.Api/Controllers/DashboardController.cs) maps
+`/dashboard-services` onto two services: one for writes and one for reads.
 
-Two narrow public services are the only things callers outside this project should reach for. Both
-are resolved from DI by [DashboardController](../../src/Dsm.Manager.Api/Controllers/DashboardController.cs).
+- **`POST`** →
+  [`DashboardCommandProcessor.UpdateWithServicesFromProvider(IEnumerable<Service>)`](../../src/Dsm.Managers/DashboardCommandProcessor.cs#L35)
+  runs the [write path](#the-write-path). It returns a `Dictionary<string, List<Service>>`
+  keyed by dashboard type (`"Dashy"`, `"Homepage"`), holding the merged list each dashboard
+  was given. The list is taken before icon resolution, so icons are still in the form the
+  defaults left them (`hl-jellyfin`).
+- **`GET`** →
+  [`DashboardQueryService.ListServices()`](../../src/Dsm.Managers/DashboardQueryService.cs)
+  reads every configured dashboard and returns one flat list, deduplicated on
+  `(Name, Hostname)`; the first entry in `DashboardManagers` wins. The values are whatever
+  was read back from the files: icons as written, categories as display names. The GET
+  doesn't take the write lock. Writes replace files atomically, so a read sees either the
+  old file or the new one.
 
-- **[DashboardCommandProcessor](../../src/Dsm.Managers/DashboardCommandProcessor.cs)** — writes.
-  `UpdateWithServicesFromProvider(IEnumerable<Service>)` is the one method that drives the whole
-  merge/write pipeline. Returns `Dictionary<string, List<Service>>` keyed by manager type
-  (`"Dashy"`, `"Homepage"`) — each manager gets its own hand-written entries back, so per-manager
-  visibility is meaningful on the write path.
-- **[DashboardQueryService](../../src/Dsm.Managers/DashboardQueryService.cs)** — reads.
-  `ListServices()` returns a single flat `List<Service>`, deduped across configured managers by
-  `(Name, Hostname)`. Every manager *should* hold the same set of services (the processor just fanned
-  the same combined list out to each), so surfacing a per-manager dict here would expose drift
-  that's rarely meaningful. First manager in `DashboardManagers` wins on conflict.
-
-Both delegate to an [`IDashboardManager`](../../src/Dsm.Managers/DashboardManagers/IDashboardManager.cs)
-picked by [`DashboardManagerFactory`](../../src/Dsm.Managers/DashboardManagers/DashboardManagerFactory.cs).
-Two implementations ship today:
-[`DashyDashboardManager`](../../src/Dsm.Managers/DashboardManagers/DashyDashboardManager.cs) and
-[`HomepageDashboardManager`](../../src/Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs) — see
-[Implementations](#implementations) below.
+Both use
+[`DashboardManagerFactory.Create(DashboardManagerConfig)`](../../src/Dsm.Managers/DashboardManagers/DashboardManagerFactory.cs).
+It builds a fresh manager for each call with `ActivatorUtilities.CreateInstance`, passing the
+config entry as a constructor argument. Every manager implements
+[`IDashboardManager`](../../src/Dsm.Managers/DashboardManagers/IDashboardManager.cs):
 
 ```csharp
 public interface IDashboardManager
 {
+    DashboardManagerType Type { get; }
+    string ConfigFilePath { get; }
+
     Task<List<Service>> ListServices();
-    Task WriteServices(List<Service> services);
+    Task<bool> WriteServices(List<Service> services);
 
     IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePrefixes { get; }
 }
 ```
 
-`NativeIconSourcePrefixes` declares which `IDashboardIconSource` types the dashboard renders
-natively, mapped to the prefix the dashboard expects in its YAML icon field. When a service's
-icon matches a registered source AND the manager declares native support for it, the
-[`IconResolver`](../../src/Dsm.Managers/Services/IconResolver.cs) translates the prefix and
-passes the name through without probing the CDN. See
-[icons.md](icons.md#native-source-declarations-shipped-backends) for the per-backend
-declarations and the resolution rules.
+- `ListServices` reads the dashboard file into `Service` records. A missing file is logged
+  as a warning and read as empty.
+- `WriteServices` resolves icons and writes the file. It returns `true` when it changed a
+  file on disk.
+- `Type` and `ConfigFilePath` identify the dashboard in logs.
+- `NativeIconSourcePrefixes` is explained in [icons.md](icons.md#native-prefixes).
 
-## Request flow (write path)
+## The write path
 
-`POST /dashboard-services` →
-[DashboardController.UpdateWithServices](../../src/Dsm.Manager.Api/Controllers/DashboardController.cs#L22) →
-[DashboardCommandProcessor.UpdateWithServicesFromProvider](../../src/Dsm.Managers/DashboardCommandProcessor.cs#L28):
+The controller's `UpdateWithServices` calls
+[`DashboardCommandProcessor.UpdateWithServicesFromProvider`](../../src/Dsm.Managers/DashboardCommandProcessor.cs#L35).
+The whole method runs under
+[`DashboardWriteCoordinator`](../../src/Dsm.Managers/DashboardWriteCoordinator.cs), a
+singleton wrapping `SemaphoreSlim(1, 1)`. Provider hosts POST independently. Without the
+lock, two POSTs could read the same file, and the second write would drop the first one's
+services until its next cycle.
 
-1. **Filter** incoming services — drop anything with `Ignore = true`, blank URL, or a name in
-   `ManagerOptions.IgnoredServiceNames` (case-insensitive).
-2. **Mark autogenerated** — every surviving service gets `Autogenerated = true` so the combiner can
-   distinguish "the tool pushed this" from "a human typed this."
-3. **Apply defaults** via
-   [`ServiceWithDefaultsFactory.CreateWithDefaults`](../../src/Dsm.Managers/Services/ServiceWithDefaultsFactory.cs) —
-   per-field precedence (incoming wins, defaults fill gaps), name templating, `ImagePath`
-   resolution. Icon-prefix resolution and the CDN fallback chain happen later, per-manager,
-   inside each `WriteServices` via
-   [`IconResolver`](../../src/Dsm.Managers/Services/IconResolver.cs). See
-   [service-defaults.md](service-defaults.md) for the full rules.
-4. **For each configured manager** (`ManagerOptions.DashboardManagers`), fan out:
-   a. **Read** the current dashboard via `IDashboardManager.ListServices()`.
-   b. **Merge** old + new with
-      [ServicesCombiner.CombineExistingServicesWithNewServices](../../src/Dsm.Managers/Services/ServicesCombiner.cs#L7).
-   c. **Write** the merged list via `IDashboardManager.WriteServices(...)`.
+1. **Filter.** Drop services that have `Ignore` set, a blank `Url`, or a name listed in
+   `IgnoredServiceNames` (case-insensitive).
+2. **Default.** Stamp `Autogenerated = true` on each survivor and pass it through
+   `ServiceWithDefaultsFactory` ([service-defaults.md](service-defaults.md)).
+3. **Merge and write, per dashboard.** For each entry in `ManagerOptions.DashboardManagers`,
+   in order:
+   - read its file with `ListServices()`
+   - merge with [`ServicesCombiner`](#the-combiner)
+   - write with `WriteServices(merged)`
 
-Steps 1–3 run once. Step 4 runs per-manager — each dashboard has its own file and its own
-hand-written entries, so the combiner runs against each one independently. The response is a
-per-manager `Dictionary<string, List<Service>>` keyed by manager type name (`"Dashy"`,
-`"Homepage"`). If the same `DashboardManagerType` shows up more than once in `DashboardManagers`,
-the loop throws `InvalidOperationException` — per-entry disambiguation (a `Name` field) is a
-future change.
+   The processor logs the write, with the services added and removed, at Information level
+   only when `WriteServices` reports a change; otherwise it logs at Debug.
 
-`GET /dashboard-services` is not the same shape: it returns a flat deduped `List<Service>`. See
-the `DashboardQueryService` bullet above.
+Steps 1 and 2 run once. Step 3 runs against each dashboard's own file, so each one keeps its
+own hand-written entries. The response is keyed by dashboard type. That's why
+`ManagerOptionsValidator` rejects two entries of the same type at startup: there is no
+per-entry name to tell them apart.
 
-## Status monitoring
+## The combiner
 
-Each `DashboardManagers` entry carries an optional `EnableStatusMonitoring: true` flag. When on,
-every item DSM writes for that manager includes the target dashboard's per-item status-ping
-directive:
-
-- **Dashy** — `statusCheck: true` per item ([Dashy status indicators](https://dashy.to/docs/status-indicators)).
-- **Homepage** — `siteMonitor: <href>` per entry ([Homepage site monitor](https://gethomepage.dev/configs/services/#site-monitor)).
-  Suppressed for any service that gets a widget attached via
-  [`SourceHomepageServiceWidgetsFilePath`](#service-widgets) — Homepage widgets poll the service
-  themselves, so emitting a separate site monitor would be redundant.
-
-Default is `false`. The write path is authoritative: the flag applies uniformly to every emitted
-item, including user-added items that survive the combiner — except on Homepage, where a service
-that picks up a widget loses `siteMonitor` automatically (the widget polls the service itself, so
-two pings per cycle would be redundant). That suppression is a side effect of widget attachment,
-not a per-service toggle; an explicit per-service `EnableStatusMonitoring` field on `Service` is
-not supported today.
-
-## The combiner rule (load-bearing)
-
-User-added items **always** survive. Replacement is scoped by `ProviderId` when available:
+Every entry DSM writes carries an ownership marker (see [Dashy](#dashy) and
+[Homepage](#homepage)), and an entry without one is hand-written.
+[`ServicesCombiner.CombineExistingServicesWithNewServices`](../../src/Dsm.Managers/Services/ServicesCombiner.cs#L7)
+merges a dashboard's existing entries with the incoming services. The rule is that DSM only
+replaces its own entries, and only those that came from the provider sources in this POST:
 
 ```text
-incomingProviderIds = {s.ProviderId for s in newServices if s.ProviderId is not null}
+incomingProviderIds = {s.ProviderId for s in incoming if s.ProviderId is set}
 
-if incomingProviderIds is non-empty:
-    # Provider-scoped: only replace services from the same provider(s)
-    result = [...newServices]
-    for existing in existingServices:
-        if not existing.Autogenerated
-           or existing.ProviderId not in incomingProviderIds:
-            result.append(existing)
-
+if incomingProviderIds is not empty:
+    # Replace DSM's own entries from the sources in this POST.
+    survivors = [e for e in existing
+                 if not e.Autogenerated
+                 or e.ProviderId not in incomingProviderIds]
 else:
-    # Backward compat (no ProviderId): hostname/name overlap replacement
-    newTitles    = {s.Name      for s in newServices}
-    newHostnames = {s.Hostname  for s in newServices if s.Hostname is not blank}
+    # A POST without ProviderIds (a provider that predates them):
+    # overlap by hostname, or by name when the entry has no hostname.
+    titles    = {s.Name for s in incoming}
+    hostnames = {s.Hostname for s in incoming if s.Hostname is set}
+    survivors = [e for e in existing
+                 if not e.Autogenerated
+                 or e.ProviderId is set
+                 or not (e.Hostname in hostnames if e.Hostname is set
+                         else e.Name in titles)]
 
-    result = [...newServices]
-    for existing in existingServices:
-        if not existing.Autogenerated
-           or existing.ProviderId is not null
-           or (existing.Name    not in newTitles
-               and existing.Hostname not in newHostnames):
-            result.append(existing)
-
-# Dedup by (Name, Hostname) — new services take precedence over surviving existing
-deduplicate result by (Name, Hostname), keeping first occurrence
+result, seenNames, seenUrls = [], {}, {}
+for s in incoming + survivors:            # incoming first, so it wins every tie
+    if (s.Name, s.Hostname) in seenNames: continue
+    seenNames.add((s.Name, s.Hostname))
+    if s.Url is set:
+        if (s.Url, s.Hostname) in seenUrls: continue
+        seenUrls.add((s.Url, s.Hostname))
+    result.append(s)
 return result sorted by (Category, Name)
 ```
 
-The provider-scoped path means multiple providers can independently contribute services for the
-same hostname without stomping each other. When a provider source fails one cycle, its ProviderId
-is absent from the incoming set, so its previously-contributed services persist.
+What follows from the rule:
 
-The backward-compat path preserves existing behavior for providers that don't yet send ProviderId.
-It also guards ProviderId-tagged services from being dropped by a null-ProviderId POST with
-overlapping hostnames.
+- **Shared hostnames.** Several providers can report services for the same hostname without
+  replacing each other's entries, because a POST only replaces entries that carry its own
+  ProviderIds.
+- **Failed sources.** A source that fails for one cycle is missing from that POST, so its
+  entries stay until it reports again.
+- **Hand-written entries** survive replacement. One drops out only by losing the dedupe to
+  an incoming service with the same `(Name, Hostname)` or `(Url, Hostname)`.
+- **Stale entries.** The `(Url, Hostname)` dedupe retires an entry written before its
+  provider sent ProviderIds, once the same URL arrives under a new name
+  (`StaleNullProviderId_SameUrlAndHostname_DedupedByUrl`).
+- **POSTs without ProviderIds** never replace an entry that has one. Only the dedupe can
+  displace such an entry.
+- **Stable output.** The final sort keeps the order the same from one write to the next.
 
-The sort at the end keeps the dashboard YAML stable across writes — no spurious diffs just from
-dictionary ordering.
+[ServicesCombinerTests](../../src/Dsm.Managers.Tests/UnitTests/ServicesCombinerTests.cs) and
+[DashboardCommandProcessorTests](../../src/Dsm.Managers.Tests/UnitTests/DashboardCommandProcessorTests.cs)
+are the specification for this rule.
 
-## Implementations
+## Writing files
 
-Each `IDashboardManager` translates between DSM's internal `Service` shape and a specific
-dashboard's config format. Both current implementations expose DSM-ownership as an
-`_autogenerated` marker so the combiner rule above can distinguish pushed entries from
-hand-written ones — but they carry that marker differently.
+Both dashboards write through
+[`YamlFileWriter.WriteIfChanged`](../../src/Dsm.Managers/DashboardManagers/YamlFileWriter.cs).
+It compares the new YAML with the file's current text and skips the write when they're
+equal. A POST that changes nothing leaves the file and its modification time alone, so the
+dashboards' file watchers don't reload. A real write goes to `<file>.tmp` and is then moved
+over the original. That rename is atomic on POSIX and NTFS, so a crash never leaves a
+truncated config.
 
-### Dashy
+DSM parses each file and serializes it again. Comments and formatting don't survive a write.
+Each entry is rebuilt from its `Service` record, so a hand-written entry keeps only the fields
+DSM models; the field lists are under [Dashy](#dashy) and [Homepage](#homepage).
 
-Dashy stores a typed `sections: [...]` block. DSM rewrites just that block; every other top-level
-key is preserved.
+## Categories
 
-The `_autogenerated` marker round-trips as an item-level tag:
+Both dashboards group services by category and render each group under a display name:
+
+- An empty category becomes `Uncategorized`.
+- `ServiceDefaultOptions.Categories.<category>.Name` is used when set. The lookup is
+  case-insensitive.
+- Otherwise the category is title-cased:
+  - **Dashy** lower-cases it first.
+  - **Homepage** keeps existing capitals and upper-cases a letter that follows a digit
+    (`3d printing` → `3D Printing`).
+
+Reading a file back gives the display name as the service's `Category`. On the next write it
+finds the same `Categories` entry again, so the output stays stable.
+
+A group's icon (Dashy section icon, Homepage layout icon) is
+`Categories.<display name>.Icon`, resolved through `IconResolver.ResolveIcon`
+([icons.md](icons.md#category-icons)). The lookup uses the display name. A `Name` that
+differs from its key by more than case therefore loses the icon: key `nas` with
+`Name: Storage` gets none.
+
+Groups and their entries are written in alphabetical order.
+
+## Dashy
+
+[`DashyDashboardManager`](../../src/Dsm.Managers/DashboardManagers/DashyDashboardManager.cs)
+reads and writes `<DashboardConfigDirectoryPath>/conf.yml`. It replaces only the top-level
+`sections` block; every other top-level key (`pageInfo`, `appConfig`, …) is kept.
 
 ```yaml
-items:
-  - title: Jellyfin
-    url: https://jellyfin.example
-    tags:
-      - _autogenerated
-      - host=media-01
-      - provider=docker-01-traefik-0
+sections:
+  - name: Media
+    icon: mdi-multimedia
+    items:
+      - title: Jellyfin
+        url: https://jellyfin.example
+        icon: hl-jellyfin
+        tags:
+          - _autogenerated
+          - host=media-01
+          - provider=media-01-docker
 ```
 
-On read,
-[DashyDashboardManager.ListServices](../../src/Dsm.Managers/DashboardManagers/DashyDashboardManager.cs#L26)
-sets `Service.Autogenerated = tags.Contains("_autogenerated")`. On write,
-[DashyItem.Create](../../src/Dsm.Managers/DashboardManagers/Dashy/DashyItem.cs#L9) always stamps
-`_autogenerated` plus a `host=...` tag and a `provider=...` tag (when ProviderId is set). A user-added item that lacks the `_autogenerated` tag is,
-by definition, preserved by the combiner.
+| `Service` | Dashy item |
+|---|---|
+| `Name` | `title` |
+| `Url` | `url` |
+| `Category` | the enclosing section's `name` |
+| `Icon` / `ImageUrl` | `icon`. On read, a value starting with `http` becomes `ImageUrl` and anything else becomes `Icon`. On write: `ImageUrl`, else `Icon`, else `favicon-local`. |
+| `Hostname` | a `host=<hostname>` tag |
+| `ProviderId` | a `provider=<id>` tag |
+| `Autogenerated` | the `_autogenerated` tag |
 
-### Homepage
+[`DashyItem.Create`](../../src/Dsm.Managers/DashboardManagers/Dashy/DashyItem.cs#L9) writes
+those three tags only when they apply. It adds `statusCheck: true` under
+[status monitoring](#status-monitoring). Nothing else is round-tripped:
+- `ServiceDefaultsName` isn't stored.
+- Other item fields and tags are dropped on write.
+- Sections are rebuilt too, so section fields other than `name`, `icon` and `items` are
+  dropped.
 
-[Homepage](https://gethomepage.dev/configs/services/) uses a separate `services.yaml` file
-(alongside `settings.yaml`, `bookmarks.yaml`, `docker.yaml`, etc.). Its shape is a list of
-single-key group maps, each holding a list of single-key service maps:
+## Homepage
+
+[`HomepageDashboardManager`](../../src/Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs)
+reads and writes `<DashboardConfigDirectoryPath>/services.yaml`. It also maintains layout
+icons in `settings.yaml` in the same directory. `services.yaml` is a list of single-key group
+maps, and each group holds a list of single-key service maps
+([Homepage services docs](https://gethomepage.dev/configs/services/)):
 
 ```yaml
 - Media:
     - Jellyfin:
-        href: https://jellyfin.example.com
-        icon: jellyfin.png
-        server: media-01-docker
+        href: https://jellyfin.example
+        icon: jellyfin
+        server: media-01
         _autogenerated: true
-- Links:
-    - Personal Blog:
-        href: https://blog.example.com
-        icon: mdi-rss
+        _serviceDefaultsName: Jellyfin
+        _providerId: media-01-docker
 ```
 
-[`HomepageDashboardManager`](../../src/Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs)
-points at the directory containing `services.yaml` via the `DashboardConfigDirectoryPath` on its
-`DashboardManagers` entry.
-Field mapping:
-
-| `Service` | Homepage field |
+| `Service` | Homepage entry |
 |---|---|
-| `Name` | entry key (`- Jellyfin:`) |
-| `Category` | group key (`- Media:`), fallback `Uncategorized` on write |
+| `Name` | entry key |
+| `Category` | group key |
 | `Url` | `href` |
-| `Icon` / `ImageUrl` | `icon` — split on read: `^http…` lands in `ImageUrl`, anything else in `Icon`. Write picks `ImageUrl ?? Icon`, omits the field when both are null |
-| `Hostname` | `server` — a reference to a key in the user's `docker.yaml` |
-| `Autogenerated` | custom `_autogenerated: true` field (unknown to Homepage but ignored) |
-| `ServiceDefaultsName` | custom `_serviceDefaultsName: <key>` field — DSM round-trip marker so the widget matcher (below) can recover the original defaults key after `Name` has been rewritten. Omitted when null. |
+| `Icon` / `ImageUrl` | `icon`. On read, a value starting with `http` becomes `ImageUrl` and anything else becomes `Icon`. On write: `ImageUrl`, else `Icon`. The key is omitted when both are empty. |
+| `Hostname` | `server` |
+| `Autogenerated` | `_autogenerated`, written on every entry as `true` or `false` |
+| `ServiceDefaultsName` | `_serviceDefaultsName`, omitted when empty |
+| `ProviderId` | `_providerId`, omitted when empty |
 
-DSM never writes a `container:` field today (`Service` doesn't carry a container name).
-`WriteServices` rewrites the whole file: entries with `_autogenerated: true` are dropped and
-replaced with the incoming services; any other entry is preserved in place, so hand-edited
-Homepage services stay untouched.
+Homepage ignores the underscore keys.
+- `server` is the field Homepage's Docker integration uses; DSM keeps the hostname in it.
+- The writer also adds `siteMonitor` ([status monitoring](#status-monitoring)) and
+  `widget`/`widgets` ([service widgets](#service-widgets)).
+- `services.yaml` is rebuilt from the merged list on every write, so other fields of a
+  hand-written entry (`description`, `container`, an inline `widget`) are dropped.
 
-`WriteServices` also updates `<dir>/settings.yaml` with per-category icons pulled from
-`ServiceDefaultOptions.Categories`. For each category present in the current write that has a
-non-null `Icon` default, the icon is run through
-[`IconResolver.ResolveIcon`](../../src/Dsm.Managers/Services/IconResolver.cs) for prefix
-translation / CDN probing (same path as service icons, see [icons.md](icons.md#category-icons)),
-and the result lands at `layout.<Category>.icon` in `settings.yaml`. Every other top-level key
-in `settings.yaml` (`theme`, `providers`, etc.) and every non-icon key within a layout entry
-(`style`, `columns`, `header`, …) is preserved. If no present category has an icon — either
-because none is configured or because every resolution returned `(null, null)` — DSM doesn't
-touch the file at all. See
-[Homepage layout docs](https://gethomepage.dev/configs/settings/#category-icons).
+**Layout icons.**
+- For each group in the write whose category has an icon (see [Categories](#categories)),
+  DSM sets `layout.<Group>.icon` in `settings.yaml`.
+- Every other key in `settings.yaml`, and every other key in each layout entry, is kept. A
+  `layout` value that isn't a map is replaced, with a warning.
+- When no group has an icon, `settings.yaml` isn't touched.
+- `WriteServices` reports a change when either file changed.
 
-#### Service widgets
+### Service widgets
 
-Optional. Set `SourceHomepageServiceWidgetsFilePath` on the Homepage `DashboardManagers` entry to
-the path of a YAML file that follows the same shape as Homepage's
-[service-widgets](https://gethomepage.dev/configs/service-widgets/) docs — a list of single-key
-`name → { server?, widget | widgets }` maps. DSM reads this file on every write and merges the
-matched widget block into the corresponding entry in `services.yaml`.
+Set `SourceHomepageServiceWidgetsFilePath` on a Homepage entry to attach widgets. It points
+at a YAML file shaped like Homepage's
+[service widgets](https://gethomepage.dev/configs/service-widgets/): a list of single-key
+maps, `name → { server?, widget | widgets }`.
 
 ```yaml
 - adguardhome:
     server: network-01
-    widget: { type: adguard, url: https://adguardhome.example, ... }
+    widget: { type: adguard, url: https://adguardhome.example }
 - adguardhome:
     server: pi-rack
-    widget: { type: adguard, url: https://adguardhome-02.example, ... }
-- adguardhome:
-    server: network-03
-    widget: { type: adguard, url: https://adguardhome-03.example, ... }
+    widget: { type: adguard, url: https://adguardhome-02.example }
 - immich:
     widget: { type: immich, url: https://immich.example, key: ... }
 ```
 
-Match precedence is four steps, all comparisons `OrdinalIgnoreCase`:
+The file is read on every write. If it's missing, DSM logs a warning and writes no widgets.
+Names are compared case-insensitively. A repeated `(name, server)` pair keeps the last
+entry, with a warning.
 
-1. `(Name, Hostname)` — widget keyed under the service's `Name` and scoped to its `Hostname` via `server:`.
-2. `(ServiceDefaultsName, Hostname)` — same, but keyed under the defaults name.
-3. `(Name, unscoped)` — widget keyed under `Name` with no `server:`.
-4. `(ServiceDefaultsName, unscoped)`.
+A service is matched by the first of these that finds an entry:
 
-The defaults-name fallback (steps 2 and 4) exists because services with a
-`NameWithHostnameFormatString` default get their `Name` rewritten before the widget lookup runs
-(`adguardhome` becomes `AdGuard Home (network-01)`), so the widget file naturally keys off the
-*unformatted* defaults name. Multiple entries under the same name with different `server:` values
-are routed to the matching service by hostname; an unscoped entry under the same name acts as a
-fallback when no `server:` matches.
+1. `(Name, Hostname)`: an entry under the service's `Name` whose `server` equals its
+   `Hostname`.
+2. `(ServiceDefaultsName, Hostname)`.
+3. `(Name, no server)`.
+4. `(ServiceDefaultsName, no server)`.
 
-A widget attached to a service suppresses `siteMonitor` for that entry — see
-[Status monitoring](#status-monitoring) above.
+Steps 1 and 2 apply only to services that have a hostname, and all comparisons ignore case.
+The `ServiceDefaultsName` steps exist because `NameWithHostnameFormatString` rewrites `Name`
+(`adguardhome` → `AdGuard Home (network-01)`) while the widgets file is keyed by the defaults
+name. The `_serviceDefaultsName` stamp keeps that working for services loaded back from
+`services.yaml`, such as another host's services that aren't in the current POST. If an entry
+has both `widgets` and `widget`, `widgets` wins and a warning is logged.
 
-#### Round-tripping the defaults-name stamp
+## Status monitoring
 
-When DSM writes a service that has `ServiceDefaultsName` set, it emits `_serviceDefaultsName: <key>`
-alongside `_autogenerated`. `ListServices` reads it back, so the widget matcher above keeps working
-after the file is round-tripped through disk. Without this, a provider running on host A would lose
-the widget on host B's service every time A POSTed (because A's POST doesn't include B's services,
-which are loaded from the existing `services.yaml`). `services.yaml` files written by older versions
-self-heal one provider POST at a time — each provider's first POST stamps its own service.
+`EnableStatusMonitoring: true` on a `DashboardManagers` entry adds the dashboard's own status
+check to every entry it writes. That includes hand-written entries, because every entry is
+rewritten:
 
-## Idempotent writes
+- Dashy items get `statusCheck: true`
+  ([Dashy status indicators](https://dashy.to/docs/status-indicators)).
+- Homepage entries get `siteMonitor: <href>`
+  ([Homepage site monitor](https://gethomepage.dev/configs/services/#site-monitor)). An entry
+  with a widget doesn't: the widget already polls the service.
 
-Both dashboard managers compare the serialized YAML against the current on-disk content and skip
-the write when bytes match
-([`YamlFileWriter.WriteIfChanged`](../../src/Dsm.Managers/DashboardManagers/YamlFileWriter.cs)). This
-means a provider POST that produces no change leaves the dashboard config file's mtime untouched,
-so Homepage / Dashy file watchers don't reload spuriously. The check is byte-exact — manual edits
-to whitespace or comments that DSM doesn't reproduce will still be clobbered (same as before).
+The default is `false`. There is no per-service setting.
 
-## Config from `manager-config.yaml`
+## Configuration
 
-Bound by [HostBuilderExtensions](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs) into
-[`ManagerOptions`](../../src/Dsm.Managers/Configuration/ManagerOptions.cs) and
-[`ServiceDefaultOptions`](../../src/Dsm.Managers/Configuration/ServiceDefaultOptions.cs).
+`manager-config.yaml` binds into
+[`ManagerOptions`](../../src/Dsm.Managers/Configuration/ManagerOptions.cs). How the file is
+found and layered is in [overview.md](overview.md#configuration).
 
-`ManagerOptions` is two fields: a list of
-[`DashboardManagerConfig`](../../src/Dsm.Managers/Configuration/DashboardManagerConfig.cs) entries
-(one per dashboard you want DSM to keep in sync) and an `IgnoredServiceNames` list (services
-posted with these names are dropped before defaulting). `DashboardManagerConfig` fields:
+| Key | Purpose |
+|---|---|
+| `DashboardManagers` | Required, at least one entry: the dashboards to keep in sync (fields below). |
+| `IgnoredServiceNames` | Service names dropped in step 1 of the write path (case-insensitive). |
+| `ApiKey` | When set, `/dashboard-services` requires a matching `X-Api-Key` header (`AspNetCore.Authentication.ApiKey` with [`ConfigApiKeyProvider`](../../src/Dsm.Manager.Api/Authentication/ConfigApiKeyProvider.cs), ordinal comparison). `/health` stays open. When unset, the authentication pipeline isn't registered at all. |
+
+Each `DashboardManagers` entry is a
+[`DashboardManagerConfig`](../../src/Dsm.Managers/Configuration/DashboardManagerConfig.cs):
 
 | Field | Applies to | Purpose |
 |---|---|---|
-| `DashboardManagerType` | all | Discriminator: `Dashy` or `Homepage` |
-| `DashboardConfigDirectoryPath` | all | Directory holding the dashboard's config files (`conf.yml` for Dashy, `services.yaml` + `settings.yaml` for Homepage) |
-| `EnableStatusMonitoring` | all | Emit per-item status pings — see [Status monitoring](#status-monitoring). Defaults to `false`. |
-| `SourceHomepageServiceWidgetsFilePath` | Homepage only | Path to a YAML file of widget definitions — see [Service widgets](#service-widgets). Optional. |
-
-The manager-side YAML shape:
+| `DashboardManagerType` | all | `Dashy` or `Homepage` |
+| `DashboardConfigDirectoryPath` | all | Directory holding the dashboard's files (`conf.yml`; `services.yaml` + `settings.yaml`) |
+| `EnableStatusMonitoring` | all | See [Status monitoring](#status-monitoring). Default `false`. |
+| `SourceHomepageServiceWidgetsFilePath` | Homepage | See [Service widgets](#service-widgets). Optional. |
 
 ```yaml
 ManagerOptions:
   DashboardManagers:
-    - DashboardManagerType: dashy
-      DashboardConfigDirectoryPath: /dashy_config       # DSM reads/writes <dir>/conf.yml
-    - DashboardManagerType: homepage
-      DashboardConfigDirectoryPath: /homepage_config    # DSM reads/writes <dir>/services.yaml
-      EnableStatusMonitoring: true                      # emits siteMonitor; suppressed for entries with widgets
-      SourceHomepageServiceWidgetsFilePath: /homepage_config/widgets.yaml   # optional; see Service widgets
-  IgnoredServiceNames: []
+    - DashboardManagerType: Dashy
+      DashboardConfigDirectoryPath: /dashy_config
+    - DashboardManagerType: Homepage
+      DashboardConfigDirectoryPath: /homepage_config
+      EnableStatusMonitoring: true
+      SourceHomepageServiceWidgetsFilePath: /homepage_config/widgets.yaml
+  IgnoredServiceNames:
+    - Dashy
 ```
 
-`ServiceDefaultOptions` is documented in [service-defaults.md](service-defaults.md) along with the
-rules for how `manager-config.yaml` overrides the shipped `service-defaults.yaml`.
+The options are validated at startup
+([`ManagerOptionsValidator`](../../src/Dsm.Managers/Configuration/ManagerOptionsValidator.cs)
+plus data annotations), and a failure stops the host. The rules:
+- at least one entry
+- no two entries with the same type
+- a directory path on every entry
+- a widgets path only on Homepage entries, and never empty
 
-Keys bind via [`AddNormalizedYamlFile`](../../src/Dsm.Shared/Configuration/NormalizedYamlConfigurationSource.cs),
-which strips underscores at load time — `snake_case`, `camelCase`, and `PascalCase` are
-interchangeable on binding. Dashes in dict keys are preserved.
+The same file can carry `ServiceDefaultOptions` overrides
+([service-defaults.md](service-defaults.md#overriding-from-manager-configyaml)).
+
+## Adding a dashboard type
+
+1. Implement `IDashboardManager`. Take a `DashboardManagerConfig` in the constructor, along
+   with any DI services you need. Build the file path from `DashboardConfigDirectoryPath` and
+   the dashboard's own file name.
+2. Add a value to
+   [`DashboardManagerType`](../../src/Dsm.Managers/DashboardManagers/DashboardManagerType.cs).
+3. Add a case to the switch in `DashboardManagerFactory.Create`:
+   `ActivatorUtilities.CreateInstance<YourManager>(_serviceProvider, config)`.
+
+The interface doesn't capture everything the rest of the pipeline relies on:
+
+- **Round-trip the ownership marker.** Write it on entries DSM owns, and read it back into
+  `Service.Autogenerated`. Otherwise the combiner treats your entries as hand-written and
+  never replaces them.
+- **Round-trip `Hostname` and `ProviderId`.** Replacement is scoped by `ProviderId`, and
+  dedupe keys on `Hostname`.
+- **Write through `YamlFileWriter.WriteIfChanged`,** and return `true` only when a file
+  changed.
+- **Declare `NativeIconSourcePrefixes`**
+  ([icons.md](icons.md#native-support-in-a-new-dashboard)).
+- **Validate new type-specific options** in `ManagerOptionsValidator`, the way the Homepage
+  widgets path is checked.
+
+## Tests
+
+- **Combiner and pipeline:**
+  [ServicesCombinerTests](../../src/Dsm.Managers.Tests/UnitTests/ServicesCombinerTests.cs),
+  [DashboardCommandProcessorTests](../../src/Dsm.Managers.Tests/UnitTests/DashboardCommandProcessorTests.cs).
+- **Reads:**
+  [DashboardQueryServiceTests](../../src/Dsm.Managers.Tests/UnitTests/DashboardQueryServiceTests.cs).
+- **Dashboard formats:**
+  [DashyDashboardManagerTests](../../src/Dsm.Managers.Tests/UnitTests/DashyDashboardManagerTests.cs),
+  [HomepageDashboardManagerTests](../../src/Dsm.Managers.Tests/UnitTests/HomepageDashboardManagerTests.cs),
+  [HomepageSettingsLayoutTests](../../src/Dsm.Managers.Tests/UnitTests/HomepageSettingsLayoutTests.cs).
+- **Widgets:**
+  [HomepageDashboardManagerWidgetMatchingTests](../../src/Dsm.Managers.Tests/UnitTests/HomepageDashboardManagerWidgetMatchingTests.cs),
+  [HomepageDashboardManagerWidgetServerScopingTests](../../src/Dsm.Managers.Tests/UnitTests/HomepageDashboardManagerWidgetServerScopingTests.cs).
+- **Validation:**
+  [ManagerOptionsValidatorTests](../../src/Dsm.Managers.Tests/UnitTests/ManagerOptionsValidatorTests.cs).
+
+How to run them: [testing.md](testing.md#running-tests).
 
 ## Folder map
 
 ```
 Dsm.Managers/
-├── Configuration/                  Options types bound from manager-config.yaml
-│   ├── ManagerOptions.cs
-│   ├── DashboardManagerConfig.cs   Per-entry manager type + file path
-│   ├── ServiceDefaultOptions.cs
-│   ├── ServiceConfig.cs
-│   └── CategoryConfig.cs
-├── DashboardManagers/              Dashboard adapters
-│   ├── IDashboardManager.cs        Extension point
-│   ├── DashboardManagerFactory.cs
-│   ├── DashboardManagerType.cs     Enum (Dashy, Homepage)
-│   ├── YamlFileWriter.cs           Shared write-if-changed helper used by both adapters
-│   ├── DashyDashboardManager.cs
-│   ├── Dashy/                      Dashy YAML DTOs (DashyConfig / DashySection / DashyItem)
-│   ├── HomepageDashboardManager.cs
-│   └── Homepage/                   Homepage YAML DTOs (HomepageServiceEntry, HomepageServiceWidgetEntry)
-├── Services/                       Pure transformations + icon lookup strategy
-│   ├── ServiceWithDefaultsFactory.cs
-│   ├── ServicesCombiner.cs
-│   ├── IconResolver.cs             Per-manager prefix translation + CDN fallback
-│   └── IconSources/                IDashboardIconSource implementations (HomarrLabs, SelfhSt, MaterialDesignIcons)
-├── HostBuilder/
-│   └── HostBuilderExtensions.cs    DI + manager-config.yaml wiring
-├── DashboardCommandProcessor.cs    Public entry (writes)
-└── DashboardQueryService.cs        Public entry (reads)
+├── DashboardCommandProcessor.cs   write entry point (POST)
+├── DashboardQueryService.cs       read entry point (GET)
+├── DashboardWriteCoordinator.cs   singleton lock around the write path
+├── Configuration/                 ManagerOptions, DashboardManagerConfig, ManagerOptionsValidator,
+│                                  ServiceDefaultOptions, ServiceConfig, CategoryConfig
+├── DashboardManagers/             IDashboardManager, DashboardManagerFactory, DashboardManagerType,
+│   │                              YamlFileWriter, DashyDashboardManager, HomepageDashboardManager
+│   ├── Dashy/                     Dashy YAML types (DashyConfig, DashySection, DashyItem)
+│   └── Homepage/                  Homepage YAML types (HomepageServiceEntry, HomepageServiceWidgetEntry)
+├── Services/                      ServiceWithDefaultsFactory, ServicesCombiner, IconResolver
+│   └── IconSources/               IDashboardIconSource, DashboardIconSourceType, JsDelivrIconSource,
+│                                  and the three sources
+└── HostBuilder/                   DI registration and manager configuration files
 ```
-
-## Adding a new dashboard type
-
-Three changes, no surprises:
-
-1. Implement [`IDashboardManager`](../../src/Dsm.Managers/DashboardManagers/IDashboardManager.cs). Take a
-   [`DashboardManagerConfig`](../../src/Dsm.Managers/Configuration/DashboardManagerConfig.cs) as a ctor
-   parameter and build the target file path by combining `config.DashboardConfigDirectoryPath`
-   with your dashboard's well-known filename (see `DashyDashboardManager.ConfigFileName` /
-   `HomepageDashboardManager.ServicesFileName` for examples) — the factory injects the config via
-   `ActivatorUtilities.CreateInstance`, so the manager never needs `IOptions<ManagerOptions>`.
-2. Add a variant to
-   [`DashboardManagerType`](../../src/Dsm.Managers/DashboardManagers/DashboardManagerType.cs).
-3. Extend the `switch` in
-   [`DashboardManagerFactory.Create(DashboardManagerConfig)`](../../src/Dsm.Managers/DashboardManagers/DashboardManagerFactory.cs)
-   to hand the config to your new manager via `ActivatorUtilities.CreateInstance<T>`.
-
-Two pieces of contract to honour beyond the interface:
-
-- **Autogenerated marker.** Expose autogenerated state in whatever form your target config can
-  carry — Dashy uses an item tag, Homepage uses a custom field — then set
-  `Service.Autogenerated` on read and stamp the marker on write. That's the contract the
-  combiner rule leans on.
-- **`NativeIconSourcePrefixes`.** Declare which icon sources your dashboard renders natively
-  and the prefix it expects in its YAML (`""` if it does a default lookup with no prefix). If
-  you leave the dictionary empty, every prefix-matched icon will fall through to a CDN probe
-  on every write — usually not what you want for a dashboard that handles `hl-`/`sh-`/`mdi-`
-  itself. See [icons.md](icons.md#native-source-declarations-shipped-backends) for the
-  shipped backends as worked examples.
-
-## Testing
-
-```sh
-dotnet test --project src/Dsm.Managers.Tests
-```
-
-Icon-source tests hit the public jsDelivr CDN and are tagged `[Category("Network")]`. Skip them
-offline:
-
-```sh
-dotnet test --project src/Dsm.Managers.Tests --filter "TestCategory!=Network"
-```
-
-The combiner and command-processor tests
-([ServicesCombinerTests](../../src/Dsm.Managers.Tests/UnitTests/ServicesCombinerTests.cs),
-[DashboardCommandProcessorTests](../../src/Dsm.Managers.Tests/UnitTests/DashboardCommandProcessorTests.cs))
-are the load-bearing ones — they're the spec for the combiner rule above.

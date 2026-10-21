@@ -1,128 +1,169 @@
 # Icon resolution
 
-How a `Service.Icon` value (set by the user, by per-service defaults, or left empty) gets
-turned into the `icon` / `image-url` field that lands in a dashboard's YAML.
+How a service's `Icon` and `ImageUrl` become the icon written into a dashboard's YAML.
+For the end-user view, see [docs/icons.md](../icons.md).
 
-End-user view: [docs/managers.md](../managers.md#per-service-defaults).
+## Where it runs
 
-## Where the logic lives
+Icons are resolved separately for each dashboard, at the moment its file is written. Each
+`IDashboardManager.WriteServices` calls
+[`IconResolver.Resolve(service, this)`](../../src/Dsm.Managers/Services/IconResolver.cs) for
+every service and writes the resulting `(Icon, ImageUrl)` pair. It has to happen per dashboard
+because dashboards differ in which icon sets they render themselves. The same service is
+written as `hl-jellyfin` for Dashy and as `jellyfin` for Homepage. Before this point, through
+defaults and the merge, a service carries its icon exactly as the user or the defaults wrote
+it, e.g. `hl-jellyfin`.
 
-| File | Role |
+| Piece | Role |
 |---|---|
-| [`ServiceWithDefaultsFactory`](../../src/Dsm.Managers/Services/ServiceWithDefaultsFactory.cs) | Per-service defaults + `ImagePath` resolution. Runs **once** per posted service. Doesn't touch icon prefixes. |
-| [`IconResolver`](../../src/Dsm.Managers/Services/IconResolver.cs) | Per-manager prefix matching, CDN probing, native pass-through, fallback chain. Runs **per dashboard manager** during `WriteServices`. |
-| [`IDashboardManager.NativeIconSourcePrefixes`](../../src/Dsm.Managers/DashboardManagers/IDashboardManager.cs) | Per-manager declaration: which `DashboardIconSourceType` values render natively, and the prefix the dashboard expects in its YAML. |
-| [`IDashboardIconSource`](../../src/Dsm.Managers/Services/IconSources/IDashboardIconSource.cs) | One per source. `Type`, `Prefix`, `GetIconUrl(name) -> (Url, MatchedName)`. |
-| [`JsDelivrIconSource`](../../src/Dsm.Managers/Services/IconSources/JsDelivrIconSource.cs) | Shared base for jsDelivr-served sources. Owns the cache, the HEAD-probe loop, and the name-normalization variants. |
+| [`IconResolver`](../../src/Dsm.Managers/Services/IconResolver.cs) | Prefix matching, native pass-through, CDN probing, fallback chain. A singleton. |
+| [`IDashboardManager.NativeIconSourcePrefixes`](../../src/Dsm.Managers/DashboardManagers/IDashboardManager.cs) | Each dashboard's declaration of the icon sources it renders itself, and the prefix it expects for each. |
+| [`IDashboardIconSource`](../../src/Dsm.Managers/Services/IconSources/IDashboardIconSource.cs) | One per icon set: `Type`, `Prefix`, `GetIconUrl(name)` → `(Url, MatchedName)`. |
+| [`JsDelivrIconSource`](../../src/Dsm.Managers/Services/IconSources/JsDelivrIconSource.cs) | Base class for the shipped sources. Name variants, HEAD probing, cache. |
 
-The fan-out: `Service` flows out of the factory in user-facing form (`mdi-account`,
-`hl-jellyfin`, …). Each manager's `WriteServices` runs an async pre-pass through every service,
-calling `IconResolver.Resolve(service, this)`. The resulting `(Icon, ImageUrl)` tuple is what
-gets written into the dashboard YAML.
+The shipped sources are all served by jsDelivr:
 
-## Precedence
+| Source | Prefix | Probed at |
+|---|---|---|
+| `HomarrLabs` | `hl-` | `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/<name>.png` |
+| `SelfhSt` | `sh-` | `https://cdn.jsdelivr.net/gh/selfhst/icons/png/<name>.png` |
+| `MaterialDesignIcons` | `mdi-` | `https://cdn.jsdelivr.net/npm/@mdi/svg@latest/svg/<name>.svg` |
 
-Mirrors the pre-refactor factory behaviour exactly. Step numbers refer to the in-order checks
-inside [`IconResolver.Resolve`](../../src/Dsm.Managers/Services/IconResolver.cs):
+## Resolution order
 
-1. **`Icon` has a registered prefix** (`hl-` / `sh-` / `mdi-`):
-   - Manager natively supports the source → return `(<native-prefix><iconName>, null)`. **No
-     CDN probe.** The user vouched for the icon by typing the prefix.
-   - Manager doesn't natively support → CDN probe via `IDashboardIconSource.GetIconUrl`.
-     - Hit → return `(null, <Url>)`.
-     - Miss → fall through to step 2.
-2. **`ImageUrl` is set** (set by the caller, or by the factory's `ImagePath` resolution) →
-   return `(null, <ImageUrl>)`.
-3. **`Icon` is set without a registered prefix** (or with a prefix that probe-missed) →
-   return `(<Icon>, null)`. Pass-through.
-4. **Both `Icon` and `ImageUrl` empty** → walk `FallbackIconSourceProviders` in order:
-   - Probe each entry (unconditionally — see "Why probe even for native sources" below).
-   - Hit: native source → `(<native-prefix><matchedName>, null)`; non-native → `(null, <Url>)`.
-   - All miss → `(null, null)`. The dashboard's own no-icon behaviour kicks in (Dashy stamps
-     `favicon-local`; Homepage shows a generic placeholder).
+`Resolve` returns at the first step that produces an answer:
 
-The "fall-through on prefix miss" in step 1 is what gives a service with both `Icon: hl-FOO`
-(probe-miss) and `ImageUrl: /local.svg` the ImageUrl on output instead of the literal
-`hl-FOO` string — same precedence the old factory had.
+1. **The icon has a registered prefix.** The prefix match is case-insensitive.
+   - If the dashboard renders that source itself, the result is `(<native prefix><name>, null)`.
+     No request is made: the user chose the icon by typing the prefix.
+   - Otherwise DSM probes the source. On a hit the result is `(null, <CDN URL>)`. On a miss it
+     moves on to the next step.
+2. **`ImageUrl` is set** (by the provider, or from `ImagePath` in the defaults): `(null, ImageUrl)`.
+3. **`Icon` is set** (no prefix, or a prefix whose probe missed): `(Icon, null)`, verbatim.
+4. **Neither is set:** walk the [fallback chain](#the-fallback-chain). If nothing is found the
+   result is `(null, null)`, logged as a warning.
 
-## Why `MatchedName` exists
+Steps 1 and 2 interact. A service with `Icon: hl-foo` and `ImageUrl: /local.svg` keeps its
+`hl-foo` icon wherever `hl-` is native. On a dashboard that doesn't render `hl-`, a probe miss
+for `foo` hands over to the image URL.
 
-`IDashboardIconSource.GetIconUrl` returns *both* the resolved URL and the variant of the name
-that hit the CDN:
+Each dashboard turns the pair into its own icon field:
+- **Dashy** writes `ImageUrl`, else `Icon`, else `favicon-local`, which tells Dashy to use the
+  service's own favicon.
+- **Homepage** writes `ImageUrl`, else `Icon`, and omits the field when both are empty.
+
+## Native prefixes
+
+| Source | Dashy writes | Homepage writes |
+|---|---|---|
+| `HomarrLabs` | `hl-<name>` | `<name>` (Homepage's default lookup is the same Dashboard Icons set) |
+| `SelfhSt` | `sh-<name>` | `sh-<name>` |
+| `MaterialDesignIcons` | `mdi-<name>` | `mdi-<name>` |
+
+Both shipped dashboards render all three sources. A prefixed icon is therefore never probed
+on its own: probes happen only in the fallback chain, or for a dashboard that leaves a source
+out of its map.
+
+## The fallback chain
+
+A service that reaches step 4 has neither an icon nor an image URL. DSM looks for an icon by
+name. The lookup name is the service's `ServiceDefaultsName` if set, otherwise its `Name`.
+Each source listed in `ServiceDefaultOptions.FallbackIconSourceProviders` is probed in order;
+the shipped list is `HomarrLabs`, then `SelfhSt` (see
+[service-defaults.md](service-defaults.md#service-defaultsyaml)).
+
+- **A hit on a source the dashboard renders itself** gives `(<native prefix><matched name>, null)`.
+- **A hit on any other source** gives `(null, <CDN URL>)`.
+- **A miss** moves on to the next source.
+
+Every fallback source is probed, including ones the dashboard renders natively. A native
+source changes only how a hit is written. The probe is what guarantees that a written name
+exists in the set. Without it, DSM would write `hl-<service name>` for every unknown service,
+and the dashboard would be left with a name that may not exist. Dashy, for one, fetches `hl-`
+icons straight from jsDelivr.
+
+### Matched names
+
+`GetIconUrl` returns the URL that answered and also the variant of the name that matched:
 
 ```csharp
 Task<(string? Url, string? MatchedName)> GetIconUrl(string iconName);
 ```
 
-The base class probes a few normalized variants of the input — lowercase, spaces stripped,
-spaces → hyphens, dots → hyphens — and the first 200 wins. The variant that won is the one
-the dashboard's own renderer needs to look up. Without it, fallback-chain native pass-through
-would stamp the user's literal service name (e.g. `Home Assistant`) which Homepage would 404
-on; with it we stamp `home-assistant`.
+`JsDelivrIconSource` lower-cases the name and tries up to three variants, keeping the first
+one that answers `2xx`:
+1. spaces removed
+2. spaces turned into hyphens
+3. dots turned into hyphens
 
-For explicit prefixes (step 1), the user already typed the canonical name, so the matched
-variant isn't needed there.
-
-## Why probe even for native sources in the fallback chain
-
-The earlier draft of this resolver skipped the probe entirely when a fallback source was
-native to the manager — write `<native-prefix><serviceName>` and trust the dashboard to
-handle a 404 gracefully. That worked for Homepage (graceful generic-icon fallback) but not
-Dashy: `icon: hl-X` is a direct `<img>` to jsdelivr; on miss, you get a broken-image
-placeholder.
-
-So: fallback-chain entries always probe, regardless of native support. Native support only
-changes what gets stamped *on a hit*.
-
-## Native source declarations (shipped backends)
-
-| Source | Dashy native prefix | Homepage native prefix |
-|---|---|---|
-| `HomarrLabs` (`hl-`) | `hl-` | `""` (Homepage's default lookup) |
-| `SelfhSt` (`sh-`) | `sh-` | `sh-` |
-| `MaterialDesignIcons` (`mdi-`) | `mdi-` | `mdi-` |
-
-Net effect under the shipped backends: every prefix-driven icon passes through without a CDN
-probe. Probes only fire for fallback-chain entries with empty `Icon`+`ImageUrl`, or for a
-hypothetical custom backend that declines a source.
+A native hit is written with the matched variant, because that is the form the dashboard's
+own renderer looks up. "AdGuard Home" is written as `adguard-home`, not as the display name.
+Step 1 doesn't need this: there the user typed the icon name.
 
 ## Caching
 
-Each `IDashboardIconSource` instance is registered as a singleton, so its cache (a
-`ConcurrentDictionary<string, (Url, MatchedName, CachedAt)>`) lives for the process lifetime.
+Each icon source is a singleton holding a cache keyed by the name exactly as it was passed in,
+so `Plex` and `plex` are separate entries.
+- Hits are kept for the life of the process.
+- Misses expire after 7 days (`JsDelivrIconSource.NegativeCacheTtl`). To retry a miss sooner,
+  for example after an icon is added upstream, restart the manager.
 
-- **Hits** are cached forever.
-- **Misses** are cached for 7 days
-  ([`JsDelivrIconSource.NegativeCacheTtl`](../../src/Dsm.Managers/Services/IconSources/JsDelivrIconSource.cs)).
-  Restart the manager to clear the negative cache (e.g. when an icon you uploaded becomes
-  available).
+Each source's named `HttpClient` has a 5-second timeout
+([HostBuilderExtensions.cs](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs)).
 
-The cache key is the *unnormalized* `iconName` argument the resolver passes in, so the same
-icon requested twice (regardless of casing or spacing) won't re-probe.
+## Category icons
 
-## Adding a new `IDashboardIconSource`
+Dashy section icons and Homepage layout icons come from `ServiceDefaultOptions.Categories.<name>.Icon`
+and go through a sibling method:
 
-1. Add a variant to [`DashboardIconSourceType`](../../src/Dsm.Managers/Services/IconSources/IDashboardIconSource.cs).
-2. If your source is jsDelivr-backed and uses the same path scheme as the existing ones,
-   extend [`JsDelivrIconSource`](../../src/Dsm.Managers/Services/IconSources/JsDelivrIconSource.cs)
-   and override `Type`, `Prefix`, `BaseUrl` (the URL prefix up to and including the trailing
-   `/`), `Extension` (without the dot), and `HttpClientName`. Otherwise implement
-   `IDashboardIconSource` directly.
-3. Register in [`HostBuilderExtensions`](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs):
+```csharp
+public Task<(string? Icon, string? ImageUrl)> ResolveIcon(string? icon, IDashboardManager manager);
+```
+
+`ResolveIcon` runs step 1 only. A native prefix passes through (translated); a non-native
+prefix is probed. Anything else, including a probe miss, comes back verbatim. There is no
+fallback chain: a category without a configured icon gets no icon.
+
+| `Categories.media.Icon` | Dashy section icon (`conf.yml`) | Homepage layout icon (`settings.yaml`) |
+|---|---|---|
+| `mdi-multimedia` | `mdi-multimedia` | `mdi-multimedia` |
+| `hl-jellyfin` | `hl-jellyfin` | `jellyfin` |
+| `https://my.cdn/foo.png` | `https://my.cdn/foo.png` | `https://my.cdn/foo.png` |
+| not set | no section icon | no layout entry |
+
+The callers are `DashyDashboardManager.ResolveSectionIcons` and
+`HomepageDashboardManager.UpdateSettingsLayoutIcons`. How categories are named and looked up
+is in [managers.md](managers.md#categories).
+
+## Adding an icon source
+
+1. Add a value to [`DashboardIconSourceType`](../../src/Dsm.Managers/Services/IconSources/DashboardIconSourceType.cs).
+2. Implement the source:
+   - **A jsDelivr-hosted set with the same URL shape:** subclass `JsDelivrIconSource`.
+     Override `Type`, `Prefix`, `BaseUrl` (everything before the name, ending in `/`),
+     `Extension` (no dot) and `HttpClientName`, and expose a `ClientName` constant.
+   - **Anything else:** implement `IDashboardIconSource` directly.
+
+   Prefixes must not overlap: the resolver uses the first registered source whose prefix the
+   icon starts with.
+3. Register the source and its client in
+   [HostBuilderExtensions.cs](../../src/Dsm.Managers/HostBuilder/HostBuilderExtensions.cs):
    ```csharp
    services.AddSingleton<IDashboardIconSource, YourSource>();
    services.AddHttpClient(YourSource.ClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
    ```
-4. Decide whether each existing dashboard manager renders this source natively. If so, add an
-   entry to that manager's `NativeIconSourcePrefixes` mapping the new
-   `DashboardIconSourceType` to whatever prefix the dashboard expects in its YAML (or `""` for
-   a default lookup).
-5. Optionally opt the source into the auto-fallback chain by adding it to
-   `FallbackIconSourceProviders` in [`src/service-defaults.yaml`](../../src/service-defaults.yaml).
+4. Add `YourSource.ClientName` to `ConfigureOfflineIconHttpClients` in
+   [IconHttpClientStubs.cs](../../src/Dsm.Managers.Tests/IconHttpClientStubs.cs). Without it,
+   manager tests that resolve icons through the real configuration can reach the live host
+   ([testing.md](testing.md#mocking-and-stubs)).
+5. For each dashboard that renders the set itself, add the type to that manager's
+   `NativeIconSourcePrefixes`, mapped to the prefix the dashboard expects (`""` for a
+   no-prefix lookup).
+6. Optionally add the type to `FallbackIconSourceProviders` in `service-defaults.yaml`.
 
-## Adding native prefix support for a new dashboard manager
+## Native support in a new dashboard
 
-Set `NativeIconSourcePrefixes` on the manager class:
+A new `IDashboardManager` declares the sources it renders, and the prefix each needs:
 
 ```csharp
 public IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePrefixes { get; }
@@ -133,57 +174,21 @@ public IReadOnlyDictionary<DashboardIconSourceType, string> NativeIconSourcePref
     };
 ```
 
-The dictionary value is the prefix the dashboard's icon renderer expects in its YAML. An empty
-string means the dashboard does a default lookup with no prefix.
-
-Sources you don't list here will fall through to CDN probing whenever a user types their
-prefix — that's the right behaviour for any source the dashboard can't render itself.
-
-## Category icons
-
-Dashy section icons and Homepage layout (settings.yaml) icons go through the resolver too,
-via a sibling method:
-
-```csharp
-public Task<(string? Icon, string? ImageUrl)> ResolveIcon(string? icon, IDashboardManager manager);
-```
-
-Behaviour matches `Resolve(Service, manager)` for the prefix-match step (native pass-through
-or CDN probe; on probe miss return verbatim) but **omits the fallback chain**. A category
-with no `Icon` set in `ServiceDefaultOptions.Categories.<name>.Icon` returns `(null, null)`
-and the manager simply doesn't write a section/layout icon for it — same as today.
-
-So:
-
-| `Categories.media.Icon` | Dashy `conf.yml` section icon | Homepage `settings.yaml` layout icon |
-|---|---|---|
-| `mdi-multimedia` | `mdi-multimedia` | `mdi-multimedia` |
-| `hl-jellyfin` | `hl-jellyfin` | `jellyfin` (translated to default lookup) |
-| `https://my.cdn/foo.png` | `https://my.cdn/foo.png` | `https://my.cdn/foo.png` |
-| `(unset)` | (no icon) | (no layout entry written) |
-
-Per-manager wiring:
-- [`DashyDashboardManager.ResolveSectionIcons`](../../src/Dsm.Managers/DashboardManagers/DashyDashboardManager.cs)
-  pre-resolves a `Dictionary<string, string?>` keyed by title-cased section name before
-  building the `DashySection` list.
-- [`HomepageDashboardManager.UpdateSettingsLayoutIcons`](../../src/Dsm.Managers/DashboardManagers/HomepageDashboardManager.cs)
-  resolves each distinct group inline; categories whose resolution returns `(null, null)`
-  are filtered out.
+A source left out of the map is treated as foreign to that dashboard. Its prefixed icons are
+probed on the CDN and written as URLs, which is the right outcome for a set the dashboard
+can't render.
 
 ## Tests
 
 [`IconResolverTests`](../../src/Dsm.Managers.Tests/UnitTests/IconResolverTests.cs) covers:
-- Native pass-through (no probe) for each prefix.
-- Prefix translation when manager and DSM use different prefixes (`hl-jellyfin` →
-  `jellyfin` for Homepage's default lookup).
-- Non-native fallback to CDN URL.
-- Prefix-miss fall-through to ImageUrl.
-- Native-prefix wins over ImageUrl (precedence regression test).
-- Fallback chain: native source probes-then-stamps matched-name; non-native probes-then-uses
-  URL; all-miss returns `(null, null)`.
-- `ServiceDefaultsName` as the fallback lookup name.
-- A `[TestCase]` smoke list of well-known Homarr Labs icons (jellyfin, plex, prometheus, …)
-  to catch upstream renames or removals.
+- native pass-through and prefix translation (`hl-jellyfin` → `jellyfin`)
+- the CDN fallback for non-native prefixes, including the hit, the miss and the hand-over to
+  `ImageUrl`
+- native prefixes beating `ImageUrl`
+- the fallback chain: native and non-native hits, all-miss, the empty chain, and
+  `ServiceDefaultsName` as the lookup name
+- `ResolveIcon`
+- a smoke list of well-known Homarr Labs icons that catches upstream renames
 
-CDN tests are tagged `[Category("Network")]`. Skip with
-`dotnet test --project src/Dsm.Managers.Tests --filter "TestCategory!=Network"` for offline runs.
+Tests that reach the CDN are tagged `[Category("Network")]`
+([testing.md](testing.md#network-dependent-tests)).

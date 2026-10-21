@@ -79,7 +79,7 @@ The entrypoint adds the `dsm` user to a group with that GID so it can read the s
 
 ## Configuration
 
-DSM reads two YAML files: manager-config.yaml for the manager API and provider-config.yaml for the rovider. The docker images look for them in `/config/`. Either file can be partially or fully replaced by `DSM_`-prefixed
+DSM reads two YAML files: manager-config.yaml for the manager API and provider-config.yaml for the provider. The docker images look for them in `/config/`. Either file can be partially or fully replaced by `DSM_`-prefixed
 environment variables; this is useful for doing all of the config in a docker compose file.
 
 These YAML files aren't a bespoke schema — they feed the standard .NET configuration tree, so
@@ -114,7 +114,7 @@ ManagerOptions:
     - Dashboard Services Manager
 
 # Optional — override or extend the per-service defaults (icons, categories, name templating).
-# Full reference: docs/service-defaults.md
+# Full reference: docs/managers.md#per-service-defaults
 ServiceDefaultOptions:
   Services:
     plex:
@@ -204,40 +204,46 @@ User guide:
 
 Development:
 
-- **[docs/development/overview.md](docs/development/overview.md)** — architecture, data flow
-- **[docs/development/managers.md](docs/development/managers.md)** — `Dsm.Managers` internals,
-  the combiner rule, how to add a new dashboard backend
-- **[docs/development/providers.md](docs/development/providers.md)** — `Dsm.Providers`
-  internals, how to add a new provider
-- **[docs/development/service-defaults.md](docs/development/service-defaults.md)** — defaulting
-  factory, per-service overrides
-- **[docs/development/icons.md](docs/development/icons.md)** — `IconResolver`, native
-  pass-through vs CDN probing, fallback chain, how to add a new icon source
+- **[docs/development/overview.md](docs/development/overview.md)**: architecture, the path
+  of one push, configuration mechanics, building and running
+- **[docs/development/managers.md](docs/development/managers.md)**: `Dsm.Managers`
+  internals; the write path, the combiner rule, Dashy and Homepage specifics, how to add a
+  dashboard backend
+- **[docs/development/providers.md](docs/development/providers.md)**: `Dsm.Providers` and the
+  worker loop; container labels, how to add a provider
+- **[docs/development/service-defaults.md](docs/development/service-defaults.md)**: the
+  defaults factory and `service-defaults.yaml`
+- **[docs/development/icons.md](docs/development/icons.md)**: icon resolution; native
+  pass-through vs CDN probing, the fallback chain, how to add an icon source
+- **[docs/development/testing.md](docs/development/testing.md)**: running the tests and the
+  conventions for writing them
 
 ## Development
 
-To build and run the images locally from a working tree (so you can iterate on code without
-publishing):
+To build and run the images from a working tree instead of pulling them:
 
 ```sh
 cd docker-compose
 docker compose --env-file env up --build -d
 ```
 
-Compose auto-merges [docker-compose/docker-compose.override.yaml](docker-compose/docker-compose.override.yaml),
-which adds `build:` directives so the API and provider images are built locally from
+Compose automatically merges [docker-compose/docker-compose.override.yaml](docker-compose/docker-compose.override.yaml).
+That file adds `build:` directives, so the API and provider images are built from
 [docker/api.Dockerfile](docker/api.Dockerfile) and
-[docker/provider.Dockerfile](docker/provider.Dockerfile) instead of pulled from the registry.
-The override file is dev-only — production hosts that copied just the four files from the
-[Quick start](#quick-start) never see it.
+[docker/provider.Dockerfile](docker/provider.Dockerfile) instead of being pulled from the
+registry. It's for development only: a host that copied just the four files from the
+[Quick start](#quick-start) never sees it.
 
-For the .NET dev loop without containers:
+For the .NET loop without containers, work from `src/`:
 
 ```sh
-dotnet build src/Dsm.sln
-dotnet run --project src/Dsm.Manager.Api
-dotnet test --solution src/Dsm.sln --filter "TestCategory!=Network"
+cd src
+dotnet build Dsm.sln
+dotnet test --solution Dsm.sln --filter "TestCategory!=Network"
 ```
 
-The `TestCategory!=Network` filter skips tests that hit the public jsDelivr CDN for icon
-resolution.
+`dotnet test` needs `src/` as its working directory because `src/global.json` switches it to
+Microsoft.Testing.Platform, and the `dotnet` CLI only finds that file from `src/` or below.
+The `TestCategory!=Network` filter skips the tests that call the public jsDelivr CDN.
+[docs/development/overview.md](docs/development/overview.md#build-and-run) shows how to run the
+API and a provider locally.

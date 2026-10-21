@@ -64,8 +64,9 @@
     });
 
     # The derivation lives in nix/package.nix, not here: it is the file update-flake.yml
-    # rewrites on each release, and keeping it separate means those seds have a small,
-    # stable target instead of the whole flake.
+    # rewrites on each release (through its passthru.updateScript), and default.nix -- the
+    # non-flake entry point that updater evaluates -- calls the same file, so the version and
+    # hashes exist in exactly one place.
     packages = forAllSystems (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
