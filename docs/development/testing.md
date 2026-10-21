@@ -43,7 +43,9 @@ Dsm.{Managers,Providers}.Tests/
 ```
 
 `Dsm.Managers.Tests` also has [IconHttpClientStubs.cs](../../src/Dsm.Managers.Tests/IconHttpClientStubs.cs)
-(see [Mocking and stubs](#mocking-and-stubs)).
+(see [Mocking and stubs](#mocking-and-stubs)) and
+[ManualTimeProvider.cs](../../src/Dsm.Managers.Tests/ManualTimeProvider.cs), a `TimeProvider`
+whose timestamps move only when a test calls `Advance`.
 
 Read fixture files with `TestDataUtilities.GetTestDataPath("foo.yml")`. It returns the
 relative path `TestData/foo.yml`, which resolves because test runs start in the output

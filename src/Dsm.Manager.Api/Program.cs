@@ -91,10 +91,11 @@ try
     app.MapHealthChecks("/health");
 
     var managerOptions = app.Services.GetRequiredService<IOptions<ManagerOptions>>().Value;
-    app.Logger.LogInformation("Manager starting with {Count} dashboards [{Dashboards}], API key {ApiKeyState}",
+    app.Logger.LogInformation("Manager starting with {Count} dashboards [{Dashboards}], API key {ApiKeyState}, StaleProviderTimeout {StaleProviderTimeout}",
         managerOptions.DashboardManagers.Count,
         string.Join(", ", managerOptions.DashboardManagers.Select(m => m.DashboardManagerType)),
-        apiKeyConfigured ? "enabled" : "disabled");
+        apiKeyConfigured ? "enabled" : "disabled",
+        managerOptions.StaleProviderTimeout);
 
     app.Run();
 }

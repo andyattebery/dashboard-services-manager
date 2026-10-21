@@ -112,6 +112,7 @@ ManagerOptions:
   IgnoredServiceNames:                                  # drop these names before merging
     - Dashy
     - Dashboard Services Manager
+  StaleProviderTimeout: 01:00:00                        # default; remove a source's entries once it stops posting this long
 
 # Optional — override or extend the per-service defaults (icons, categories, name templating).
 # Full reference: docs/managers.md#per-service-defaults
@@ -182,6 +183,7 @@ index lists with `__0`, `__1`, etc. Whatever you set this way wins over the YAML
 | `ManagerOptions.DashboardManagers[0].DashboardManagerType` | `DSM_ManagerOptions__DashboardManagers__0__DashboardManagerType` |
 | `ManagerOptions.DashboardManagers[0].DashboardConfigDirectoryPath` | `DSM_ManagerOptions__DashboardManagers__0__DashboardConfigDirectoryPath` |
 | `ManagerOptions.IgnoredServiceNames[0]` | `DSM_ManagerOptions__IgnoredServiceNames__0` |
+| `ManagerOptions.StaleProviderTimeout` | `DSM_ManagerOptions__StaleProviderTimeout` |
 | `ManagerOptions.ApiKey` | `DSM_ManagerOptions__ApiKey` |
 | `ProviderOptions.ApiKey` | `DSM_ProviderOptions__ApiKey` |
 

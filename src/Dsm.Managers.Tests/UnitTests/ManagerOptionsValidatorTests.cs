@@ -89,6 +89,40 @@ public class ManagerOptionsValidatorTests
         Assert.That(result.Failures, Has.Some.Contains("must contain at least one entry"));
     }
 
+    [TestCase(0)]
+    [TestCase(-60)]
+    public void FailsWhenStaleProviderTimeoutIsNotPositive(int seconds)
+    {
+        var options = new ManagerOptions
+        {
+            DashboardManagers = new List<DashboardManagerConfig>
+            {
+                new() { DashboardManagerType = DashboardManagerType.Dashy, DashboardConfigDirectoryPath = "/tmp/a" },
+            },
+            StaleProviderTimeout = TimeSpan.FromSeconds(seconds),
+        };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Failed, Is.True);
+        Assert.That(result.Failures, Has.Some.Contains("StaleProviderTimeout"));
+    }
+
+    [Test]
+    public void ReportsStaleProviderTimeoutEvenWhenDashboardManagersIsEmpty()
+    {
+        var options = new ManagerOptions
+        {
+            DashboardManagers = new List<DashboardManagerConfig>(),
+            StaleProviderTimeout = TimeSpan.Zero,
+        };
+
+        var result = new ManagerOptionsValidator().Validate(null, options);
+
+        Assert.That(result.Failures, Has.Some.Contains("StaleProviderTimeout"));
+        Assert.That(result.Failures, Has.Some.Contains("must contain at least one entry"));
+    }
+
     [Test]
     public void SucceedsWithWidgetsPathOnHomepageManager()
     {

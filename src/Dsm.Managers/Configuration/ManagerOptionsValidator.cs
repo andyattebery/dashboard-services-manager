@@ -7,6 +7,11 @@ public sealed class ManagerOptionsValidator : IValidateOptions<ManagerOptions>
     public ValidateOptionsResult Validate(string? name, ManagerOptions options)
     {
         var failures = new List<string>();
+        if (options.StaleProviderTimeout <= TimeSpan.Zero)
+        {
+            failures.Add(
+                $"{nameof(ManagerOptions.StaleProviderTimeout)} must be positive (got {options.StaleProviderTimeout}).");
+        }
         if (options.DashboardManagers is null)
         {
             failures.Add("DashboardManagers is required (no entries were bound from configuration).");

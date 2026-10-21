@@ -24,8 +24,10 @@ ProviderOptions:
 
 `ServicesProviders` is a list — you can run several on the same host. Each tick, the provider
 calls every entry, aggregates the results, and POSTs them as a single batch. If one source
-fails on a tick (e.g. Traefik unreachable), the others still post; the failing one logs a
-warning and is retried on the next tick.
+fails on a tick (e.g. Traefik unreachable), the others still post; the failing one logs an
+error and is retried on the next tick. Its entries stay on the dashboard until it posts again,
+or until it has been silent for the manager's `StaleProviderTimeout` (default one hour; see
+[managers.md](managers.md#services-from-providers-that-stop-posting)).
 
 ## Provider identity
 
@@ -45,6 +47,10 @@ For example, a deployment on docker-01 with three Traefik sources and one Docker
 
 You can also override the ProviderId per source by setting `ProviderId` directly on a
 `ServicesProviders` entry.
+
+Removing a source, changing the hostname, or changing how many sources of one type a provider has
+(which renumbers the index) leaves entries under IDs that no longer post. The manager removes
+those once its `StaleProviderTimeout` passes.
 
 ## Provider types
 

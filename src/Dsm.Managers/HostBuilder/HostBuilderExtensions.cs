@@ -5,6 +5,7 @@ using Dsm.Managers.Services.IconSources;
 using Dsm.Shared.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.HostBuilder;
@@ -30,7 +31,9 @@ public static class HostBuilderExtensions
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>()
             .AddSingleton<DashboardWriteCoordinator>()
+            .AddSingleton<StaleProviderTracker>()
             .AddSingleton<IconResolver, IconResolver>();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IDashboardIconSource, HomarrLabsDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, SelfhStDashboardIconSource>();
         services.AddSingleton<IDashboardIconSource, MaterialDesignIconsDashboardIconSource>();
