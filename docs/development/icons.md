@@ -8,7 +8,9 @@ For the end-user view, see [docs/icons.md](../icons.md).
 Icons are resolved separately for each dashboard, at the moment its file is written. Each
 `IDashboardManager.WriteServices` calls
 [`IconResolver.Resolve(service, this)`](../../src/Dsm.Managers/Services/IconResolver.cs) for
-every service and writes the resulting `(Icon, ImageUrl)` pair. It has to happen per dashboard
+every service it builds an entry for, and writes the resulting `(Icon, ImageUrl)` pair.
+Hand-written entries keep their icon as written and are never probed
+([managers.md](managers.md#writing-files)). It has to happen per dashboard
 because dashboards differ in which icon sets they render themselves. The same service is
 written as `hl-jellyfin` for Dashy and as `jellyfin` for Homepage. Before this point, through
 defaults and the merge, a service carries its icon exactly as the user or the defaults wrote
@@ -113,8 +115,9 @@ Each source's named `HttpClient` has a 5-second timeout
 
 ## Category icons
 
-Dashy section icons and Homepage layout icons come from `ServiceDefaultOptions.Categories.<name>.Icon`
-and go through a sibling method:
+Dashy section icons and Homepage layout icons come from the group's category in
+`ServiceDefaultOptions.Categories`, found by key or by `Name` (`FindCategory`; see
+[managers.md](managers.md#categories)). They go through a sibling method:
 
 ```csharp
 public Task<(string? Icon, string? ImageUrl)> ResolveIcon(string? icon, IDashboardManager manager);

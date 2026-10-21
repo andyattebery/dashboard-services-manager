@@ -18,8 +18,8 @@ Two decisions shape the code.
 external links, and items with no infrastructure behind them. Regenerating the file would lose
 them. So every entry DSM writes carries a marker, and a push replaces only DSM's own entries
 from the provider sources that sent it. That rule lives in
-[the combiner](managers.md#the-combiner). Hand-written entries survive the merge, but each one
-is rewritten with only the fields DSM models ([managers.md](managers.md#writing-files)).
+[the combiner](managers.md#the-combiner). Hand-written entries survive the merge and are
+written back as they were read ([managers.md](managers.md#writing-files)).
 
 **One writer.** Providers describe what they see and nothing more; only the manager touches
 dashboard files. Any number of providers can push into one manager: one per Docker host, one

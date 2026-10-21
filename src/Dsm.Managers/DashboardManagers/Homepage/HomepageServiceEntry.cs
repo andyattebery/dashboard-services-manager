@@ -8,9 +8,7 @@ public class HomepageServiceEntry
 
     public string? Href { get; set; }
     public string? Icon { get; set; }
-    public string? Description { get; set; }
     public string? Server { get; set; }
-    public string? Container { get; set; }
     public string? SiteMonitor { get; set; }
     public Dictionary<string, object?>? Widget { get; set; }
     public List<Dictionary<string, object?>>? Widgets { get; set; }

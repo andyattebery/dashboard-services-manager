@@ -98,6 +98,7 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
             - name: Existing
               items:
               - title: HandWrittenDashyEntry
+                description: Dashy hand note
                 url: https://hand.example
                 icon: favicon-local
                 tags:
@@ -108,6 +109,7 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
             - Existing:
                 - HandWrittenHomepageEntry:
                     href: https://hand-hp.example
+                    description: Homepage hand note
                     server: elsewhere
             """);
 
@@ -143,8 +145,10 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
         {
             Assert.That(dashyYaml, Does.Contain("https://jellyfin.new"));
             Assert.That(dashyYaml, Does.Contain("HandWrittenDashyEntry"));
+            Assert.That(dashyYaml, Does.Contain("description: Dashy hand note"));
             Assert.That(homepageYaml, Does.Contain("https://jellyfin.new"));
             Assert.That(homepageYaml, Does.Contain("HandWrittenHomepageEntry"));
+            Assert.That(homepageYaml, Does.Contain("description: Homepage hand note"));
         });
     }
 
