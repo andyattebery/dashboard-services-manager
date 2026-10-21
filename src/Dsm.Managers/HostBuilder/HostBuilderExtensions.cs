@@ -30,7 +30,9 @@ public static class HostBuilderExtensions
             .AddTransient<DashboardManagerFactory, DashboardManagerFactory>()
             .AddTransient<ServiceWithDefaultsFactory, ServiceWithDefaultsFactory>()
             .AddTransient<ServicesCombiner, ServicesCombiner>()
+            .AddTransient<ServiceMerger, ServiceMerger>()
             .AddSingleton<DashboardWriteCoordinator>()
+            .AddSingleton<ProviderServiceStore>()
             .AddSingleton<StaleProviderTracker>()
             .AddSingleton<IconResolver, IconResolver>();
         services.TryAddSingleton(TimeProvider.System);

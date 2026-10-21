@@ -94,3 +94,5 @@ UserPrefs.xml
 
 plans/
 tasks/
+# Manager state written by the sample compose file (docker-compose/docker-compose.yaml)
+docker-compose/data/

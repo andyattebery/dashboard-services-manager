@@ -3,6 +3,7 @@ using Dsm.Managers.DashboardManagers;
 using Dsm.Managers.HostBuilder;
 using Dsm.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Dsm.Managers.Tests.UnitTests;
@@ -248,10 +249,10 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
     }
 
     [Test]
-    public async Task ProviderIdPostsOnlyIgnoredServices_PastStaleProviderTimeout_ItsOldEntriesAreRemoved()
+    public async Task ProviderIdPostsOnlyIgnoredServices_ItsOldEntriesAreRemovedImmediately()
     {
-        // The source still posts, but everything it sends is filtered out (here: ignored). Its
-        // earlier entry must expire like any silent source's, not count as "seen" forever.
+        // The source still posts, but now marks its only service ignored. The ignore is part of
+        // that source's current copies, so the entry goes on this POST, not after a timeout.
         using var dashyDir = TestTempDir.Create("dsm_cp_stale_ignored");
         var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
         File.WriteAllText(dashyPath, """
@@ -268,33 +269,269 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
                 - provider=media-01-docker
             """);
 
-        var time = new ManualTimeProvider();
-        var processor = BuildProcessor(time, TimeSpan.FromMinutes(10), (DashboardManagerType.Dashy, dashyDir.Path));
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
 
-        var ignoredOnly = new List<Service>
+        var response = await processor.UpdateWithServicesFromProvider(new List<Service>
         {
             new Service("Jellyfin", "https://jellyfin.example", "Media", null, null, "media-01", ignore: true,
                 providerId: "media-01-docker"),
-        };
-
-        await processor.UpdateWithServicesFromProvider(ignoredOnly);
-        time.Advance(TimeSpan.FromMinutes(6));
-        await processor.UpdateWithServicesFromProvider(ignoredOnly);
-        time.Advance(TimeSpan.FromMinutes(6));
-        var response = await processor.UpdateWithServicesFromProvider(ignoredOnly);
+        });
 
         Assert.That(response["Dashy"], Is.Empty);
         Assert.That(await File.ReadAllTextAsync(dashyPath), Does.Not.Contain("https://jellyfin.example"));
     }
 
+    [Test]
+    public async Task SourcePostsOnlyIgnoredCopies_PastStaleProviderTimeout_ServiceStaysHidden()
+    {
+        // nas-01's Docker source posts nothing but the ignored forgejo copy. It is still a live
+        // source, so its ignore must not expire and let Traefik's copy back in.
+        using var dashyDir = TestTempDir.Create("dsm_cp_ignore_alive");
+        var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
+        File.WriteAllText(dashyPath, EmptyDashyConfig);
+        var time = new ManualTimeProvider();
+        var processor = BuildProcessor(time, TimeSpan.FromMinutes(10), (DashboardManagerType.Dashy, dashyDir.Path));
+
+        var docker = new List<Service>
+        {
+            new Service("Forgejo", null, null, null, null, "nas-01", ignore: true, providerId: "nas-01-docker"),
+        };
+        var traefik = new List<Service>
+        {
+            new Service("Forgejo", "https://forgejo.example", null, null, null, "nas-01", false,
+                providerId: "docker-01-traefik-2"),
+        };
+
+        for (var minute = 0; minute <= 18; minute += 6)
+        {
+            await processor.UpdateWithServicesFromProvider(docker);
+            await processor.UpdateWithServicesFromProvider(traefik);
+            time.Advance(TimeSpan.FromMinutes(6));
+        }
+
+        Assert.That(await File.ReadAllTextAsync(dashyPath), Does.Not.Contain("https://forgejo.example"));
+    }
+
+    [Test]
+    public async Task PostFromOneSource_OtherSourcesEntriesStay()
+    {
+        // A POST replaces only the copies of the ProviderIds it carries. A source that failed this
+        // cycle, or just hasn't posted yet, keeps its entries.
+        using var dashyDir = TestTempDir.Create("dsm_cp_per_source");
+        File.WriteAllText(dashyDir.RootedPath(DashyDashboardManager.ConfigFileName), EmptyDashyConfig);
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
+
+        await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Scrutiny", "https://scrutiny.example", null, null, null, "nas-01", false, providerId: "nas-01-docker"),
+        });
+        await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Nextcloud", "https://nextcloud.example", null, null, null, "nas-01", false, providerId: "docker-01-traefik-2"),
+        });
+        var response = await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Scrutiny", "https://scrutiny.new", null, null, null, "nas-01", false, providerId: "nas-01-docker"),
+        });
+
+        Assert.That(response["Dashy"].Select(s => (s.Name, s.Url)), Is.EquivalentTo(new[]
+        {
+            ("Nextcloud", (string?)"https://nextcloud.example"),
+            ("Scrutiny", (string?)"https://scrutiny.new"),
+        }));
+    }
+
+    [Test]
+    public async Task ManagerRestart_SameStateFile_IgnoreStillApplies()
+    {
+        // The ignored copy is in no dashboard file; only the state file remembers it.
+        using var dashyDir = TestTempDir.Create("dsm_cp_restart_dashy");
+        using var stateDir = TestTempDir.Create("dsm_cp_restart_state");
+        var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
+        var statePath = stateDir.RootedPath("state.json");
+        File.WriteAllText(dashyPath, EmptyDashyConfig);
+        var managers = new[] { (DashboardManagerType.Dashy, dashyDir.Path) };
+        var traefik = new List<Service>
+        {
+            new Service("Forgejo", "https://forgejo.example", null, null, null, "nas-01", false,
+                providerId: "docker-01-traefik-2"),
+        };
+
+        var beforeRestart = BuildProcessorWith(managers, stateFilePath: statePath);
+        await beforeRestart.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Forgejo", null, null, null, null, "nas-01", ignore: true, providerId: "nas-01-docker"),
+        });
+        await beforeRestart.UpdateWithServicesFromProvider(traefik);
+
+        var afterRestart = BuildProcessorWith(managers, stateFilePath: statePath);
+        await afterRestart.UpdateWithServicesFromProvider(traefik);
+
+        Assert.That(await File.ReadAllTextAsync(dashyPath), Does.Not.Contain("https://forgejo.example"));
+    }
+
+    [Test]
+    public async Task NoStateFile_FirstPost_KeepsOtherSourcesEntriesFromTheDashboardFile()
+    {
+        // First run after the upgrade: the state is seeded from the dashboard file, so one source's
+        // POST doesn't drop every other source's entries until they post again.
+        using var dashyDir = TestTempDir.Create("dsm_cp_seed");
+        var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
+        File.WriteAllText(dashyPath, """
+            ---
+            sections:
+            - name: Media
+              items:
+              - title: Scrutiny
+                url: https://scrutiny.example
+                icon: favicon-local
+                tags:
+                - _autogenerated
+                - host=nas-01
+                - provider=nas-01-docker
+              - title: Calibre
+                url: https://calibre.example
+                icon: favicon-local
+                tags:
+                - _autogenerated
+                - host=nas-01
+                - provider=docker-01-traefik-2
+              - title: Hand
+                url: https://hand.example
+                icon: favicon-local
+                tags:
+                - host=nas-01
+            """);
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
+
+        var response = await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("AdGuard Home", "https://adguard.example", null, null, null, "pi-rack", false,
+                providerId: "pi-rack-yamlfile"),
+        });
+
+        Assert.That(response["Dashy"].Select(s => s.Name),
+            Is.EquivalentTo(new[] { "AdGuard Home", "Calibre", "Hand", "Scrutiny" }));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task ContainerIgnoredWithoutUrl_TraefikPublishesSameService_ServiceIsAbsent(bool dockerPostsFirst)
+    {
+        // forgejo on nas-01 has no Traefik labels, so its Docker copy has no URL; its route lives
+        // in Traefik's own config. A dsm.ignore on the container must still hide the service.
+        using var dashyDir = TestTempDir.Create("dsm_cp_merge_ignore");
+        var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
+        File.WriteAllText(dashyPath, EmptyDashyConfig);
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
+
+        var docker = new List<Service>
+        {
+            new Service("Forgejo", null, null, null, null, "nas-01", ignore: true, providerId: "nas-01-docker"),
+        };
+        var traefik = new List<Service>
+        {
+            new Service("Forgejo", "https://forgejo.example", null, null, null, "nas-01", false,
+                providerId: "docker-01-traefik-2"),
+        };
+
+        await processor.UpdateWithServicesFromProvider(dockerPostsFirst ? docker : traefik);
+        var response = await processor.UpdateWithServicesFromProvider(dockerPostsFirst ? traefik : docker);
+
+        Assert.That(response["Dashy"].Select(s => s.Name), Does.Not.Contain("Forgejo"));
+        Assert.That(await File.ReadAllTextAsync(dashyPath), Does.Not.Contain("https://forgejo.example"));
+    }
+
+    [Test]
+    public async Task ContainerLabelsWithoutUrl_TraefikPublishesSameService_EntryHasTraefikUrlAndLabelValues()
+    {
+        using var dashyDir = TestTempDir.Create("dsm_cp_merge_labels");
+        File.WriteAllText(dashyDir.RootedPath(DashyDashboardManager.ConfigFileName), EmptyDashyConfig);
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
+
+        await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Forgejo", null, "development", "hl-forgejo", null, "nas-01", false,
+                providerId: "nas-01-docker"),
+        });
+        var response = await processor.UpdateWithServicesFromProvider(new List<Service>
+        {
+            new Service("Forgejo", "https://forgejo.example", null, null, null, "nas-01", false,
+                providerId: "docker-01-traefik-2"),
+        });
+
+        var forgejo = response["Dashy"].Single(s => s.Name == "Forgejo");
+        Assert.Multiple(() =>
+        {
+            Assert.That(forgejo.Url, Is.EqualTo("https://forgejo.example"));
+            Assert.That(forgejo.Category, Is.EqualTo("development"));
+            Assert.That(forgejo.Icon, Is.EqualTo("hl-forgejo"));
+            Assert.That(forgejo.ProviderId, Is.EqualTo("docker-01-traefik-2"), "the copy that supplied the URL owns the entry");
+        });
+    }
+
+    [Test]
+    public async Task TwoSourcesPublishSameService_AlternatingPosts_FileUnchangedAfterFirstWrites()
+    {
+        // nas-01's 9 shared services: docker-01 reads them from nas-01's Traefik, and nas-01's own
+        // provider from its container labels. Whoever posted last used to take ownership.
+        using var dashyDir = TestTempDir.Create("dsm_cp_merge_noflip");
+        var dashyPath = dashyDir.RootedPath(DashyDashboardManager.ConfigFileName);
+        File.WriteAllText(dashyPath, EmptyDashyConfig);
+        var processor = BuildProcessor((DashboardManagerType.Dashy, dashyDir.Path));
+
+        var traefik = new List<Service>
+        {
+            new Service("Scrutiny", "https://scrutiny.example", null, null, null, "nas-01", false,
+                providerId: "docker-01-traefik-2"),
+        };
+        var docker = new List<Service>
+        {
+            new Service("Scrutiny", "https://scrutiny.example", null, null, null, "nas-01", false,
+                providerId: "nas-01-docker"),
+        };
+
+        await processor.UpdateWithServicesFromProvider(traefik);
+        await processor.UpdateWithServicesFromProvider(docker);
+        var afterBoth = await File.ReadAllTextAsync(dashyPath);
+
+        await processor.UpdateWithServicesFromProvider(traefik);
+        var afterTraefikAgain = await File.ReadAllTextAsync(dashyPath);
+        await processor.UpdateWithServicesFromProvider(docker);
+        var afterDockerAgain = await File.ReadAllTextAsync(dashyPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(afterTraefikAgain, Is.EqualTo(afterBoth));
+            Assert.That(afterDockerAgain, Is.EqualTo(afterBoth));
+        });
+    }
+
+    private const string EmptyDashyConfig = """
+        ---
+        sections:
+        - name: Media
+          items: []
+        """;
+
     private DashboardCommandProcessor BuildProcessor(params (DashboardManagerType Type, string Path)[] managers)
-        => BuildProcessor(timeProvider: null, staleProviderTimeout: null, managers);
+        => BuildProcessorWith(managers);
 
     private DashboardCommandProcessor BuildProcessor(
         TimeProvider? timeProvider,
         TimeSpan? staleProviderTimeout,
         params (DashboardManagerType Type, string Path)[] managers)
+        => BuildProcessorWith(managers, timeProvider, staleProviderTimeout);
+
+    // The state file defaults to a file in the first dashboard's temp dir, so a test never touches
+    // a real /data/state.json.
+    private DashboardCommandProcessor BuildProcessorWith(
+        (DashboardManagerType Type, string Path)[] managers,
+        TimeProvider? timeProvider = null,
+        TimeSpan? staleProviderTimeout = null,
+        string? stateFilePath = null)
     {
+        var statePath = stateFilePath ?? Path.Combine(managers[0].Path, "dsm-state.json");
         var managerConfigs = managers
             .Select(m => new DashboardManagerConfig
             {
@@ -319,6 +556,11 @@ public class DashboardCommandProcessorTests : PerTestHostedTestBase
             {
                 services.AddSingleton(timeProvider);
             }
+            services.AddSingleton(sp => new ProviderServiceStore(
+                statePath,
+                sp.GetRequiredService<IOptions<ManagerOptions>>(),
+                sp.GetRequiredService<DashboardManagerFactory>(),
+                sp.GetRequiredService<ILogger<ProviderServiceStore>>()));
         });
         return host.Services.GetRequiredService<DashboardCommandProcessor>();
     }

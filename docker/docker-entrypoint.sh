@@ -27,9 +27,10 @@ fi
 
 chown -R "$PUID:$PGID" /home/dsm
 
-# Make any mounted dashboard config dirs writable by the runtime user. Bind-mounted host dirs
-# should already have the right ownership; this matters for fresh named volumes.
-for d in /dashy_config /homepage_config; do
+# Make any mounted dashboard config dirs, and the manager's state dir, writable by the runtime
+# user. Bind-mounted host dirs should already have the right ownership; this matters for fresh
+# named or anonymous volumes.
+for d in /dashy_config /homepage_config /data; do
   [ -d "$d" ] && chown -R "$PUID:$PGID" "$d" 2>/dev/null || true
 done
 

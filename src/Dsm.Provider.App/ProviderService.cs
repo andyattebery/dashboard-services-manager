@@ -89,6 +89,8 @@ public class ProviderService : BackgroundService
         }
     }
 
+    // The manager reads the provider type back out of this {hostname}-{type}[-{index}] format to
+    // decide which source's values win when it merges copies of a service (ServiceMerger).
     private void AssignProviderIds()
     {
         var hostname = (_providerOptions.Hostname

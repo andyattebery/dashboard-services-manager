@@ -33,9 +33,13 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /app .
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+ && mkdir -p /data
 
 VOLUME [ "/config" ]
+# /data/state.json holds every provider's latest services, including ones the dashboards never
+# show (ignored, or without a URL). Without a mount it lives in an anonymous volume.
+VOLUME [ "/data" ]
 
 EXPOSE 8080
 

@@ -41,7 +41,9 @@ _All AI generated code/documentation has been human-reviewed and when needed, it
   60 s) and sends the discovered services to the manager API.
 
 Multiple provider apps — one per host, each with its own configured sources — can fan into a
-single manager API. The manager dedupes services per `(Name, Hostname)`.
+single manager API. When two sources publish the same service, the manager merges their copies
+into one entry, so a container's `dsm.ignore` or `dsm.icon` applies even if Traefik also
+publishes it (see [Two sources, one service](docs/providers.md#two-sources-one-service)).
 
 ### Supported Dashboards and Providers
 
@@ -65,10 +67,11 @@ docker compose --env-file env up -d
 ```
 
 That pulls the published images from `ghcr.io/andyattebery/dashboard-services-manager` and starts
-the manager API on port 8080 plus a single Docker-source provider. Edit `manager-config.yaml`
-(dashboard type, file paths, per-service overrides) and `provider-config.yaml` (API URL,
-hostname, which providers to enable) for your environment. Both can also be driven by
-`DSM_`-prefixed environment variables.
+the manager API on port 8080 plus a single Docker-source provider. The manager keeps its state in
+`./data` next to the compose file (see [Manager state](docs/managers.md#manager-state)). Edit
+`manager-config.yaml` (dashboard type, file paths, per-service overrides) and
+`provider-config.yaml` (API URL, hostname, which providers to enable) for your environment. Both
+can also be driven by `DSM_`-prefixed environment variables.
 
 Both containers run as a non-root `dsm` user whose UID/GID are set at runtime from `PUID` and
 `PGID` (default `1000:1000`); the [docker-compose/env](docker-compose/env) file supplies them

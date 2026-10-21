@@ -27,8 +27,9 @@ service it returns. The Docker, Swarm and Traefik providers also stamp the entry
 `Hostname`.
 
 Providers don't apply the manager's filters. A service without a URL, or one labelled to be
-ignored, still goes over the wire, and the manager drops it
-([managers.md](managers.md#the-write-path)).
+ignored, still goes over the wire. The manager stores it and applies it when merging: an ignored
+copy hides the service, and a URL-less copy's labels apply to another source's copy
+([managers.md](managers.md#merging-sources)).
 
 ### Docker
 
@@ -150,7 +151,9 @@ path, then under `/config/`), then `DSM_` environment variables
 1. Gives each `ServicesProviderConfig` without a `ProviderId` one of the form
    `{hostname}-{type}`, lower-cased. When several entries of a type need one, it appends
    `-{index}`. The hostname is `ProviderOptions.Hostname`, else the `HOSTNAME` environment
-   variable, else the machine name.
+   variable, else the machine name. The manager's `ServiceMerger` reads the type back out of
+   this format, so changing it changes which source's values win
+   ([managers.md](managers.md#merging-sources)).
 2. Runs one cycle immediately, then one every `RefreshInterval` (a `PeriodicTimer`). A cycle:
    - Builds each provider through the factory and calls `ListServices()`. An exception from
      one provider is logged, and the remaining providers still run.

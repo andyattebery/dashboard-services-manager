@@ -3,7 +3,9 @@
 A provider runs on each host where you want to discover services. It enumerates whatever sources
 you configure (Docker, Docker Swarm, Traefik, a hand-maintained YAML file) and POSTs the result
 to the manager API on every refresh tick. Multiple provider hosts can fan into the same manager
-— each host's services keep their own `Hostname`, and the manager dedupes per `(Name, Hostname)`.
+— each host's services keep their own `Hostname`, and when two sources publish the same service
+the manager merges their copies into one entry (see
+[Two sources, one service](#two-sources-one-service)).
 
 Configuration lives in [`provider-config.yaml`](../docker-compose/provider-config.yaml).
 
@@ -46,11 +48,36 @@ For example, a deployment on docker-01 with three Traefik sources and one Docker
 `docker-01-traefik-0`, `docker-01-traefik-1`, `docker-01-traefik-2`, `docker-01-docker`.
 
 You can also override the ProviderId per source by setting `ProviderId` directly on a
-`ServicesProviders` entry.
+`ServicesProviders` entry. The manager reads the source type from the end of the ID when it
+merges copies of a service, so keep the `-docker`, `-swarm`, `-traefik` or `-yamlfile` ending
+(an index may follow it). An ID without one ranks after every type.
 
 Removing a source, changing the hostname, or changing how many sources of one type a provider has
 (which renumbers the index) leaves entries under IDs that no longer post. The manager removes
 those once its `StaleProviderTimeout` passes.
+
+## Two sources, one service
+
+Sources often overlap. On a host that runs both a Docker provider and a Traefik that another
+provider reads, the same service can arrive twice: once from the container's labels, once from
+the Traefik route. The manager treats copies as one service when they share a name and hostname
+(after per-service defaults), or a URL and hostname, and merges them:
+
+- **Ignore wins.** If any copy is ignored (`dsm.ignore=true`, or `ignore: true` in a YAML file),
+  or its name is in `IgnoredServiceNames`, the service is hidden, even though another source
+  publishes it with a URL.
+- **Labels apply without a URL.** A container's `dsm.category`, `dsm.icon`, `dsm.image_path` and
+  `dsm.service_defaults_name` apply even when the container has no URL of its own, as long as
+  another source publishes a service with the same name on the same host, with a URL. A copy
+  without a URL can only be matched by name, so a `dsm.name` that differs from the other source's
+  name keeps the two apart.
+- **URL:** Traefik's route first, then Docker, Swarm, and the YAML file.
+- **Every other value:** Docker first, then Swarm, Traefik, and the YAML file. A Traefik copy only
+  carries a router name, so container labels always apply.
+- A service that no source gives a URL isn't shown.
+
+The merged entry is owned by the source that supplied its URL, so it stays the same whichever
+source posted last.
 
 ## Provider types
 
@@ -65,12 +92,14 @@ those once its `StaleProviderTimeout` passes.
 
 Runs on a host with a Docker daemon (the provider container bind-mounts `/var/run/docker.sock`
 in the stock compose file). Reads `<DockerLabelPrefix>.*` labels off running containers and
-turns each container with a usable URL into a service.
+turns each container into a service.
 
-A container is dropped from the discovery if there's nothing to put in `Url` — that means no
-`<prefix>.url` label and no Traefik router rule that the provider can recover a hostname from.
-Containers running purely as backends without a public URL are intentionally invisible to the
-dashboard.
+A container with nothing to put in `Url` (no `<prefix>.url` label and no Traefik router rule the
+provider can recover a hostname from) doesn't appear on its own. Its labels still apply when
+another source publishes the same service with a URL, typically a Traefik provider reading routes
+defined outside the container's labels (see
+[Two sources, one service](#two-sources-one-service)). Containers running purely as backends
+without a public URL stay invisible to the dashboard.
 
 Required: `Hostname`, `DockerLabelPrefix`.
 
@@ -149,11 +178,11 @@ The Docker and Swarm providers translate container labels into services. For a l
 | Label | Maps to | Notes |
 |---|---|---|
 | `dsm.name` | service name | Defaults to the container name (Swarm: with the stack namespace stripped) |
-| `dsm.url` | URL | If absent, recovered from a Traefik router rule via `dsm.traefik.router` below |
+| `dsm.url` | URL | If absent, recovered from a Traefik router rule via `dsm.traefik.router` below, or taken from another source that publishes the same service. When a Traefik route is also published, the route wins. |
 | `dsm.category` | category | Free-form; used by the manager to group entries on the dashboard and look up a category icon |
 | `dsm.icon` | icon | Plain icon name or a CDN-prefix lookup (`hl-`, `sh-`, `mdi-`) — see [icons.md](icons.md). Most services don't need this set; DSM picks an icon automatically from the service name. |
-| `dsm.image_path` | image URL | Absolute URL or a path resolved against `dsm.url` — see [icons.md](icons.md#image-urls) |
-| `dsm.ignore` | ignore flag | `"true"` to drop this container before the manager sees it |
+| `dsm.image_path` | image URL | Absolute URL, or a path resolved against the service's URL (which may come from another source, such as Traefik) — see [icons.md](icons.md#image-urls) |
+| `dsm.ignore` | ignore flag | `"true"` hides the service, including any copy another source such as Traefik publishes (see [Two sources, one service](#two-sources-one-service)) |
 | `dsm.service_defaults_name` | defaults alias | Picks up defaults for a different service name — `dsm.service_defaults_name=plex` on a container called "Plex Beta" gives it the shipped `plex` defaults |
 | `dsm.traefik.router` | (URL recovery) | Name of a Traefik router whose `Host(...)` rule should be used to build the URL when `dsm.url` is absent. Useful when Traefik already declares the hostname and you don't want to duplicate it |
 

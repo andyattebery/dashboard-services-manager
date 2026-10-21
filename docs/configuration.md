@@ -48,6 +48,12 @@ The manager API is unauthenticated by default. To require a shared secret on
 When unset, the trusted-LAN behavior is preserved. `/health` is never gated. See the
 [Optional API key](../README.md#optional-api-key) section in the README for the full example.
 
+## Manager state
+
+Besides the dashboard files, the manager writes one file of its own: `/data/state.json`, every
+source's latest services. Its path is fixed. Mount a directory at `/data` to keep it when the
+container is removed; see [Manager state](managers.md#manager-state).
+
 ## More
 
 - [loki.md](loki.md) — a worked example: enable a Grafana Loki sink purely through YAML.
