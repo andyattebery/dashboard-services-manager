@@ -164,7 +164,8 @@ path, then under `/config/`), then `DSM_` environment variables
      one provider is logged, and the remaining providers still run.
    - POSTs the combined list through the Refit client
      [`IDcmClient`](../../src/Dsm.Providers/ApiClients/IDcmClient.cs). An empty list isn't
-     POSTed. HTTP errors, transport errors and timeouts are logged, and the loop carries on.
+     POSTed. HTTP errors (`ApiException`), and transport errors and timeouts (Refit's
+     `ApiRequestException`, wrapping the original), are logged, and the loop carries on.
    - Touches `/tmp/dsm-heartbeat`. The provider image's `HEALTHCHECK` and the compose
      healthcheck treat the container as healthy while that file is less than two minutes
      old, so the path is fixed.
@@ -262,9 +263,11 @@ dotnet run --project Dsm.Provider.App      # from src/
 
 The provider suite needs neither Docker nor Traefik. `DockerServicesProviderTests` and
 `TraefikServicesProviderTests` replace `IDockerClient` and `ITraefikApiClient` with Moq mocks
-fed from `TestData/`. `SwarmServicesProviderTests` covers the stack-prefix rule. The label
-rules, including router selection, are in `ContainerLabelServiceFactoryTests`, and rule
-parsing is in `TraefikRuleParserTests`. How to run them: [testing.md](testing.md#running-tests).
+fed from `TestData/`. `SwarmServicesProviderTests` covers the stack-prefix rule and router
+matching on the stripped name. The label rules, including router selection, are in
+`ContainerLabelServiceFactoryTests`, and rule parsing is in `TraefikRuleParserTests`.
+`RefitClientTests` builds the real `IDcmClient` and Traefik clients against a stub
+`HttpMessageHandler`, so a Refit upgrade that breaks client creation fails there. How to run them: [testing.md](testing.md#running-tests).
 
 ## Folder map
 

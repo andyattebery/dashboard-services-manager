@@ -56,9 +56,18 @@ The override file there adds the `build:` directives.
 - **Packages:** every project restores with a `packages.lock.json`, and CI's test job and both
   Dockerfiles restore with `--locked-mode`. After changing a `PackageReference`, run a normal
   restore or build and commit every lock file that changed. Lock files of dependent projects
-  change too. Refit sits at 10.0.1. 505bf29 downgraded it from 10.1.6, whose signing cert was
-  revoked. 10.1.6 and 10.1.7 are now unlisted, so Dependabot will offer a later Refit, and
-  that PR's locked restore is the re-test.
+  change too.
+- **Refit (16.x):**
+  - **Reflection builder:** `AddRefitClient` / `RestService.For` need the `Refit.Reflection`
+    package (opt-in since Refit 14). Without it, the provider dies at startup with
+    `NotSupportedException`.
+  - **Generated-only clients were rejected:** they buy trim/AOT safety DSM doesn't use, and
+    they need a `JsonSerializerContext` for every DTO.
+  - **Errors:** since Refit 11, failures with no response (connection refused, DNS, timeout)
+    arrive as `ApiRequestException` wrapping the original. HTTP error responses are still
+    `ApiException`.
+  - **Tests:** `RefitClientTests` builds the real clients against a stub handler, because the
+    provider tests mock them.
 - **SDK pin:** `src/global.json` uses `rollForward: disable`, Microsoft's setting for repos with
   lock files.
   - The SDK adds implicit package references (e.g. `Microsoft.NET.ILLink.Tasks` once trimming
@@ -69,8 +78,9 @@ The override file there adds the `build:` directives.
   - Dependabot (`.github/dependabot.yml`) bumps global.json and both Dockerfiles in one PR.
   - Keep global.json comment-free: Dependabot's `dotnet-sdk` parser rejects JSON comments.
 - **Formatting:** nothing is enforced; CI has no format or lint step. `.config/dotnet-tools.json`
-  pins CSharpier 0.22.1, but the code isn't formatted with it (67 of 135 files would change)
-  and it needs a .NET 7 runtime. Don't run it repo-wide. Match the surrounding style.
+  pins CSharpier 1.3.0 (`dotnet tool restore`, then `dotnet csharpier check .`), but the code
+  isn't formatted with it: 92 of the 109 files it checks would change. Don't run it repo-wide.
+  Match the surrounding style.
 - **Nix**, run by CI on every push to main and every PR: `nix flake check` and
   `nix build .#packages.<system>.dsm-provider`.
 
@@ -214,14 +224,17 @@ not `IOptions`.
 
 ## Tests
 
-NUnit 4 on Microsoft.Testing.Platform; the test projects are executables. The full conventions
+NUnit 5 on Microsoft.Testing.Platform; the test projects are executables. The full conventions
 are in `docs/development/testing.md`. The ones most likely to trip you up:
 
-- Each fixture class carries `[CancelAfter(TestTimeouts.HungThresholdMs)]` itself. In the
-  pinned NUnit 4.5.1 the attribute is `Inherited = false`, so putting it on a base class won't
-  apply it to the fixtures that derive from it. It's also cooperative (it only cancels a token),
-  and DSM's I/O methods take no token, so it doesn't interrupt a hung test. `[TestFixture]` is
-  omitted.
+- Each fixture class carries `[CancelAfter(TestTimeouts.HungThresholdMs)]` itself.
+  - The convention dates from NUnit 4.5.1, where the attribute was `Inherited = false`. NUnit
+    5.0.0 declares it `Inherited = true`.
+  - It's cooperative (it only cancels a token), and DSM's I/O methods take no token, so it
+    doesn't interrupt a hung test.
+  - `[TestFixture]` is omitted.
+- NUnit 5's `Assert.ThrowsAsync` / `CatchAsync` / `DoesNotThrowAsync` return a `Task`. Await
+  them, or the assertion never runs.
 - Tests that reach cdn.jsdelivr.net are `[Category("Network")]`; today they are all in
   `IconResolverTests`. Other manager test hosts call `services.ConfigureOfflineIconHttpClients()`,
   so icon probes get a canned 200 instead of hitting the CDN. `ManagerTestFixtureHostedTestBase`

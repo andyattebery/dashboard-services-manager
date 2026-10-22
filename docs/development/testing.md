@@ -3,7 +3,7 @@
 How to run the tests, and the conventions new tests follow.
 
 There are two test projects, [Dsm.Managers.Tests](../../src/Dsm.Managers.Tests/) and
-[Dsm.Providers.Tests](../../src/Dsm.Providers.Tests/). Both use NUnit 4 on
+[Dsm.Providers.Tests](../../src/Dsm.Providers.Tests/). Both use NUnit 5 on
 Microsoft.Testing.Platform (MTP): `EnableNUnitRunner` turns each one into an executable test
 application. Both reference [Dsm.Shared.Tests](../../src/Dsm.Shared.Tests/), a plain library of
 shared test infrastructure. It holds no tests itself.
@@ -157,6 +157,9 @@ of the graph is real DI. This is why the provider suite needs neither a Docker d
 Traefik instance. Examples:
 [DockerServicesProviderTests](../../src/Dsm.Providers.Tests/UnitTests/DockerServicesProviderTests.cs),
 [TraefikServicesProviderTests](../../src/Dsm.Providers.Tests/UnitTests/TraefikServicesProviderTests.cs).
+Because those mocks stand in for the Refit clients,
+[RefitClientTests](../../src/Dsm.Providers.Tests/UnitTests/RefitClientTests.cs) builds the
+real ones against a stub `HttpMessageHandler`.
 
 **`Dsm.Managers.Tests` uses hand-rolled stubs and doesn't reference Moq.** Manager code is
 mostly data transformation with a shallow collaborator graph. A small
@@ -206,8 +209,10 @@ receives as an extra method parameter or through `TestContext.CurrentContext.Can
 Nothing is interrupted unless that token reaches the code that is running. The DSM calls that do
 I/O (`ListServices()`, `WriteServices()`, `GetIconUrl(...)`) take no token.
 
-Put the attribute on each fixture class, not on a base class. In the pinned NUnit 4.5.1,
-`CancelAfterAttribute` is declared `Inherited = false`, so it doesn't reach derived fixtures.
+Put the attribute on each fixture class. The convention dates from NUnit 4.5.1, where
+`CancelAfterAttribute` was declared `Inherited = false` and didn't reach derived fixtures.
+NUnit 5.0.0 declares it `Inherited = true` (checked by reflection), so a base-class attribute
+would now reach them too. The fixtures still carry their own.
 
 ## Naming
 

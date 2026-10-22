@@ -131,13 +131,15 @@ public class ProviderService : BackgroundService
             _logger.LogError(e, "POST /dashboard-services failed with HTTP {StatusCode}: {Content}",
                 (int)e.StatusCode, e.Content);
         }
-        catch (HttpRequestException e)
-        {
-            _logger.LogError(e, "POST /dashboard-services failed (transport)");
-        }
-        catch (TaskCanceledException e)
+        // Refit wraps failures that happen before a response (connection refused, DNS, timeout)
+        // in ApiRequestException; the original is the inner exception.
+        catch (ApiRequestException e) when (e.InnerException is TaskCanceledException)
         {
             _logger.LogError(e, "POST /dashboard-services timed out");
+        }
+        catch (ApiRequestException e)
+        {
+            _logger.LogError(e, "POST /dashboard-services failed (transport)");
         }
     }
 }
