@@ -21,7 +21,7 @@
     <PackageReference Include="Refit.HttpClientFactory" Version="16.4.0" />
     <!-- AddRefitClient needs Refit's reflection request builder, opt-in since Refit 14. -->
     <PackageReference Include="Refit.Reflection" Version="16.4.0" />
-    <PackageReference Include="YamlDotNet" Version="17.1.0" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
   <ItemGroup>
