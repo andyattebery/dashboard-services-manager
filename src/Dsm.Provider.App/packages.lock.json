@@ -40,11 +40,12 @@
       },
       "Serilog.Sinks.Grafana.Loki": {
         "type": "Direct",
-        "requested": "[8.3.2, )",
-        "resolved": "8.3.2",
-        "contentHash": "znb7fSb/4NfM++cSp99bUO3MCuP1Xx1k2329BUZCp7Tp+YwzAlDHHzBcVUZCll/EPGLuVPUdx894peHaAjYlvA==",
+        "requested": "[9.0.2, )",
+        "resolved": "9.0.2",
+        "contentHash": "Tgja5SRbZfNVZsPtq3ThQayf4G11kWdoDHJjUDK93uGuhrEsKn+nA0FsMmCfohZV+717bZOKFwGWxQzWQdaEpg==",
         "dependencies": {
-          "Serilog": "2.12.0"
+          "FSharp.Core": "10.1.301",
+          "Serilog": "4.3.1"
         }
       },
       "Docker.DotNet": {
@@ -54,6 +55,11 @@
         "dependencies": {
           "Newtonsoft.Json": "13.0.1"
         }
+      },
+      "FSharp.Core": {
+        "type": "Transitive",
+        "resolved": "10.1.301",
+        "contentHash": "excLf2zM/qUB3WhRUfI0xvOOaPwcRAEdYT/BXe9eiTKySnWVuIKMQTf5+6ETy5nsb1dpLp1s2j2yAM/XcRgFMg=="
       },
       "Microsoft.Extensions.Configuration": {
         "type": "Transitive",
@@ -363,8 +369,8 @@
       },
       "Serilog": {
         "type": "Transitive",
-        "resolved": "4.3.0",
-        "contentHash": "+cDryFR0GRhsGOnZSKwaDzRRl4MupvJ42FhCE4zhQRVanX0Jpg6WuCBk59OVhVDPmab1bB+nRykAnykYELA9qQ=="
+        "resolved": "4.3.1",
+        "contentHash": "savYe7h5yRlkqBVOwP8cIRDOdqKiPmYCU4W87JH38sBmcKD5EBoXvQIw6bNEvZ/pTe1gsiye3VFCzBsoppGkXQ=="
       },
       "Serilog.Extensions.Hosting": {
         "type": "Transitive",
