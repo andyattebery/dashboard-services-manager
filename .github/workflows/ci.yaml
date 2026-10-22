@@ -30,7 +30,7 @@ jobs:
       run:
         working-directory: src
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # src/global.json pins the SDK with rollForward: disable, so the Docker builds' --locked-mode
       # restore needs that exact SDK image. Images only build on tags, so without this check a
       # mismatch would first fail at release. Dependabot bumps both in one PR.
@@ -88,7 +88,7 @@ jobs:
             system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
@@ -108,7 +108,7 @@ jobs:
     needs: test
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
       - name: Compute version
@@ -209,7 +209,7 @@ jobs:
             asset_rid: win-arm64
             archive_ext: zip
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || github.ref }}
       - name: Set up .NET
