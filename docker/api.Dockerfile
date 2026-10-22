@@ -1,7 +1,8 @@
-ARG DOTNET_VERSION=10.0
 ARG VERSION=0.0.0
 
-FROM mcr.microsoft.com/dotnet/sdk:$DOTNET_VERSION AS build
+# The SDK must be exactly src/global.json's version (rollForward: disable). Dependabot bumps
+# both in one PR, and CI's test job fails when they differ.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
 ARG VERSION
 
 ENV PROVIDER_PROJECT_NAME=Dsm.Manager.Api
@@ -22,7 +23,7 @@ RUN dotnet publish $PROVIDER_PROJECT_NAME/$PROVIDER_PROJECT_NAME.csproj \
     /p:DisableGitVersionTask=true
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION AS app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS app
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends gosu curl \

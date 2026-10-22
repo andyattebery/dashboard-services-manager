@@ -38,9 +38,10 @@ per Traefik instance, one for a static YAML file. The manager serializes their w
 
 `Dsm.Managers` and `Dsm.Providers` don't reference each other. The `Service` record, sent as
 JSON, is the whole contract between the two sides. Every project targets `net10.0`.
-[src/global.json](../../src/global.json) pins the SDK (10.0.100, `latestMinor` roll-forward)
-and puts `dotnet test` into Microsoft.Testing.Platform mode
-([testing.md](testing.md#running-tests)).
+[src/global.json](../../src/global.json) pins the SDK exactly (`rollForward: disable`, because
+every project has a lock file) and puts `dotnet test` into Microsoft.Testing.Platform mode
+([testing.md](testing.md#running-tests)). Dependabot keeps the SDK version current, together
+with the Dockerfiles' SDK image, and CI fails when the two differ.
 
 ## One push, end to end
 

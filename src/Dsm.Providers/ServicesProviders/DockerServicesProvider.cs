@@ -37,17 +37,14 @@ public class DockerServicesProvider : IServicesProvider
 
     private Service CreateServiceFromContainerListResponse(ContainerListResponse containerListResponse)
     {
-        var serviceName = GetServiceName(containerListResponse);
+        var containerName = GetContainerName(containerListResponse);
 
-        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, serviceName, containerListResponse.Labels, _config.ProviderId);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, containerName, containerListResponse.Labels, _config.ProviderId);
     }
 
-    private static string GetServiceName(ContainerListResponse containerListResponse)
+    private static string GetContainerName(ContainerListResponse containerListResponse)
     {
         var name = containerListResponse.Names?.FirstOrDefault() ?? containerListResponse.ID;
-
-        var formattedName = name.TrimStart('/');
-        formattedName = ServicesProviderUtilities.GetFormattedServiceName(formattedName);
-        return formattedName;
+        return name.TrimStart('/');
     }
 }

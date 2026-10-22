@@ -87,8 +87,10 @@ fail the cycle.
 
 ### Name formatting
 
-The Docker, Swarm and Traefik providers pass raw names through
+Raw names go through
 [`ServicesProviderUtilities.GetFormattedServiceName`](../../src/Dsm.Providers/ServicesProviders/ServicesProviderUtilities.cs).
+For Docker and Swarm that happens in `ContainerLabelServiceFactory`, after it has matched
+Traefik routers against the raw name. For Traefik it happens in the provider.
 It turns `_` and `-` into spaces, title-cases the result, and writes the word `db` as `DB`:
 `calibre-web` → `Calibre Web`, `immich_db` → `Immich DB`.
 
@@ -121,13 +123,16 @@ the same container or Swarm service. The router is chosen like this:
 2. `dsm.traefik.router` names one of the routers: that router's rule. A name that doesn't
    match is logged as a warning, and selection continues below.
 3. Exactly one router: its rule.
-4. Several routers: the one whose name equals the service name, otherwise the first router
+4. Several routers: the one whose name equals the container name, otherwise the first router
    name in ordinal order. A warning suggests setting `dsm.traefik.router`.
 
-The comparison in step 4 uses the formatted service name (`Minio`), so in practice a router
-named `minio` doesn't match it and ordinal order decides. The choice depends only on which
-labels exist, never on their order, so a container's URL stays the same from one poll to the
-next.
+Step 4 compares against the raw name, before [formatting](#name-formatting). That's the
+container name without its leading `/` for Docker, and the service name without its stack
+prefix for Swarm. So the container `adguard-home` picks the router `adguard-home` over
+`adguard-dns`. The comparison is exact and case-sensitive, like Traefik's own router names.
+`ContainerLabelServiceFactory` gets the raw name and does the formatting itself. The choice
+depends only on which labels exist, never on their order, so a container's URL stays the same
+from one poll to the next.
 
 ### Traefik rules
 

@@ -31,6 +31,19 @@ jobs:
         working-directory: src
     steps:
       - uses: actions/checkout@v6
+      # src/global.json pins the SDK with rollForward: disable, so the Docker builds' --locked-mode
+      # restore needs that exact SDK image. Images only build on tags, so without this check a
+      # mismatch would first fail at release. Dependabot bumps both in one PR.
+      - name: Check Docker SDK image matches global.json
+        working-directory: .
+        run: |
+          sdk=$(jq -r .sdk.version src/global.json)
+          for f in docker/*.Dockerfile; do
+            if ! grep -qxF "FROM mcr.microsoft.com/dotnet/sdk:${sdk} AS build" "$f"; then
+              echo "::error file=$f::SDK image tag doesn't match src/global.json (${sdk})"
+              exit 1
+            fi
+          done
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:

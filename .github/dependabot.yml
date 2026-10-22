@@ -1,0 +1,44 @@
+version: 2
+
+# src/global.json pins the SDK exactly (rollForward: disable), and the Dockerfiles' build stage
+# must use the same SDK image; CI's test job fails when they differ. Their updates share one PR.
+multi-ecosystem-groups:
+  dotnet-sdk:
+    schedule:
+      interval: "weekly"
+
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+    groups:
+      nuget-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/src"
+    patterns: ["*"]
+    multi-ecosystem-group: "dotnet-sdk"
+    ignore:
+      # A new .NET major also needs a TargetFramework change; make that one by hand.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    patterns: ["*"]
+    multi-ecosystem-group: "dotnet-sdk"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "nix"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

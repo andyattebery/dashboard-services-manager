@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Dsm.Providers.ServicesProviders;
 using Dsm.Providers.ServicesProviders.Traefik;
 using Dsm.Shared.Models;
 using Dsm.Providers.Options;
@@ -16,10 +17,12 @@ public class ContainerLabelServiceFactory
         _logger = logger;
     }
 
-    public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string name, IDictionary<string, string> labels, string? providerId = null)
+    // containerName is the raw container (or stack-stripped Swarm service) name. Traefik router
+    // names are matched against it as written; the service's Name is its formatted form.
+    public Service CreateFromLabels(ServicesProviderConfig config, string? hostname, string containerName, IDictionary<string, string> labels, string? providerId = null)
     {
         var dockerLabelPrefix = config.DockerLabelPrefix;
-        var state = new LabelParserState(name, hostname, config.AreServiceHostsHttps, providerId, dockerLabelPrefix, _logger);
+        var state = new LabelParserState(containerName, hostname, config.AreServiceHostsHttps, providerId, dockerLabelPrefix, _logger);
 
         foreach (var label in labels)
         {
@@ -77,7 +80,7 @@ public class ContainerLabelServiceFactory
 
     private class LabelParserState
     {
-        public string DockerName { get; set; }
+        public string ContainerName { get; set; }
         public string? Hostname { get; set; }
         public string? LabelCategory { get; set; }
         public string? LabelIcon { get; set; }
@@ -96,14 +99,14 @@ public class ContainerLabelServiceFactory
         private readonly ILogger _logger;
 
         public LabelParserState(
-            string dockerName,
+            string containerName,
             string? hostname,
             bool areTraefikRulesHttps,
             string? providerId,
             string? dockerLabelPrefix,
             ILogger logger)
         {
-            DockerName = dockerName;
+            ContainerName = containerName;
             Hostname = hostname;
             _areTraefikRulesHttps = areTraefikRulesHttps;
             _providerId = providerId;
@@ -114,7 +117,7 @@ public class ContainerLabelServiceFactory
         public Service Build()
         {
             return new Service(
-                LabelName ?? DockerName,
+                LabelName ?? ServicesProviderUtilities.GetFormattedServiceName(ContainerName),
                 GetUrl(),
                 LabelCategory,
                 LabelIcon,
@@ -164,7 +167,7 @@ public class ContainerLabelServiceFactory
 
                 _logger.LogWarning(
                     "Container '{Container}' requests traefik router '{Requested}' via '{Label}', but its routers are {Routers}; falling back to automatic selection",
-                    DockerName,
+                    ContainerName,
                     LabelTraefikRouter,
                     $"{_dockerLabelPrefix}.traefik.router",
                     string.Join(", ", TraefikRouterNameToRule.Keys.OrderBy(k => k, StringComparer.Ordinal)));
@@ -182,13 +185,13 @@ public class ContainerLabelServiceFactory
 
             // Prefer the router named after the container — the convention every
             // multi-router container in practice follows — then a stable sort.
-            var selected = TraefikRouterNameToRule.ContainsKey(DockerName)
-                ? DockerName
+            var selected = TraefikRouterNameToRule.ContainsKey(ContainerName)
+                ? ContainerName
                 : routerNames[0];
 
             _logger.LogWarning(
                 "Container '{Container}' has {Count} traefik routers ({Routers}) and no '{Label}' label; selected '{Selected}'. Set that label to choose explicitly.",
-                DockerName,
+                ContainerName,
                 routerNames.Count,
                 string.Join(", ", routerNames),
                 $"{_dockerLabelPrefix}.traefik.router",

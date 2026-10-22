@@ -24,9 +24,11 @@ testing). Where they disagree with the code, the code and tests win.
 
 ## Commands
 
-Run `dotnet test` from `src/`. `src/global.json` (SDK 10.0.100, `rollForward: latestMinor`)
-switches `dotnet test` to Microsoft.Testing.Platform. From the repo root that file isn't found,
-and `--solution` / `--project` fail with `MSB1001: Unknown switch`.
+Run `dotnet test` from `src/`. `src/global.json` switches `dotnet test` to
+Microsoft.Testing.Platform. From the repo root that file isn't found, and `--solution` /
+`--project` fail with `MSB1001: Unknown switch`. It also pins the SDK exactly (10.0.402,
+`rollForward: disable`), so that exact SDK must be installed. With mise:
+`mise install dotnet@<version>`.
 
 ```sh
 cd src
@@ -54,8 +56,18 @@ The override file there adds the `build:` directives.
 - **Packages:** every project restores with a `packages.lock.json`, and CI's test job and both
   Dockerfiles restore with `--locked-mode`. After changing a `PackageReference`, run a normal
   restore or build and commit every lock file that changed. Lock files of dependent projects
-  change too. Refit is held back at 10.0.1 on purpose (505bf29: the newer release's signing
-  cert was revoked).
+  change too. Refit sits at 10.0.1. 505bf29 downgraded it from 10.1.6, whose signing cert was
+  revoked. 10.1.6 and 10.1.7 are now unlisted, so Dependabot will offer a later Refit, and
+  that PR's locked restore is the re-test.
+- **SDK pin:** `src/global.json` uses `rollForward: disable`, Microsoft's setting for repos with
+  lock files.
+  - The SDK adds implicit package references (e.g. `Microsoft.NET.ILLink.Tasks` once trimming
+    or AOT is on) whose versions follow the SDK. A different SDK would then fail
+    `--locked-mode` with NU1004.
+  - The Dockerfiles' build stage must use the same `sdk:<version>` image. CI's test job fails
+    when they differ.
+  - Dependabot (`.github/dependabot.yml`) bumps global.json and both Dockerfiles in one PR.
+  - Keep global.json comment-free: Dependabot's `dotnet-sdk` parser rejects JSON comments.
 - **Formatting:** nothing is enforced; CI has no format or lint step. `.config/dotnet-tools.json`
   pins CSharpier 0.22.1, but the code isn't formatted with it (67 of 135 files would change)
   and it needs a .NET 7 runtime. Don't run it repo-wide. Match the surrounding style.

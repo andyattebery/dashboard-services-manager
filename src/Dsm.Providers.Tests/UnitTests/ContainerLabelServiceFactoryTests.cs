@@ -76,14 +76,30 @@ public class ContainerLabelServiceFactoryTests
         Assert.That(a.Url, Is.EqualTo(b.Url));
     }
 
+    // The other router sorts first, so ordinal order alone would pick it.
     [Test]
     public void MultipleRouters_PrefersRouterNamedAfterContainer()
     {
         var factory = CreateFactory();
+        var labels = new Dictionary<string, string>
+        {
+            ["traefik.http.routers.adguard-dns.rule"] = "Host(`dns.example.com`)",
+            ["traefik.http.routers.adguard-home.rule"] = "Host(`adguard.example.com`)"
+        };
 
-        var service = factory.CreateFromLabels(CreateConfig(), "test-host", "minio", TwoRouterLabels(suffixedFirst: true));
+        var service = factory.CreateFromLabels(CreateConfig(), "test-host", "adguard-home", labels);
 
-        Assert.That(service.Url, Is.EqualTo("https://minio.example.com"));
+        Assert.That(service.Url, Is.EqualTo("https://adguard.example.com"));
+    }
+
+    [Test]
+    public void Name_IsFormattedFromContainerName()
+    {
+        var factory = CreateFactory();
+
+        var service = factory.CreateFromLabels(CreateConfig(), "test-host", "adguard-home", new Dictionary<string, string>());
+
+        Assert.That(service.Name, Is.EqualTo("Adguard Home"));
     }
 
     [Test]

@@ -239,7 +239,9 @@ That file adds `build:` directives, so the API and provider images are built fro
 registry. It's for development only: a host that copied just the four files from the
 [Quick start](#quick-start) never sees it.
 
-For the .NET loop without containers, work from `src/`:
+For the .NET loop without containers, install the exact .NET SDK named in
+[src/global.json](src/global.json). It's pinned with `rollForward: disable`, so a newer SDK
+won't do. With mise: `mise install dotnet@<version>`. Then work from `src/`:
 
 ```sh
 cd src

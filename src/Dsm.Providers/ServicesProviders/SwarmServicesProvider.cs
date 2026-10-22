@@ -37,9 +37,7 @@ public class SwarmServicesProvider : IServicesProvider
     {
         var serviceName = GetServiceName(swarmService);
 
-        var formattedServiceName = ServicesProviderUtilities.GetFormattedServiceName(serviceName);
-
-        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, formattedServiceName, swarmService.Spec.Labels, _config.ProviderId);
+        return _containerLabelServiceFactory.CreateFromLabels(_config, _config.Hostname, serviceName, swarmService.Spec.Labels, _config.ProviderId);
     }
 
     private static string GetServiceName(SwarmService swarmService)
