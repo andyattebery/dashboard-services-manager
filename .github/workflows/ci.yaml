@@ -45,7 +45,7 @@ jobs:
             fi
           done
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: src/global.json
           cache: true
@@ -213,7 +213,7 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref }}
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: src/global.json
           cache: true
