@@ -2,7 +2,7 @@ ARG VERSION=0.0.0
 
 # The SDK must be exactly src/global.json's version (rollForward: disable). Dependabot bumps
 # both in one PR, and CI's test job fails when they differ.
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403 AS build
 ARG VERSION
 
 ENV PROVIDER_PROJECT_NAME=Dsm.Manager.Api
